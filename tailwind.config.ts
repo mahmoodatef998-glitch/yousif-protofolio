@@ -12,15 +12,21 @@ const config: Config = {
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
+        dark: {
+          bg: "#0b0b0b",
+          section: "#121212",
+        },
+        text: {
+          primary: "#ffffff",
+          secondary: "#b5b5b5",
+        },
         accent: {
-          DEFAULT: "#F1C40F",
-          dark: "#D4AC0D",
-          light: "#F7DC6F",
+          DEFAULT: "#f5c16c",
+          hover: "#f5c16c",
         },
       },
       fontFamily: {
-        sans: ["var(--font-inter)", "Poppins", "Montserrat", "sans-serif"],
-        heading: ["Poppins", "Montserrat", "sans-serif"],
+        sans: ["var(--font-inter)", "Inter", "-apple-system", "BlinkMacSystemFont", "sans-serif"],
       },
       animation: {
         "fade-in": "fadeIn 0.6s ease-out",
