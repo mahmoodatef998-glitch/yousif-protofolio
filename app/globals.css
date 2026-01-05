@@ -74,6 +74,50 @@ section.visible {
   transform: translateY(0);
 }
 
+/* Professional Photography Styles */
+.photography-grid {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.photography-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1rem;
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.photography-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.7) 100%);
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  z-index: 1;
+}
+
+.photography-card:hover::before {
+  opacity: 1;
+}
+
+/* Smooth scroll behavior */
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 100px;
+}
+
+/* Custom selection color */
+::selection {
+  background-color: #F1C40F;
+  color: #0a0a0a;
+}
+
+::-moz-selection {
+  background-color: #F1C40F;
+  color: #0a0a0a;
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 10px;
