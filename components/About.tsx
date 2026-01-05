@@ -32,7 +32,7 @@ export function About() {
     <section
       ref={sectionRef}
       id="about"
-      className={`py-32 bg-dark-bg transition-opacity duration-1000 ${
+      className={`py-24 md:py-32 bg-dark-bg transition-opacity duration-1000 ${
         isVisible ? 'opacity-100' : 'opacity-0'
       }`}
     >
@@ -54,18 +54,39 @@ export function About() {
             </h2>
             <div className="space-y-6 text-lg text-text-secondary leading-relaxed">
               <p>
-                With over a decade of experience, I specialize in capturing authentic moments
-                and creating timeless memories through photography and videography.
+                I&apos;m Yousif, a professional photographer and videographer with over 10 years of
+                experience in capturing authentic moments and creating timeless memories.
+              </p>
+              <p>
+                My passion for photography began at an early age and has evolved into a career
+                dedicated to excellence and creativity. I specialize in wedding photography,
+                portrait sessions, event coverage, and commercial work.
               </p>
               <p>
                 My work has been featured in various publications and exhibitions, and I&apos;ve
-                had the privilege of working with clients from all walks of life.
+                had the privilege of working with clients from all walks of life, helping them
+                preserve their most important moments.
               </p>
               <p>
                 Whether it&apos;s a wedding, corporate event, or personal portrait session, I
                 approach each project with attention to detail and a commitment to delivering
-                stunning results.
+                stunning results that exceed expectations.
               </p>
+            </div>
+            
+            <div className="mt-12 grid grid-cols-3 gap-8 pt-8 border-t border-dark-section">
+              <div className="text-center">
+                <div className="text-3xl font-bold text-accent mb-2">500+</div>
+                <div className="text-sm text-text-secondary">Projects</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-accent mb-2">10+</div>
+                <div className="text-sm text-text-secondary">Years</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-accent mb-2">100%</div>
+                <div className="text-sm text-text-secondary">Satisfaction</div>
+              </div>
             </div>
           </div>
         </div>

@@ -3,12 +3,30 @@
 import { useEffect, useRef, useState } from 'react';
 
 const services = [
-  'Wedding Photography',
-  'Portrait Sessions',
-  'Event Coverage',
-  'Commercial Photography',
-  'Videography',
-  'Post-Production',
+  {
+    title: 'Wedding Photography',
+    description: 'Capturing your special day with elegance and emotion',
+  },
+  {
+    title: 'Portrait Sessions',
+    description: 'Professional portraits that showcase your personality',
+  },
+  {
+    title: 'Event Coverage',
+    description: 'Documenting your events with precision and style',
+  },
+  {
+    title: 'Commercial Photography',
+    description: 'High-quality images for your business and brand',
+  },
+  {
+    title: 'Videography',
+    description: 'Cinematic video production for all occasions',
+  },
+  {
+    title: 'Post-Production',
+    description: 'Professional editing and color grading services',
+  },
 ];
 
 export function Services() {
@@ -40,7 +58,7 @@ export function Services() {
     <section
       ref={sectionRef}
       id="services"
-      className={`py-32 bg-dark-section transition-opacity duration-1000 ${
+      className={`py-24 md:py-32 bg-dark-section transition-opacity duration-1000 ${
         isVisible ? 'opacity-100' : 'opacity-0'
       }`}
     >
@@ -56,8 +74,11 @@ export function Services() {
               className="text-center group cursor-pointer"
             >
               <h3 className="text-2xl font-semibold text-text-primary mb-4 group-hover:text-accent transition-colors">
-                {service}
+                {service.title}
               </h3>
+              <p className="text-text-secondary text-sm">
+                {service.description}
+              </p>
             </div>
           ))}
         </div>

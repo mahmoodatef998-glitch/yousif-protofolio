@@ -27,9 +27,12 @@ export function Hero() {
           transition={{ duration: 0.8 }}
         >
           <h1 className="text-6xl md:text-8xl lg:text-9xl font-bold text-text-primary mb-6 tracking-tight">
-            Photographer
+            Yousif
           </h1>
-          <p className="text-xl md:text-2xl text-text-secondary mb-12 max-w-2xl mx-auto">
+          <p className="text-xl md:text-2xl text-text-secondary mb-4 max-w-2xl mx-auto">
+            Photographer & Videographer
+          </p>
+          <p className="text-lg md:text-xl text-text-secondary/80 mb-12 max-w-2xl mx-auto">
             Capturing moments that tell your story
           </p>
           <a

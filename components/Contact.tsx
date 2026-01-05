@@ -32,7 +32,7 @@ export function Contact() {
     <section
       ref={sectionRef}
       id="contact"
-      className={`py-32 bg-dark-bg transition-opacity duration-1000 ${
+      className={`py-24 md:py-32 bg-dark-bg transition-opacity duration-1000 ${
         isVisible ? 'opacity-100' : 'opacity-0'
       }`}
     >
@@ -42,30 +42,43 @@ export function Contact() {
         </h2>
 
         <div className="space-y-8 mb-16">
-          <a
-            href="mailto:contact@example.com"
-            className="block text-2xl text-text-secondary hover:text-accent transition-colors"
-          >
-            contact@example.com
-          </a>
-
-          <div className="flex justify-center space-x-8">
+          <div>
+            <p className="text-text-secondary mb-4">Get in touch</p>
             <a
-              href="#"
+              href="mailto:yousif@photography.com"
+              className="block text-2xl md:text-3xl text-text-primary hover:text-accent transition-colors mb-2"
+            >
+              yousif@photography.com
+            </a>
+            <a
+              href="tel:+1234567890"
+              className="block text-xl text-text-secondary hover:text-accent transition-colors"
+            >
+              +1 (234) 567-890
+            </a>
+          </div>
+
+          <div className="flex justify-center space-x-8 pt-8">
+            <a
+              href="https://instagram.com"
+              target="_blank"
+              rel="noopener noreferrer"
               className="text-text-secondary hover:text-accent transition-colors"
               aria-label="Instagram"
             >
               <Instagram className="w-6 h-6" />
             </a>
             <a
-              href="#"
+              href="https://linkedin.com"
+              target="_blank"
+              rel="noopener noreferrer"
               className="text-text-secondary hover:text-accent transition-colors"
               aria-label="LinkedIn"
             >
               <Linkedin className="w-6 h-6" />
             </a>
             <a
-              href="mailto:contact@example.com"
+              href="mailto:yousif@photography.com"
               className="text-text-secondary hover:text-accent transition-colors"
               aria-label="Email"
             >

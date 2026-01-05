@@ -13,6 +13,10 @@ const portfolioItems = [
   { id: 6, title: 'Lifestyle', category: 'Lifestyle', image: 'https://images.unsplash.com/photo-1519741347686-c1e0aadf9381?w=1200&q=80' },
   { id: 7, title: 'Editorial', category: 'Editorial', image: 'https://images.unsplash.com/photo-1522673607200-164d066402dc?w=1200&q=80' },
   { id: 8, title: 'Fine Art', category: 'Fine Art', image: 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=1200&q=80' },
+  { id: 9, title: 'Corporate Events', category: 'Corporate', image: 'https://images.unsplash.com/photo-1505373877841-8d25f7d46678?w=1200&q=80' },
+  { id: 10, title: 'Product Photography', category: 'Product', image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1200&q=80' },
+  { id: 11, title: 'Real Estate', category: 'Real Estate', image: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=1200&q=80' },
+  { id: 12, title: 'Travel Photography', category: 'Travel', image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&q=80' },
 ];
 
 export function Portfolio() {
@@ -46,7 +50,7 @@ export function Portfolio() {
       <section
         ref={sectionRef}
         id="work"
-        className={`py-32 bg-dark-section transition-opacity duration-1000 ${
+        className={`py-24 md:py-32 bg-dark-section transition-opacity duration-1000 ${
           isVisible ? 'opacity-100' : 'opacity-0'
         }`}
       >

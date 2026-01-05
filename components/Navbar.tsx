@@ -44,7 +44,7 @@ export function Navbar() {
             onClick={(e) => handleNavClick(e, '#home')}
             className="text-xl font-semibold text-text-primary hover:text-accent transition-colors"
           >
-            Portfolio
+            Yousif
           </a>
 
           <div className="hidden md:flex items-center space-x-8">

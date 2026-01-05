@@ -7,10 +7,19 @@ import { Contact } from '@/components/Contact';
 export default function Home() {
   return (
     <main className="bg-dark-bg">
+      {/* Hero Section - Full Screen */}
       <Hero />
-      <Portfolio />
+      
+      {/* About Section */}
       <About />
+      
+      {/* Portfolio Section */}
+      <Portfolio />
+      
+      {/* Services Section */}
       <Services />
+      
+      {/* Contact Section */}
       <Contact />
     </main>
   );
