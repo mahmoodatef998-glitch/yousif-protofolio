@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import { Suspense } from 'react';
 import { getAllImages } from '@/lib/cloudinary';
 import { Category } from '@/types';
 import PortfolioClient from '@/components/PortfolioClient';
@@ -52,7 +53,13 @@ export default async function PortfolioPage() {
           </p>
         </div>
 
-        <PortfolioClient images={images} categories={categories} />
+        <Suspense fallback={
+          <div className="text-center py-12">
+            <p className="text-gray-600 dark:text-gray-400">Loading portfolio...</p>
+          </div>
+        }>
+          <PortfolioClient images={images} categories={categories} />
+        </Suspense>
       </div>
     </div>
   );

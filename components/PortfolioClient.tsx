@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { ImageGallery } from './ImageGallery';
 import { CategoryFilter } from './CategoryFilter';
 import { Category, PortfolioImage } from '@/types';
@@ -11,7 +12,18 @@ interface PortfolioClientProps {
 }
 
 export default function PortfolioClient({ images, categories }: PortfolioClientProps) {
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const searchParams = useSearchParams();
+  const categoryFromUrl = searchParams.get('category');
+  const [selectedCategory, setSelectedCategory] = useState<string>(
+    categoryFromUrl || 'all'
+  );
+
+  // Update selected category when URL changes
+  useEffect(() => {
+    if (categoryFromUrl) {
+      setSelectedCategory(categoryFromUrl);
+    }
+  }, [categoryFromUrl]);
 
   return (
     <>
