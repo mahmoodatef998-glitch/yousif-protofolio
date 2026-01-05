@@ -2,9 +2,9 @@
 echo Starting Photography Portfolio Server...
 echo.
 
-REM Kill any existing Node processes on port 3000
-for /f "tokens=5" %%a in ('netstat -aon ^| findstr :3000 ^| findstr LISTENING') do (
-    echo Killing process on port 3000...
+REM Kill any existing Node processes on port 3008
+for /f "tokens=5" %%a in ('netstat -aon ^| findstr :3008 ^| findstr LISTENING') do (
+    echo Killing process on port 3008...
     taskkill /F /PID %%a > nul 2>&1
 )
 timeout /t 2 /nobreak > nul
@@ -32,7 +32,7 @@ timeout /t 15 /nobreak > nul
 
 REM Check if server is running
 :check
-curl -s http://localhost:3000 > nul 2>&1
+curl -s http://localhost:3008 > nul 2>&1
 if errorlevel 1 (
     echo Server not ready yet, waiting...
     timeout /t 3 /nobreak > nul
@@ -41,11 +41,11 @@ if errorlevel 1 (
 
 REM Open browser
 echo Opening browser...
-start http://localhost:3000
+start http://localhost:3008
 
 echo.
 echo ========================================
-echo Server is running at http://localhost:3000
+echo Server is running at http://localhost:3008
 echo ========================================
 echo.
 echo The server window will stay open.

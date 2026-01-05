@@ -20,10 +20,10 @@ Start-Sleep -Seconds 8
 
 # Open browser
 Write-Host "Opening browser..." -ForegroundColor Green
-Start-Process "http://localhost:3000"
+Start-Process "http://localhost:3008"
 
 Write-Host ""
-Write-Host "Server is running at http://localhost:3000" -ForegroundColor Green
+Write-Host "Server is running at http://localhost:3008" -ForegroundColor Green
 Write-Host "Server window will stay open. Close it to stop the server." -ForegroundColor Yellow
 Write-Host ""
 Write-Host "Press any key to exit this script (server will keep running)..." -ForegroundColor Gray
