@@ -63,6 +63,14 @@ export async function getImagesByFolder(folder: string): Promise<CloudinaryImage
  */
 export async function getAllImages(): Promise<PortfolioImage[]> {
   try {
+    // Check if Cloudinary is configured
+    if (!process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 
+        !process.env.NEXT_PUBLIC_CLOUDINARY_API_KEY || 
+        !process.env.CLOUDINARY_API_SECRET) {
+      console.log('Cloudinary not configured, returning empty array');
+      return [];
+    }
+
     // You can modify this to fetch from a specific folder or with specific tags
     const folder = process.env.NEXT_PUBLIC_CLOUDINARY_FOLDER || 'portfolio';
     

@@ -8,6 +8,12 @@ import { getCloudinaryImageUrl } from '@/lib/cloudinary-url';
 // Get sections from Cloudinary
 async function getSections() {
   try {
+    // Check if Cloudinary is configured
+    if (!process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME) {
+      console.log('Cloudinary not configured, returning empty sections');
+      return [];
+    }
+
     const images = await getAllImages();
     
     // Group images by category (section)
