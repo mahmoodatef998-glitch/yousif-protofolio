@@ -1,23 +1,27 @@
-import { Hero } from '@/components/Hero';
-import { Portfolio } from '@/components/Portfolio';
 import { About } from '@/components/About';
-import { Services } from '@/components/Services';
+import { Videos } from '@/components/Videos';
+import { Reels } from '@/components/Reels';
+import { Wedding } from '@/components/Wedding';
+import { Product } from '@/components/Product';
 import { Contact } from '@/components/Contact';
 
 export default function Home() {
   return (
     <main className="bg-dark-bg">
-      {/* Hero Section - Full Screen */}
-      <Hero />
-      
-      {/* About Section */}
+      {/* About Section - Hero at top */}
       <About />
       
-      {/* Portfolio Section */}
-      <Portfolio />
+      {/* Videos Section - 3 full-screen videos */}
+      <Videos />
       
-      {/* Services Section */}
-      <Services />
+      {/* Reels Section - 5 reels */}
+      <Reels />
+      
+      {/* Wedding Section */}
+      <Wedding />
+      
+      {/* Product Section */}
+      <Product />
       
       {/* Contact Section */}
       <Contact />
