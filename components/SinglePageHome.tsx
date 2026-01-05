@@ -86,9 +86,99 @@ const contactInfo = [
   },
 ];
 
+// Demo sections data
+const getDemoSections = (): Section[] => {
+  const demoImages = {
+    wedding: [
+      '1519682337058-a94d519337bc',
+      '1465495976277-4387d4b0b4c6',
+      '1511285560929-80b456fea0bc',
+      '1519741347686-c1e0aadf9381',
+      '1522673607200-164d066402dc',
+      '1519167758481-83f550bb49b3',
+      '1519741497686-c1e0aadf9381',
+      '1522673607200-164d066402dc',
+    ],
+    portrait: [
+      '1494790108377-be9c29b29330',
+      '1507003211169-0a1dd7228f2d',
+      '1500648767791-00dcc994a43e',
+      '1506794778202-cad84cf45fdd',
+      '1502823403499-6ccfcf4fb453',
+      '1507591064345-6c1d8b4b8c3a',
+      '1519085360753-af7119b3e8b7',
+      '1506794778202-cad84cf45fdd',
+    ],
+    events: [
+      '1511574784320-5b5c2e5c5c5c',
+      '1519167758481-83f550bb49b3',
+      '1519741497686-c1e0aadf9381',
+      '1522673607200-164d066402dc',
+      '1519682337058-a94d519337bc',
+      '1465495976277-4387d4b0b4c6',
+      '1511285560929-80b456fea0bc',
+      '1519741347686-c1e0aadf9381',
+    ],
+  };
+
+  return [
+    {
+      name: 'wedding',
+      count: 12,
+      images: demoImages.wedding.map((id, i) => ({
+        public_id: `demo-wedding-${i}`,
+        secure_url: `https://images.unsplash.com/photo-${id}?w=800&q=80`,
+        width: 800,
+        height: 600,
+        format: 'jpg',
+        category: 'wedding',
+        alt: `Wedding Photography ${i + 1}`,
+        caption: '',
+        tags: ['wedding'],
+        context: {},
+      })),
+      coverImage: 'https://images.unsplash.com/photo-1519682337058-a94d519337bc?w=1920&q=80',
+    },
+    {
+      name: 'portrait',
+      count: 15,
+      images: demoImages.portrait.map((id, i) => ({
+        public_id: `demo-portrait-${i}`,
+        secure_url: `https://images.unsplash.com/photo-${id}?w=800&q=80`,
+        width: 800,
+        height: 600,
+        format: 'jpg',
+        category: 'portrait',
+        alt: `Portrait Photography ${i + 1}`,
+        caption: '',
+        tags: ['portrait'],
+        context: {},
+      })),
+      coverImage: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=1920&q=80',
+    },
+    {
+      name: 'events',
+      count: 20,
+      images: demoImages.events.map((id, i) => ({
+        public_id: `demo-events-${i}`,
+        secure_url: `https://images.unsplash.com/photo-${id}?w=800&q=80`,
+        width: 800,
+        height: 600,
+        format: 'jpg',
+        category: 'events',
+        alt: `Event Photography ${i + 1}`,
+        caption: '',
+        tags: ['events'],
+        context: {},
+      })),
+      coverImage: 'https://images.unsplash.com/photo-1511574784320-5b5c2e5c5c5c?w=1920&q=80',
+    },
+  ];
+};
+
 export default function SinglePageHome() {
-  const [sections, setSections] = useState<Section[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [sections, setSections] = useState<Section[]>(getDemoSections());
+  const [loading, setLoading] = useState(false);
   const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({});
 
   useEffect(() => {
@@ -96,6 +186,11 @@ export default function SinglePageHome() {
     const fetchSections = async () => {
       try {
         const response = await fetch('/api/cloudinary/images');
+        
+        if (!response.ok) {
+          throw new Error('API call failed');
+        }
+        
         const data = await response.json();
         const images = data.images || [];
         
@@ -116,144 +211,20 @@ export default function SinglePageHome() {
           coverImage: items[0]?.secure_url || items[0]?.public_id || '',
         }));
 
-        // If no sections from Cloudinary, use demo sections
-        if (sectionsData.length === 0 || sectionsData.every(s => s.images.length === 0)) {
-          const demoImages = {
-            wedding: [
-              '1519682337058-a94d519337bc',
-              '1465495976277-4387d4b0b4c6',
-              '1511285560929-80b456fea0bc',
-              '1519741347686-c1e0aadf9381',
-              '1522673607200-164d066402dc',
-              '1519167758481-83f550bb49b3',
-              '1519741497686-c1e0aadf9381',
-              '1522673607200-164d066402dc',
-            ],
-            portrait: [
-              '1494790108377-be9c29b29330',
-              '1507003211169-0a1dd7228f2d',
-              '1500648767791-00dcc994a43e',
-              '1506794778202-cad84cf45fdd',
-              '1502823403499-6ccfcf4fb453',
-              '1507591064345-6c1d8b4b8c3a',
-              '1519085360753-af7119b3e8b7',
-              '1506794778202-cad84cf45fdd',
-            ],
-            events: [
-              '1511574784320-5b5c2e5c5c5c',
-              '1519167758481-83f550bb49b3',
-              '1519741497686-c1e0aadf9381',
-              '1522673607200-164d066402dc',
-              '1519682337058-a94d519337bc',
-              '1465495976277-4387d4b0b4c6',
-              '1511285560929-80b456fea0bc',
-              '1519741347686-c1e0aadf9381',
-            ],
-          };
-
-          sectionsData = [
-            {
-              name: 'wedding',
-              count: 12,
-              images: demoImages.wedding.map((id, i) => ({
-                public_id: `demo-wedding-${i}`,
-                secure_url: `https://images.unsplash.com/photo-${id}?w=800&q=80`,
-                width: 800,
-                height: 600,
-                format: 'jpg',
-                category: 'wedding',
-                alt: `Wedding Photography ${i + 1}`,
-                caption: '',
-                tags: ['wedding'],
-                context: {},
-              })),
-              coverImage: 'https://images.unsplash.com/photo-1519682337058-a94d519337bc?w=1920&q=80',
-            },
-            {
-              name: 'portrait',
-              count: 15,
-              images: demoImages.portrait.map((id, i) => ({
-                public_id: `demo-portrait-${i}`,
-                secure_url: `https://images.unsplash.com/photo-${id}?w=800&q=80`,
-                width: 800,
-                height: 600,
-                format: 'jpg',
-                category: 'portrait',
-                alt: `Portrait Photography ${i + 1}`,
-                caption: '',
-                tags: ['portrait'],
-                context: {},
-              })),
-              coverImage: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=1920&q=80',
-            },
-            {
-              name: 'events',
-              count: 20,
-              images: demoImages.events.map((id, i) => ({
-                public_id: `demo-events-${i}`,
-                secure_url: `https://images.unsplash.com/photo-${id}?w=800&q=80`,
-                width: 800,
-                height: 600,
-                format: 'jpg',
-                category: 'events',
-                alt: `Event Photography ${i + 1}`,
-                caption: '',
-                tags: ['events'],
-                context: {},
-              })),
-              coverImage: 'https://images.unsplash.com/photo-1511574784320-5b5c2e5c5c5c?w=1920&q=80',
-            },
-          ];
+        // If no sections from Cloudinary, keep demo sections
+        if (sectionsData.length > 0 && !sectionsData.every(s => s.images.length === 0)) {
+          setSections(sectionsData);
         }
-
-        setSections(sectionsData);
+        // Otherwise, keep the initial demo sections
       } catch (error) {
         console.error('Error fetching sections:', error);
-        // Use demo sections on error
-        const demoWedding = ['1519682337058-a94d519337bc', '1465495976277-4387d4b0b4c6', '1511285560929-80b456fea0bc', '1519741347686-c1e0aadf9381', '1522673607200-164d066402dc', '1519167758481-83f550bb49b3', '1519741497686-c1e0aadf9381', '1522673607200-164d066402dc'];
-        const demoPortrait = ['1494790108377-be9c29b29330', '1507003211169-0a1dd7228f2d', '1500648767791-00dcc994a43e', '1506794778202-cad84cf45fdd', '1502823403499-6ccfcf4fb453', '1507591064345-6c1d8b4b8c3a', '1519085360753-af7119b3e8b7', '1506794778202-cad84cf45fdd'];
-        
-        setSections([
-          {
-            name: 'wedding',
-            count: 12,
-            images: demoWedding.map((id, i) => ({
-              public_id: `demo-wedding-${i}`,
-              secure_url: `https://images.unsplash.com/photo-${id}?w=800&q=80`,
-              width: 800,
-              height: 600,
-              format: 'jpg',
-              category: 'wedding',
-              alt: `Wedding Photography ${i + 1}`,
-              caption: '',
-              tags: ['wedding'],
-              context: {},
-            })),
-            coverImage: 'https://images.unsplash.com/photo-1519682337058-a94d519337bc?w=1920&q=80',
-          },
-          {
-            name: 'portrait',
-            count: 15,
-            images: demoPortrait.map((id, i) => ({
-              public_id: `demo-portrait-${i}`,
-              secure_url: `https://images.unsplash.com/photo-${id}?w=800&q=80`,
-              width: 800,
-              height: 600,
-              format: 'jpg',
-              category: 'portrait',
-              alt: `Portrait Photography ${i + 1}`,
-              caption: '',
-              tags: ['portrait'],
-              context: {},
-            })),
-            coverImage: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=1920&q=80',
-          },
-        ]);
+        // Keep demo sections on error
       } finally {
         setLoading(false);
       }
     };
 
+    // Try to fetch from API, but keep demo sections as fallback
     fetchSections();
   }, []);
 
@@ -278,16 +249,7 @@ export default function SinglePageHome() {
     };
   }, []);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <Camera className="w-12 h-12 animate-spin mx-auto text-accent mb-4" />
-          <p className="text-gray-400">Loading portfolio...</p>
-        </div>
-      </div>
-    );
-  }
+  // Always show content, even while loading (demo sections are already set)
 
   return (
     <main className="bg-gray-900 text-white">
@@ -310,6 +272,10 @@ export default function SinglePageHome() {
           )}
           {/* Overlay Gradient */}
           <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/50 to-transparent z-20" />
+          {/* Pattern Overlay */}
+          <div className="absolute inset-0 opacity-5 z-15" style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23F1C40F' fill-opacity='0.1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+          }} />
         </div>
         
         {/* Animated Background Elements */}
