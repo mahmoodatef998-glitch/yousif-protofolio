@@ -37,10 +37,10 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} antialiased`} suppressHydrationWarning>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <div className="flex flex-col min-h-screen">
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+          <div className="flex flex-col min-h-screen bg-gray-900">
             <Navbar />
-            <main className="flex-grow pt-16 md:pt-20">
+            <main className="flex-grow">
               {children}
             </main>
             <Footer />

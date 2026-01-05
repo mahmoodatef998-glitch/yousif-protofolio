@@ -12,63 +12,63 @@ export function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800">
+    <footer className="bg-gray-900 border-t border-gray-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Brand */}
           <div>
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
+            <h3 className="text-lg font-bold text-white mb-4">
               Photography Portfolio
             </h3>
-            <p className="text-gray-600 dark:text-gray-400 text-sm">
+            <p className="text-gray-400 text-sm">
               Capturing moments, creating memories. Professional photography services.
             </p>
           </div>
 
           {/* Quick Links */}
           <div>
-            <h4 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider mb-4">
+            <h4 className="text-sm font-semibold text-white uppercase tracking-wider mb-4">
               Quick Links
             </h4>
             <ul className="space-y-2">
               <li>
-                <Link
-                  href="/"
-                  className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm transition-colors"
+                <a
+                  href="#home"
+                  className="text-gray-400 hover:text-accent text-sm transition-colors"
                 >
                   Home
-                </Link>
+                </a>
               </li>
               <li>
-                <Link
-                  href="/portfolio"
-                  className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm transition-colors"
+                <a
+                  href="#portfolio"
+                  className="text-gray-400 hover:text-accent text-sm transition-colors"
                 >
                   Portfolio
-                </Link>
+                </a>
               </li>
               <li>
-                <Link
-                  href="/about"
-                  className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm transition-colors"
+                <a
+                  href="#about"
+                  className="text-gray-400 hover:text-accent text-sm transition-colors"
                 >
                   About
-                </Link>
+                </a>
               </li>
               <li>
-                <Link
-                  href="/contact"
-                  className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm transition-colors"
+                <a
+                  href="#contact"
+                  className="text-gray-400 hover:text-accent text-sm transition-colors"
                 >
                   Contact
-                </Link>
+                </a>
               </li>
             </ul>
           </div>
 
           {/* Social Media */}
           <div>
-            <h4 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider mb-4">
+            <h4 className="text-sm font-semibold text-white uppercase tracking-wider mb-4">
               Connect
             </h4>
             <div className="flex space-x-4">
@@ -80,7 +80,7 @@ export function Footer() {
                     href={link.href}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="p-2 rounded-lg bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors"
+                    className="p-2 rounded-lg bg-gray-800 hover:bg-accent text-gray-300 hover:text-gray-900 transition-all duration-300 hover:scale-110"
                     aria-label={link.name}
                   >
                     <Icon className="w-5 h-5" />
@@ -91,8 +91,8 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-800">
-          <p className="text-center text-sm text-gray-600 dark:text-gray-400">
+        <div className="mt-8 pt-8 border-t border-gray-800">
+          <p className="text-center text-sm text-gray-400">
             © {currentYear} Photography Portfolio. All rights reserved.
           </p>
         </div>
