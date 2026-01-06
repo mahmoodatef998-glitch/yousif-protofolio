@@ -13,6 +13,8 @@ const nextConfig = {
         pathname: '/**',
       },
     ],
+    unoptimized: false,
+    formats: ['image/avif', 'image/webp'],
   },
   reactStrictMode: true,
   // Suppress hydration warnings from browser extensions
@@ -24,6 +26,10 @@ const nextConfig = {
   experimental: {
     optimizePackageImports: ['lucide-react'],
   },
+  // Disable Vercel Analytics in development if causing issues
+  ...(process.env.NODE_ENV === 'production' && {
+    // Production-only config
+  }),
 };
 
 module.exports = nextConfig;
