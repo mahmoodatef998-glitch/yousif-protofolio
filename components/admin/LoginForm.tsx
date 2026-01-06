@@ -31,8 +31,10 @@ export function LoginForm() {
       }
 
       if (data.user) {
-        router.push('/admin');
-        router.refresh();
+        // Use replace instead of push to avoid back button issues
+        router.replace('/admin');
+        // Force a hard refresh to ensure session is set
+        window.location.href = '/admin';
       }
     } catch (err) {
       setError('An unexpected error occurred');
