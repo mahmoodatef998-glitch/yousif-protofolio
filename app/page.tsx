@@ -3,6 +3,7 @@ import { Videos } from '@/components/Videos';
 import { Reels } from '@/components/Reels';
 import { Wedding } from '@/components/Wedding';
 import { Product } from '@/components/Product';
+import { Restaurant } from '@/components/Restaurant';
 import { Contact } from '@/components/Contact';
 
 export default function Home() {
@@ -22,6 +23,9 @@ export default function Home() {
       
       {/* Product Section */}
       <Product />
+      
+      {/* Restaurant Section */}
+      <Restaurant />
       
       {/* Contact Section */}
       <Contact />
