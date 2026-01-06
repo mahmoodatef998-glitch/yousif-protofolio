@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
   LayoutDashboard, 
@@ -19,11 +19,13 @@ import {
   Edit2,
   Trash2,
   Save,
-  X
+  X,
+  Upload,
+  Loader2
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
-type SectionType = 'about' | 'videos' | 'reels' | 'wedding' | 'product' | 'restaurant' | 'contact';
+type SectionType = 'about' | 'videos' | 'reels' | 'wedding' | 'product' | 'restaurant' | 'contact' | 'upload';
 
 interface Section {
   id: SectionType;
@@ -33,6 +35,7 @@ interface Section {
 }
 
 const sections: Section[] = [
+  { id: 'upload', name: 'Upload', icon: Upload, description: 'Upload images and videos' },
   { id: 'about', name: 'About Me', icon: User, description: 'Manage your bio and personal information' },
   { id: 'videos', name: 'Videos', icon: Video, description: 'Manage full-screen videos' },
   { id: 'reels', name: 'Reels', icon: Film, description: 'Manage short video reels' },
@@ -45,7 +48,7 @@ const sections: Section[] = [
 export default function AdminDashboard() {
   const router = useRouter();
   const supabase = createClient();
-  const [activeSection, setActiveSection] = useState<SectionType>('about');
+  const [activeSection, setActiveSection] = useState<SectionType>('upload');
   const [isEditing, setIsEditing] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
@@ -140,26 +143,28 @@ export default function AdminDashboard() {
                 {currentSection?.description}
               </p>
             </div>
-            <button
-              onClick={() => setIsEditing(!isEditing)}
-              className={`px-6 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${
-                isEditing
-                  ? 'bg-accent text-dark-bg hover:bg-accent/90'
-                  : 'bg-dark-bg text-text-primary hover:bg-dark-section border border-dark-section'
-              }`}
-            >
-              {isEditing ? (
-                <>
-                  <Save className="w-4 h-4" />
-                  Save Changes
-                </>
-              ) : (
-                <>
-                  <Edit2 className="w-4 h-4" />
-                  Edit
-                </>
-              )}
-            </button>
+            {activeSection !== 'upload' && (
+              <button
+                onClick={() => setIsEditing(!isEditing)}
+                className={`px-6 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${
+                  isEditing
+                    ? 'bg-accent text-dark-bg hover:bg-accent/90'
+                    : 'bg-dark-bg text-text-primary hover:bg-dark-section border border-dark-section'
+                }`}
+              >
+                {isEditing ? (
+                  <>
+                    <Save className="w-4 h-4" />
+                    Save Changes
+                  </>
+                ) : (
+                  <>
+                    <Edit2 className="w-4 h-4" />
+                    Edit
+                  </>
+                )}
+              </button>
+            )}
           </div>
         </header>
 
@@ -187,6 +192,8 @@ function SectionContent({
   onEditChange: (editing: boolean) => void;
 }) {
   switch (section) {
+    case 'upload':
+      return <UploadSection />;
     case 'about':
       return <AboutSection isEditing={isEditing} />;
     case 'videos':
@@ -206,6 +213,274 @@ function SectionContent({
   }
 }
 
+// Upload Section with Drag and Drop
+function UploadSection() {
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({});
+  const [category, setCategory] = useState('wedding');
+  const [imageName, setImageName] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const categories = ['wedding', 'product', 'restaurant', 'videos', 'reels'];
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+
+    const files = Array.from(e.dataTransfer.files).filter(file => 
+      file.type.startsWith('image/') || file.type.startsWith('video/')
+    );
+    
+    if (files.length > 0) {
+      setSelectedFiles(prev => [...prev, ...files]);
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const files = Array.from(e.target.files);
+      setSelectedFiles(prev => [...prev, ...files]);
+    }
+  };
+
+  const removeFile = (index: number) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleUpload = async () => {
+    if (selectedFiles.length === 0) {
+      alert('Please select at least one file');
+      return;
+    }
+
+    if (!category) {
+      alert('Please select a category');
+      return;
+    }
+    
+    setUploading(true);
+    const progress: { [key: string]: number } = {};
+
+    try {
+      for (let i = 0; i < selectedFiles.length; i++) {
+        const file = selectedFiles[i];
+        const fileName = selectedFiles.length === 1 
+          ? imageName || file.name.replace(/\.[^/.]+$/, '')
+          : `${imageName || 'image'}-${i + 1}`;
+
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('category', category);
+        formData.append('name', fileName);
+
+        progress[file.name] = 0;
+        setUploadProgress({ ...progress });
+
+        const xhr = new XMLHttpRequest();
+
+        xhr.upload.addEventListener('progress', (e) => {
+          if (e.lengthComputable) {
+            const percentComplete = (e.loaded / e.total) * 100;
+            progress[file.name] = percentComplete;
+            setUploadProgress({ ...progress });
+          }
+        });
+
+        await new Promise<void>((resolve, reject) => {
+          xhr.onload = () => {
+            if (xhr.status === 200) {
+              progress[file.name] = 100;
+              setUploadProgress({ ...progress });
+              resolve();
+            } else {
+              reject(new Error(`Upload failed for ${file.name}`));
+            }
+          };
+
+          xhr.onerror = () => {
+            reject(new Error(`Upload failed for ${file.name}`));
+          };
+
+          xhr.open('POST', '/api/cloudinary/upload');
+          xhr.send(formData);
+        });
+      }
+
+      setSelectedFiles([]);
+      setImageName('');
+      alert('Files uploaded successfully!');
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      alert(`Upload failed: ${error.message || 'Unknown error'}`);
+    } finally {
+      setUploading(false);
+      setUploadProgress({});
+    }
+  };
+
+    return (
+    <div className="space-y-6">
+      <div className="bg-dark-section rounded-lg p-6">
+        <h3 className="text-lg font-semibold text-text-primary mb-4">Upload Images/Videos</h3>
+
+        {/* Drag and Drop Area */}
+        <div
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          className={`border-2 border-dashed rounded-xl p-12 text-center transition-all ${
+            isDragging
+              ? 'border-accent bg-accent/10'
+              : 'border-dark-section hover:border-accent/50'
+          }`}
+        >
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept="image/*,video/*"
+            onChange={handleFileSelect}
+            className="hidden"
+            id="file-upload"
+            disabled={uploading}
+          />
+          <label
+            htmlFor="file-upload"
+            className="cursor-pointer flex flex-col items-center justify-center"
+          >
+            <div className={`w-20 h-20 rounded-full flex items-center justify-center mb-4 transition-colors ${
+              isDragging ? 'bg-accent/20' : 'bg-dark-bg'
+            }`}>
+              <Upload className={`w-10 h-10 ${isDragging ? 'text-accent' : 'text-text-secondary'}`} />
+            </div>
+            <p className="text-text-primary font-medium mb-2 text-lg">
+              {isDragging ? 'Drop files here' : 'Drag and drop files here'}
+            </p>
+            <p className="text-text-secondary text-sm mb-4">
+              or click to browse
+            </p>
+            <p className="text-text-secondary text-xs">
+              Supports images and videos (multiple files)
+            </p>
+          </label>
+        </div>
+
+        {/* Selected Files */}
+        {selectedFiles.length > 0 && (
+          <div className="mt-6 space-y-2">
+            <h4 className="text-sm font-medium text-text-primary mb-3">
+              Selected Files ({selectedFiles.length})
+            </h4>
+            <div className="space-y-2 max-h-60 overflow-y-auto">
+              {selectedFiles.map((file, index) => (
+                <div
+                  key={index}
+                  className="flex items-center justify-between p-3 bg-dark-bg rounded-lg"
+                >
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <ImageIcon className="w-5 h-5 text-text-secondary flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-text-primary truncate">{file.name}</p>
+                      <p className="text-xs text-text-secondary">
+                        {(file.size / 1024 / 1024).toFixed(2)} MB
+                      </p>
+                    </div>
+                  </div>
+                  {uploading && uploadProgress[file.name] !== undefined ? (
+                    <div className="flex items-center gap-3">
+                      <div className="w-24 h-2 bg-dark-section rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-accent transition-all"
+                          style={{ width: `${uploadProgress[file.name]}%` }}
+                        />
+                      </div>
+                      <span className="text-xs text-text-secondary w-10">
+                        {Math.round(uploadProgress[file.name])}%
+                      </span>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => removeFile(index)}
+                      className="p-1 hover:bg-red-500/10 rounded text-red-400 transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Form Fields */}
+        <div className="mt-6 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-text-secondary mb-2">
+              Image/Video Name {selectedFiles.length > 1 && '(will be used as prefix)'}
+            </label>
+            <input
+              type="text"
+              value={imageName}
+              onChange={(e) => setImageName(e.target.value)}
+              placeholder={selectedFiles.length > 1 ? "e.g., wedding-photos" : "e.g., wedding-photo-1"}
+              className="w-full px-4 py-2 bg-dark-bg border border-dark-section rounded-lg text-text-primary focus:border-accent focus:outline-none disabled:opacity-50"
+              disabled={uploading}
+            />
+        </div>
+
+          <div>
+            <label className="block text-sm font-medium text-text-secondary mb-2">
+              Category/Section *
+            </label>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="w-full px-4 py-2 bg-dark-bg border border-dark-section rounded-lg text-text-primary focus:border-accent focus:outline-none disabled:opacity-50"
+              disabled={uploading}
+            >
+              {categories.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <button
+            onClick={handleUpload}
+            disabled={uploading || selectedFiles.length === 0 || !category}
+            className="w-full px-6 py-3 bg-accent text-dark-bg rounded-lg font-semibold hover:bg-accent/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            {uploading ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                Uploading...
+              </>
+            ) : (
+              <>
+                <Upload className="w-5 h-5" />
+                Upload {selectedFiles.length > 0 ? `${selectedFiles.length} file(s)` : 'Files'}
+              </>
+              )}
+            </button>
+          </div>
+        </div>
+    </div>
+  );
+}
+
 // About Section
 function AboutSection({ isEditing }: { isEditing: boolean }) {
   const [title, setTitle] = useState('Yousif');
@@ -215,7 +490,7 @@ function AboutSection({ isEditing }: { isEditing: boolean }) {
   const [backgroundImage, setBackgroundImage] = useState('https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=1920&q=80');
 
   return (
-    <div className="space-y-6">
+          <div className="space-y-6">
       <div className="bg-dark-section rounded-lg p-6">
         <h3 className="text-lg font-semibold text-text-primary mb-4">Hero Content</h3>
         <div className="space-y-4">
@@ -250,7 +525,7 @@ function AboutSection({ isEditing }: { isEditing: boolean }) {
             />
           </div>
         </div>
-      </div>
+              </div>
 
       <div className="bg-dark-section rounded-lg p-6">
         <h3 className="text-lg font-semibold text-text-primary mb-4">About Content</h3>
@@ -267,7 +542,7 @@ function AboutSection({ isEditing }: { isEditing: boolean }) {
           </div>
           <div>
             <label className="block text-sm font-medium text-text-secondary mb-2">Background Image URL</label>
-            <input
+                    <input
               type="url"
               value={backgroundImage}
               onChange={(e) => setBackgroundImage(e.target.value)}
@@ -276,8 +551,8 @@ function AboutSection({ isEditing }: { isEditing: boolean }) {
             />
           </div>
         </div>
-      </div>
-    </div>
+                  </div>
+                </div>
   );
 }
 
@@ -290,7 +565,7 @@ function VideosSection({ isEditing }: { isEditing: boolean }) {
     { id: 4, title: 'Commercial Work', url: '', thumbnail: '' },
   ]);
 
-  return (
+                  return (
     <div className="space-y-6">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-text-primary">Videos ({videos.length})</h3>
@@ -298,9 +573,9 @@ function VideosSection({ isEditing }: { isEditing: boolean }) {
           <button className="px-4 py-2 bg-accent text-dark-bg rounded-lg hover:bg-accent/90 transition-colors flex items-center gap-2">
             <Plus className="w-4 h-4" />
             Add Video
-          </button>
+                    </button>
         )}
-      </div>
+              </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {videos.map((video) => (
@@ -410,11 +685,11 @@ function ReelsSection({ isEditing }: { isEditing: boolean }) {
                 disabled={!isEditing}
                 className="w-full px-3 py-2 bg-dark-bg border border-dark-section rounded text-text-primary text-sm focus:border-accent focus:outline-none disabled:opacity-50"
               />
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+              </div>
   );
 }
 
@@ -464,8 +739,8 @@ function GallerySection({ section, isEditing }: { section: string; isEditing: bo
               }}
               disabled={!isEditing}
               className="w-full px-3 py-2 bg-dark-bg border border-dark-section rounded text-text-primary text-sm focus:border-accent focus:outline-none disabled:opacity-50"
-            />
-          </div>
+                  />
+                </div>
         ))}
       </div>
     </div>
@@ -483,8 +758,8 @@ function ContactSection({ isEditing }: { isEditing: boolean }) {
     <div className="space-y-6">
       <div className="bg-dark-section rounded-lg p-6">
         <h3 className="text-lg font-semibold text-text-primary mb-4">Contact Information</h3>
-        <div className="space-y-4">
-          <div>
+                <div className="space-y-4">
+                  <div>
             <label className="block text-sm font-medium text-text-secondary mb-2">Email</label>
             <input
               type="email"
@@ -493,18 +768,18 @@ function ContactSection({ isEditing }: { isEditing: boolean }) {
               disabled={!isEditing}
               className="w-full px-4 py-2 bg-dark-bg border border-dark-section rounded-lg text-text-primary focus:border-accent focus:outline-none disabled:opacity-50"
             />
-          </div>
-          <div>
+                  </div>
+                  <div>
             <label className="block text-sm font-medium text-text-secondary mb-2">Phone</label>
-            <input
+                    <input
               type="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               disabled={!isEditing}
               className="w-full px-4 py-2 bg-dark-bg border border-dark-section rounded-lg text-text-primary focus:border-accent focus:outline-none disabled:opacity-50"
-            />
-          </div>
-          <div>
+                    />
+                  </div>
+                  <div>
             <label className="block text-sm font-medium text-text-secondary mb-2">Instagram URL</label>
             <input
               type="url"
@@ -512,8 +787,8 @@ function ContactSection({ isEditing }: { isEditing: boolean }) {
               onChange={(e) => setInstagram(e.target.value)}
               disabled={!isEditing}
               className="w-full px-4 py-2 bg-dark-bg border border-dark-section rounded-lg text-text-primary focus:border-accent focus:outline-none disabled:opacity-50"
-            />
-          </div>
+                    />
+                  </div>
           <div>
             <label className="block text-sm font-medium text-text-secondary mb-2">LinkedIn URL</label>
             <input
