@@ -11,7 +11,7 @@ export default function Home() {
       {/* About Section - Hero at top */}
       <About />
       
-      {/* Videos Section - 3 full-screen videos */}
+      {/* Videos Section - 4 full-screen videos */}
       <Videos />
       
       {/* Reels Section - 5 reels */}

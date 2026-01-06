@@ -8,18 +8,28 @@ const videos = [
     title: 'Wedding Highlights',
     src: 'https://videos.pexels.com/video-files/3044128/3044128-hd_1920_1080_30fps.mp4',
     thumbnail: 'https://images.unsplash.com/photo-1519682337058-a94d519337bc?w=1920&q=80',
+    description: 'Capturing the magic of your special day',
   },
   {
     id: 2,
     title: 'Portrait Session',
     src: 'https://videos.pexels.com/video-files/3045163/3045163-hd_1920_1080_30fps.mp4',
     thumbnail: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=1920&q=80',
+    description: 'Professional portraits that tell your story',
   },
   {
     id: 3,
     title: 'Event Coverage',
     src: 'https://videos.pexels.com/video-files/3045164/3045164-hd_1920_1080_30fps.mp4',
     thumbnail: 'https://images.unsplash.com/photo-1511574784320-5b5c2e5c5c5c?w=1920&q=80',
+    description: 'Documenting your events with cinematic style',
+  },
+  {
+    id: 4,
+    title: 'Commercial Work',
+    src: 'https://videos.pexels.com/video-files/2491284/2491284-hd_1920_1080_30fps.mp4',
+    thumbnail: 'https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?w=1920&q=80',
+    description: 'High-quality commercial videography',
   },
 ];
 
@@ -73,11 +83,14 @@ export function Videos() {
               <source src={video.src} type="video/mp4" />
               Your browser does not support the video tag.
             </video>
-            <div className="absolute inset-0 bg-dark-bg/40" />
-            <div className="relative z-10 text-center">
-              <h3 className="text-4xl md:text-6xl font-bold text-text-primary mb-4">
+            <div className="absolute inset-0 bg-dark-bg/50" />
+            <div className="relative z-10 text-center px-6">
+              <h3 className="text-5xl md:text-7xl lg:text-8xl font-bold text-text-primary mb-4">
                 {video.title}
               </h3>
+              <p className="text-xl md:text-2xl text-text-secondary max-w-2xl mx-auto">
+                {video.description}
+              </p>
             </div>
           </div>
         ))}
