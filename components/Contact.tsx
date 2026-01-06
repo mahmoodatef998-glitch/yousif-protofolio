@@ -12,6 +12,34 @@ export function Contact() {
     message: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [contactInfo, setContactInfo] = useState({
+    email: 'yousif@photography.com',
+    phone: '+1 (234) 567-890',
+    instagram: 'https://instagram.com',
+    linkedin: 'https://linkedin.com',
+  });
+
+  useEffect(() => {
+    fetchContact();
+  }, []);
+
+  const fetchContact = async () => {
+    try {
+      const response = await fetch('/api/contact');
+      const { data } = await response.json();
+      
+      if (data) {
+        setContactInfo({
+          email: data.email || 'yousif@photography.com',
+          phone: data.phone || '+1 (234) 567-890',
+          instagram: data.instagram_url || 'https://instagram.com',
+          linkedin: data.linkedin_url || 'https://linkedin.com',
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching contact:', error);
+    }
+  };
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -77,7 +105,7 @@ export function Contact() {
               <h3 className="text-2xl font-semibold text-text-primary mb-6">Contact Information</h3>
               <div className="space-y-6">
                 <a
-                  href="mailto:yousif@photography.com"
+                  href={`mailto:${contactInfo.email}`}
                   className="flex items-center space-x-4 group"
                 >
                   <div className="w-12 h-12 rounded-lg bg-dark-section flex items-center justify-center group-hover:bg-accent/20 transition-colors">
@@ -86,13 +114,13 @@ export function Contact() {
                   <div>
                     <p className="text-sm text-text-secondary">Email</p>
                     <p className="text-text-primary group-hover:text-accent transition-colors">
-                      yousif@photography.com
+                      {contactInfo.email}
                     </p>
                   </div>
                 </a>
 
                 <a
-                  href="tel:+1234567890"
+                  href={`tel:${contactInfo.phone.replace(/\s/g, '')}`}
                   className="flex items-center space-x-4 group"
                 >
                   <div className="w-12 h-12 rounded-lg bg-dark-section flex items-center justify-center group-hover:bg-accent/20 transition-colors">
@@ -101,7 +129,7 @@ export function Contact() {
                   <div>
                     <p className="text-sm text-text-secondary">Phone</p>
                     <p className="text-text-primary group-hover:text-accent transition-colors">
-                      +1 (234) 567-890
+                      {contactInfo.phone}
                     </p>
                   </div>
                 </a>
@@ -112,7 +140,7 @@ export function Contact() {
               <h3 className="text-2xl font-semibold text-text-primary mb-6">Follow Me</h3>
               <div className="flex space-x-4">
                 <a
-                  href="https://instagram.com"
+                  href={contactInfo.instagram}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-12 h-12 rounded-lg bg-dark-section flex items-center justify-center hover:bg-accent/20 hover:scale-110 transition-all duration-300"
@@ -121,7 +149,7 @@ export function Contact() {
                   <Instagram className="w-5 h-5 text-accent" />
                 </a>
                 <a
-                  href="https://linkedin.com"
+                  href={contactInfo.linkedin}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-12 h-12 rounded-lg bg-dark-section flex items-center justify-center hover:bg-accent/20 hover:scale-110 transition-all duration-300"
@@ -130,7 +158,7 @@ export function Contact() {
                   <Linkedin className="w-5 h-5 text-accent" />
                 </a>
                 <a
-                  href="mailto:yousif@photography.com"
+                  href={`mailto:${contactInfo.email}`}
                   className="w-12 h-12 rounded-lg bg-dark-section flex items-center justify-center hover:bg-accent/20 hover:scale-110 transition-all duration-300"
                   aria-label="Email"
                 >

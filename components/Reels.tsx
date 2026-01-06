@@ -1,45 +1,45 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import Image from 'next/image';
 
-const reels = [
-  {
-    id: 1,
-    title: 'Wedding Reel',
-    thumbnail: 'https://images.unsplash.com/photo-1519682337058-a94d519337bc?w=800&q=80',
-    video: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-  },
-  {
-    id: 2,
-    title: 'Portrait Reel',
-    thumbnail: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=800&q=80',
-    video: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
-  },
-  {
-    id: 3,
-    title: 'Event Reel',
-    thumbnail: 'https://images.unsplash.com/photo-1511574784320-5b5c2e5c5c5c?w=800&q=80',
-    video: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-  },
-  {
-    id: 4,
-    title: 'Fashion Reel',
-    thumbnail: 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=800&q=80',
-    video: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
-  },
-  {
-    id: 5,
-    title: 'Lifestyle Reel',
-    thumbnail: 'https://images.unsplash.com/photo-1519741347686-c1e0aadf9381?w=800&q=80',
-    video: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
-  },
-];
+interface Reel {
+  id: string;
+  title: string;
+  thumbnail: string;
+  video: string;
+}
 
 export function Reels() {
   const sectionRef = useRef<HTMLElement>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [selectedReel, setSelectedReel] = useState<string | null>(null);
+  const [reels, setReels] = useState<Reel[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchReels();
+  }, []);
+
+  const fetchReels = async () => {
+    try {
+      const response = await fetch('/api/content?section=reels');
+      const { data } = await response.json();
+      
+      if (data && data.length > 0) {
+        const formattedReels = data.map((item: any) => ({
+          id: item.id,
+          title: item.title || 'Untitled Reel',
+          thumbnail: item.thumbnail_url || item.media_url || '',
+          video: item.media_url || '',
+        }));
+        setReels(formattedReels);
+      }
+    } catch (error) {
+      console.error('Error fetching reels:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -61,6 +61,20 @@ export function Reels() {
       }
     };
   }, []);
+
+  if (loading) {
+    return (
+      <section id="reels" className="py-24 md:py-32 bg-dark-section">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8 text-center">
+          <div className="text-text-secondary">Loading reels...</div>
+        </div>
+      </section>
+    );
+  }
+
+  if (reels.length === 0) {
+    return null;
+  }
 
   return (
     <>

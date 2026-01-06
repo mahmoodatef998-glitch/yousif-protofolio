@@ -4,19 +4,42 @@ import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { X } from 'lucide-react';
 
-const restaurantImages = [
-  { id: 1, title: 'Restaurant Interior 1', category: 'Restaurant', image: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=1200&q=80' },
-  { id: 2, title: 'Restaurant Interior 2', category: 'Restaurant', image: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=1200&q=80' },
-  { id: 3, title: 'Restaurant Interior 3', category: 'Restaurant', image: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=1200&q=80' },
-  { id: 4, title: 'Restaurant Interior 4', category: 'Restaurant', image: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=1200&q=80' },
-  { id: 5, title: 'Restaurant Interior 5', category: 'Restaurant', image: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=1200&q=80' },
-  { id: 6, title: 'Restaurant Interior 6', category: 'Restaurant', image: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=1200&q=80' },
-];
+interface GalleryImage {
+  id: string;
+  title: string;
+  image: string;
+}
 
 export function Restaurant() {
   const sectionRef = useRef<HTMLElement>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [images, setImages] = useState<GalleryImage[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchImages();
+  }, []);
+
+  const fetchImages = async () => {
+    try {
+      const response = await fetch('/api/content?section=restaurant');
+      const { data } = await response.json();
+      
+      if (data && data.length > 0) {
+        const formattedImages = data.map((item: any) => ({
+          id: item.id,
+          title: item.title || 'Untitled Image',
+          image: item.media_url || '',
+        }));
+        setImages(formattedImages);
+      }
+    } catch (error) {
+      console.error('Error fetching restaurant images:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -39,6 +62,20 @@ export function Restaurant() {
     };
   }, []);
 
+  if (loading) {
+    return (
+      <section id="restaurant" className="py-24 md:py-32 bg-dark-section">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8 text-center">
+          <div className="text-text-secondary">Loading restaurant gallery...</div>
+        </div>
+      </section>
+    );
+  }
+
+  if (images.length === 0) {
+    return null;
+  }
+
   return (
     <>
       <section
@@ -54,7 +91,7 @@ export function Restaurant() {
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {restaurantImages.map((item) => (
+            {images.map((item) => (
               <div
                 key={item.id}
                 className="group relative aspect-[4/3] overflow-hidden cursor-pointer"
@@ -68,7 +105,7 @@ export function Restaurant() {
                 <div className="absolute inset-0 bg-dark-bg/0 group-hover:bg-dark-bg/80 transition-all duration-300 flex items-center justify-center">
                   <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-center">
                     <p className="text-text-primary text-xl font-semibold mb-2">{item.title}</p>
-                    <p className="text-text-secondary text-sm">{item.category}</p>
+                    <p className="text-text-secondary text-sm">Restaurant</p>
                   </div>
                 </div>
               </div>

@@ -4,19 +4,42 @@ import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { X } from 'lucide-react';
 
-const weddingImages = [
-  { id: 1, title: 'Wedding Ceremony', image: 'https://images.unsplash.com/photo-1519682337058-a94d519337bc?w=1200&q=80' },
-  { id: 2, title: 'Bridal Portrait', image: 'https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?w=1200&q=80' },
-  { id: 3, title: 'Reception', image: 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=1200&q=80' },
-  { id: 4, title: 'First Dance', image: 'https://images.unsplash.com/photo-1519741347686-c1e0aadf9381?w=1200&q=80' },
-  { id: 5, title: 'Wedding Details', image: 'https://images.unsplash.com/photo-1522673607200-164d066402dc?w=1200&q=80' },
-  { id: 6, title: 'Couple Session', image: 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=1200&q=80' },
-];
+interface GalleryImage {
+  id: string;
+  title: string;
+  image: string;
+}
 
 export function Wedding() {
   const sectionRef = useRef<HTMLElement>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [images, setImages] = useState<GalleryImage[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchImages();
+  }, []);
+
+  const fetchImages = async () => {
+    try {
+      const response = await fetch('/api/content?section=wedding');
+      const { data } = await response.json();
+      
+      if (data && data.length > 0) {
+        const formattedImages = data.map((item: any) => ({
+          id: item.id,
+          title: item.title || 'Untitled Image',
+          image: item.media_url || '',
+        }));
+        setImages(formattedImages);
+      }
+    } catch (error) {
+      console.error('Error fetching wedding images:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -39,6 +62,20 @@ export function Wedding() {
     };
   }, []);
 
+  if (loading) {
+    return (
+      <section id="wedding" className="py-24 md:py-32 bg-dark-bg">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8 text-center">
+          <div className="text-text-secondary">Loading wedding gallery...</div>
+        </div>
+      </section>
+    );
+  }
+
+  if (images.length === 0) {
+    return null;
+  }
+
   return (
     <>
       <section
@@ -54,7 +91,7 @@ export function Wedding() {
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {weddingImages.map((item) => (
+            {images.map((item) => (
               <div
                 key={item.id}
                 className="group relative aspect-[4/3] overflow-hidden cursor-pointer"

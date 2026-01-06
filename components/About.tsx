@@ -6,6 +6,39 @@ import { motion } from 'framer-motion';
 export function About() {
   const sectionRef = useRef<HTMLElement>(null);
   const [isVisible, setIsVisible] = useState(false);
+  const [aboutData, setAboutData] = useState({
+    heroTitle: 'About',
+    heroSubtitle: '',
+    bio: '',
+    profileImage: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&q=80',
+    stats: { clients: 500, projects: 10, awards: 100 },
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchAbout();
+  }, []);
+
+  const fetchAbout = async () => {
+    try {
+      const response = await fetch('/api/about');
+      const { data } = await response.json();
+      
+      if (data) {
+        setAboutData({
+          heroTitle: data.hero_title || 'About',
+          heroSubtitle: data.hero_subtitle || '',
+          bio: data.bio_text || '',
+          profileImage: data.profile_image_url || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&q=80',
+          stats: data.stats || { clients: 500, projects: 10, awards: 100 },
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching about:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -57,8 +90,8 @@ export function About() {
             className="relative aspect-[3/4] order-2 lg:order-1"
           >
             <img
-              src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&q=80"
-              alt="Yousif"
+              src={aboutData.profileImage}
+              alt={aboutData.heroTitle}
               className="absolute inset-0 w-full h-full object-cover"
             />
           </motion.div>
@@ -71,37 +104,31 @@ export function About() {
             className="order-1 lg:order-2"
           >
             <h2 className="text-5xl md:text-6xl lg:text-7xl font-bold text-text-primary mb-8">
-              About
+              {aboutData.heroTitle}
             </h2>
-            <div className="space-y-6 text-lg md:text-xl text-text-secondary leading-relaxed">
-              <p>
-                I&apos;m Yousif, a professional photographer and videographer with over 10 years of
-                experience in capturing authentic moments and creating timeless memories.
-              </p>
-              <p>
-                My passion for photography began at an early age and has evolved into a career
-                dedicated to excellence and creativity. I specialize in wedding photography,
-                portrait sessions, event coverage, and commercial work.
-              </p>
-              <p>
-                My work has been featured in various publications and exhibitions, and I&apos;ve
-                had the privilege of working with clients from all walks of life, helping them
-                preserve their most important moments.
-              </p>
-            </div>
+            {aboutData.heroSubtitle && (
+              <p className="text-xl md:text-2xl text-accent mb-8">{aboutData.heroSubtitle}</p>
+            )}
+            {aboutData.bio && (
+              <div className="space-y-6 text-lg md:text-xl text-text-secondary leading-relaxed">
+                {aboutData.bio.split('\n').map((paragraph, index) => (
+                  <p key={index}>{paragraph}</p>
+                ))}
+              </div>
+            )}
             
             <div className="mt-12 grid grid-cols-3 gap-8 pt-8 border-t border-dark-section">
               <div className="text-center">
-                <div className="text-4xl md:text-5xl font-bold text-accent mb-2">500+</div>
+                <div className="text-4xl md:text-5xl font-bold text-accent mb-2">{aboutData.stats.projects}+</div>
                 <div className="text-sm text-text-secondary">Projects</div>
               </div>
               <div className="text-center">
-                <div className="text-4xl md:text-5xl font-bold text-accent mb-2">10+</div>
-                <div className="text-sm text-text-secondary">Years</div>
+                <div className="text-4xl md:text-5xl font-bold text-accent mb-2">{aboutData.stats.clients}+</div>
+                <div className="text-sm text-text-secondary">Clients</div>
               </div>
               <div className="text-center">
-                <div className="text-4xl md:text-5xl font-bold text-accent mb-2">100%</div>
-                <div className="text-sm text-text-secondary">Satisfaction</div>
+                <div className="text-4xl md:text-5xl font-bold text-accent mb-2">{aboutData.stats.awards}+</div>
+                <div className="text-sm text-text-secondary">Awards</div>
               </div>
             </div>
           </motion.div>

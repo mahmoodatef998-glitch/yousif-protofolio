@@ -4,19 +4,42 @@ import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { X } from 'lucide-react';
 
-const productImages = [
-  { id: 1, title: 'Product Shot 1', category: 'Commercial', image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1200&q=80' },
-  { id: 2, title: 'Product Shot 2', category: 'Commercial', image: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=1200&q=80' },
-  { id: 3, title: 'Product Shot 3', category: 'Commercial', image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&q=80' },
-  { id: 4, title: 'Product Shot 4', category: 'Commercial', image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1200&q=80' },
-  { id: 5, title: 'Product Shot 5', category: 'Commercial', image: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=1200&q=80' },
-  { id: 6, title: 'Product Shot 6', category: 'Commercial', image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&q=80' },
-];
+interface GalleryImage {
+  id: string;
+  title: string;
+  image: string;
+}
 
 export function Product() {
   const sectionRef = useRef<HTMLElement>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [images, setImages] = useState<GalleryImage[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchImages();
+  }, []);
+
+  const fetchImages = async () => {
+    try {
+      const response = await fetch('/api/content?section=product');
+      const { data } = await response.json();
+      
+      if (data && data.length > 0) {
+        const formattedImages = data.map((item: any) => ({
+          id: item.id,
+          title: item.title || 'Untitled Image',
+          image: item.media_url || '',
+        }));
+        setImages(formattedImages);
+      }
+    } catch (error) {
+      console.error('Error fetching product images:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -39,6 +62,20 @@ export function Product() {
     };
   }, []);
 
+  if (loading) {
+    return (
+      <section id="product" className="py-24 md:py-32 bg-dark-section">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8 text-center">
+          <div className="text-text-secondary">Loading product gallery...</div>
+        </div>
+      </section>
+    );
+  }
+
+  if (images.length === 0) {
+    return null;
+  }
+
   return (
     <>
       <section
@@ -54,7 +91,7 @@ export function Product() {
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {productImages.map((item) => (
+            {images.map((item) => (
               <div
                 key={item.id}
                 className="group relative aspect-[4/3] overflow-hidden cursor-pointer"
@@ -68,7 +105,7 @@ export function Product() {
                 <div className="absolute inset-0 bg-dark-bg/0 group-hover:bg-dark-bg/80 transition-all duration-300 flex items-center justify-center">
                   <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-center">
                     <p className="text-text-primary text-xl font-semibold mb-2">{item.title}</p>
-                    <p className="text-text-secondary text-sm">{item.category}</p>
+                    <p className="text-text-secondary text-sm">Product</p>
                   </div>
                 </div>
               </div>
