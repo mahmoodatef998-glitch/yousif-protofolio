@@ -8,31 +8,31 @@ const reels = [
     id: 1,
     title: 'Wedding Reel',
     thumbnail: 'https://images.unsplash.com/photo-1519682337058-a94d519337bc?w=800&q=80',
-    video: 'https://videos.pexels.com/video-files/3044128/3044128-hd_1920_1080_30fps.mp4',
+    video: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
   },
   {
     id: 2,
     title: 'Portrait Reel',
     thumbnail: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=800&q=80',
-    video: 'https://videos.pexels.com/video-files/3045163/3045163-hd_1920_1080_30fps.mp4',
+    video: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
   },
   {
     id: 3,
     title: 'Event Reel',
     thumbnail: 'https://images.unsplash.com/photo-1511574784320-5b5c2e5c5c5c?w=800&q=80',
-    video: 'https://videos.pexels.com/video-files/3045164/3045164-hd_1920_1080_30fps.mp4',
+    video: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
   },
   {
     id: 4,
     title: 'Fashion Reel',
     thumbnail: 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=800&q=80',
-    video: 'https://videos.pexels.com/video-files/3044128/3044128-hd_1920_1080_30fps.mp4',
+    video: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
   },
   {
     id: 5,
     title: 'Lifestyle Reel',
     thumbnail: 'https://images.unsplash.com/photo-1519741347686-c1e0aadf9381?w=800&q=80',
-    video: 'https://videos.pexels.com/video-files/3045163/3045163-hd_1920_1080_30fps.mp4',
+    video: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
   },
 ];
 
