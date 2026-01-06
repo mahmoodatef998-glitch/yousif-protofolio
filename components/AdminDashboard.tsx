@@ -330,13 +330,19 @@ function UploadSection() {
                 });
 
                 if (!saveResponse.ok) {
-                  console.error('Failed to save to database');
+                  const errorData = await saveResponse.json();
+                  console.error('Failed to save to database:', errorData);
+                  reject(new Error(`Failed to save to database: ${errorData.error || 'Unknown error'}`));
+                  return;
                 }
-              } catch (error) {
+                
+                const savedData = await saveResponse.json();
+                console.log('Successfully saved to database:', savedData);
+                resolve();
+              } catch (error: any) {
                 console.error('Error saving to database:', error);
+                reject(new Error(`Failed to save to database: ${error.message || 'Unknown error'}`));
               }
-              
-              resolve();
             } else {
               reject(new Error(`Upload failed for ${file.name}`));
             }
@@ -353,10 +359,17 @@ function UploadSection() {
 
       setSelectedFiles([]);
       setImageName('');
-      alert('Files uploaded successfully!');
+      
+      // Show success message and refresh page after a short delay
+      alert('Files uploaded successfully! The page will refresh to show the new content.');
+      
+      // Refresh the page after 1 second to show new content
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
     } catch (error: any) {
       console.error('Upload error:', error);
-      alert(`Upload failed: ${error.message || 'Unknown error'}`);
+      alert(`Upload failed: ${error.message || 'Unknown error'}\n\nPlease check the browser console for more details.`);
     } finally {
       setUploading(false);
       setUploadProgress({});
