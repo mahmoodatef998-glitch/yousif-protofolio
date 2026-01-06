@@ -1467,8 +1467,6 @@ function ContactSection({ isEditing }: { isEditing: boolean }) {
           </button>
         </div>
       )}
-        </div>
-      </div>
     </div>
   );
 }
