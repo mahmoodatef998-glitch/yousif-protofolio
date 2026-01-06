@@ -19,6 +19,30 @@ export function Product() {
 
   useEffect(() => {
     fetchImages();
+    
+    let channel: BroadcastChannel | null = null;
+    let interval: NodeJS.Timeout | null = null;
+    
+    // Listen for content updates from admin dashboard
+    if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+      channel = new BroadcastChannel('content-updated');
+      channel.onmessage = (event) => {
+        if (event.data.type === 'content-updated' && 
+            (event.data.section === 'product' || !event.data.section)) {
+          fetchImages();
+        }
+      };
+    }
+    
+    // Refresh data every 30 seconds to show new uploads
+    interval = setInterval(() => {
+      fetchImages();
+    }, 30000);
+    
+    return () => {
+      if (channel) channel.close();
+      if (interval) clearInterval(interval);
+    };
   }, []);
 
   const fetchImages = async () => {

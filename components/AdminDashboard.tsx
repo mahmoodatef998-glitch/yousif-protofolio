@@ -360,13 +360,15 @@ function UploadSection() {
       setSelectedFiles([]);
       setImageName('');
       
-      // Show success message and refresh page after a short delay
-      alert('Files uploaded successfully! The page will refresh to show the new content.');
+      // Show success message
+      alert('Files uploaded successfully! The homepage will automatically update within 30 seconds, or you can refresh it manually.');
       
-      // Refresh the page after 1 second to show new content
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
+      // Broadcast message to homepage to refresh immediately (if open)
+      if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+        const channel = new BroadcastChannel('content-updated');
+        channel.postMessage({ type: 'content-updated', section: category });
+        channel.close();
+      }
     } catch (error: any) {
       console.error('Upload error:', error);
       alert(`Upload failed: ${error.message || 'Unknown error'}\n\nPlease check the browser console for more details.`);
