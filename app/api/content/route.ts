@@ -4,6 +4,18 @@ import { createClient } from '@/lib/supabase/server';
 // GET - Fetch all content
 export async function GET(request: NextRequest) {
   try {
+    // Check environment variables
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+      console.error('Missing Supabase environment variables');
+      return NextResponse.json(
+        { 
+          error: 'Supabase configuration missing',
+          details: 'NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY must be set'
+        },
+        { status: 500 }
+      );
+    }
+
     const supabase = await createClient();
     const { searchParams } = new URL(request.url);
     const section = searchParams.get('section');
@@ -25,14 +37,21 @@ export async function GET(request: NextRequest) {
       
       if (sectionError) {
         console.error(`Section '${section}' not found:`, sectionError);
-        return NextResponse.json({ data: [] });
+        return NextResponse.json({ 
+          data: [],
+          message: `Section '${section}' not found. Make sure you ran the schema.sql and seed.sql files in Supabase.`,
+          error: sectionError.message 
+        });
       }
       
       if (sectionData) {
         query = query.eq('section_id', sectionData.id);
       } else {
         console.log(`Section '${section}' not found in database`);
-        return NextResponse.json({ data: [] });
+        return NextResponse.json({ 
+          data: [],
+          message: `Section '${section}' not found in database. Make sure you ran the schema.sql and seed.sql files in Supabase.`
+        });
       }
     }
 
@@ -40,13 +59,27 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       console.error('Error fetching content:', error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json(
+        { 
+          error: error.message,
+          code: error.code,
+          details: 'Failed to fetch content from Supabase. Check your database connection and RLS policies.'
+        },
+        { status: 500 }
+      );
     }
 
     console.log(`Fetched ${data?.length || 0} items for section '${section || 'all'}'`);
     return NextResponse.json({ data: data || [] });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error('API route error:', error);
+    return NextResponse.json(
+      { 
+        error: error.message || 'Internal server error',
+        details: 'An unexpected error occurred while processing the request'
+      },
+      { status: 500 }
+    );
   }
 }
 

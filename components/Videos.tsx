@@ -46,11 +46,17 @@ export function Videos() {
 
   const fetchVideos = async () => {
     try {
-      const response = await fetch('/api/content?section=videos');
+      setLoading(true);
+      const response = await fetch('/api/content?section=videos', {
+        cache: 'no-store', // Ensure fresh data
+      });
       
       if (!response.ok) {
         console.error('Failed to fetch videos:', response.status, response.statusText);
+        const errorText = await response.text();
+        console.error('Error response:', errorText);
         setLoading(false);
+        setVideos([]);
         return;
       }
       
@@ -59,22 +65,26 @@ export function Videos() {
       
       console.log('Videos fetched:', data);
       
-      if (data && data.length > 0) {
-        const formattedVideos = data.map((item: any) => ({
-          id: item.id,
-          title: item.title || 'Untitled Video',
-          src: item.media_url || '',
-          thumbnail: item.thumbnail_url || '',
-          description: item.description || '',
-        }));
-        setVideos(formattedVideos);
+      if (data && Array.isArray(data) && data.length > 0) {
+        const formattedVideos = data
+          .filter((item: any) => item.media_url && item.media_url.trim() !== '') // Filter out empty URLs
+          .map((item: any) => ({
+            id: item.id,
+            title: item.title || 'Untitled Video',
+            src: item.media_url || '',
+            thumbnail: item.thumbnail_url || item.media_url || '',
+            description: item.description || '',
+          }));
+        
         console.log('Videos formatted:', formattedVideos);
+        setVideos(formattedVideos);
       } else {
-        console.log('No videos found in database');
+        console.log('No videos found in database or empty array');
         setVideos([]);
       }
     } catch (error) {
       console.error('Error fetching videos:', error);
+      setVideos([]);
     } finally {
       setLoading(false);
     }
@@ -110,7 +120,14 @@ export function Videos() {
   }
 
   if (videos.length === 0) {
-    return null;
+    return (
+      <section id="videos" className="bg-dark-bg min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-5xl md:text-6xl font-bold text-text-primary mb-4">Videos</h2>
+          <p className="text-text-secondary">No videos yet. Upload videos from the admin dashboard.</p>
+        </div>
+      </section>
+    );
   }
 
   return (

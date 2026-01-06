@@ -46,11 +46,17 @@ export function Reels() {
 
   const fetchReels = async () => {
     try {
-      const response = await fetch('/api/content?section=reels');
+      setLoading(true);
+      const response = await fetch('/api/content?section=reels', {
+        cache: 'no-store', // Ensure fresh data
+      });
       
       if (!response.ok) {
         console.error('Failed to fetch reels:', response.status, response.statusText);
+        const errorText = await response.text();
+        console.error('Error response:', errorText);
         setLoading(false);
+        setReels([]);
         return;
       }
       
@@ -59,21 +65,25 @@ export function Reels() {
       
       console.log('Reels fetched:', data);
       
-      if (data && data.length > 0) {
-        const formattedReels = data.map((item: any) => ({
-          id: item.id,
-          title: item.title || 'Untitled Reel',
-          thumbnail: item.thumbnail_url || item.media_url || '',
-          video: item.media_url || '',
-        }));
-        setReels(formattedReels);
+      if (data && Array.isArray(data) && data.length > 0) {
+        const formattedReels = data
+          .filter((item: any) => item.media_url && item.media_url.trim() !== '') // Filter out empty URLs
+          .map((item: any) => ({
+            id: item.id,
+            title: item.title || 'Untitled Reel',
+            thumbnail: item.thumbnail_url || item.media_url || '',
+            video: item.media_url || '',
+          }));
+        
         console.log('Reels formatted:', formattedReels);
+        setReels(formattedReels);
       } else {
-        console.log('No reels found in database');
+        console.log('No reels found in database or empty array');
         setReels([]);
       }
     } catch (error) {
       console.error('Error fetching reels:', error);
+      setReels([]);
     } finally {
       setLoading(false);
     }
@@ -111,7 +121,14 @@ export function Reels() {
   }
 
   if (reels.length === 0) {
-    return null;
+    return (
+      <section id="reels" className="py-24 md:py-32 bg-dark-section">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8 text-center">
+          <h2 className="text-5xl md:text-6xl font-bold text-text-primary mb-16">Reels</h2>
+          <p className="text-text-secondary">No reels yet. Upload reels from the admin dashboard.</p>
+        </div>
+      </section>
+    );
   }
 
   return (

@@ -47,11 +47,17 @@ export function Wedding() {
 
   const fetchImages = async () => {
     try {
-      const response = await fetch('/api/content?section=wedding');
+      setLoading(true);
+      const response = await fetch('/api/content?section=wedding', {
+        cache: 'no-store', // Ensure fresh data
+      });
       
       if (!response.ok) {
         console.error('Failed to fetch wedding images:', response.status, response.statusText);
+        const errorText = await response.text();
+        console.error('Error response:', errorText);
         setLoading(false);
+        setImages([]);
         return;
       }
       
@@ -60,20 +66,24 @@ export function Wedding() {
       
       console.log('Wedding images fetched:', data);
       
-      if (data && data.length > 0) {
-        const formattedImages = data.map((item: any) => ({
-          id: item.id,
-          title: item.title || 'Untitled Image',
-          image: item.media_url || '',
-        }));
-        setImages(formattedImages);
+      if (data && Array.isArray(data) && data.length > 0) {
+        const formattedImages = data
+          .filter((item: any) => item.media_url && item.media_url.trim() !== '') // Filter out empty URLs
+          .map((item: any) => ({
+            id: item.id,
+            title: item.title || 'Untitled Image',
+            image: item.media_url || '',
+          }));
+        
         console.log('Wedding images formatted:', formattedImages);
+        setImages(formattedImages);
       } else {
-        console.log('No wedding images found in database');
+        console.log('No wedding images found in database or empty array');
         setImages([]);
       }
     } catch (error) {
       console.error('Error fetching wedding images:', error);
+      setImages([]);
     } finally {
       setLoading(false);
     }
