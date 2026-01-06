@@ -48,7 +48,17 @@ export function Restaurant() {
   const fetchImages = async () => {
     try {
       const response = await fetch('/api/content?section=restaurant');
-      const { data } = await response.json();
+      
+      if (!response.ok) {
+        console.error('Failed to fetch restaurant images:', response.status, response.statusText);
+        setLoading(false);
+        return;
+      }
+      
+      const result = await response.json();
+      const data = result.data || result;
+      
+      console.log('Restaurant images fetched:', data);
       
       if (data && data.length > 0) {
         const formattedImages = data.map((item: any) => ({
@@ -57,6 +67,10 @@ export function Restaurant() {
           image: item.media_url || '',
         }));
         setImages(formattedImages);
+        console.log('Restaurant images formatted:', formattedImages);
+      } else {
+        console.log('No restaurant images found in database');
+        setImages([]);
       }
     } catch (error) {
       console.error('Error fetching restaurant images:', error);
@@ -97,7 +111,14 @@ export function Restaurant() {
   }
 
   if (images.length === 0) {
-    return null;
+    return (
+      <section id="restaurant" className="py-24 md:py-32 bg-dark-section">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8 text-center">
+          <h2 className="text-5xl md:text-6xl font-bold text-text-primary mb-16">Restaurant</h2>
+          <p className="text-text-secondary">No images yet. Upload images from the admin dashboard.</p>
+        </div>
+      </section>
+    );
   }
 
   return (

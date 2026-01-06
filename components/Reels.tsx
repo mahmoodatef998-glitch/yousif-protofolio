@@ -47,7 +47,17 @@ export function Reels() {
   const fetchReels = async () => {
     try {
       const response = await fetch('/api/content?section=reels');
-      const { data } = await response.json();
+      
+      if (!response.ok) {
+        console.error('Failed to fetch reels:', response.status, response.statusText);
+        setLoading(false);
+        return;
+      }
+      
+      const result = await response.json();
+      const data = result.data || result;
+      
+      console.log('Reels fetched:', data);
       
       if (data && data.length > 0) {
         const formattedReels = data.map((item: any) => ({
@@ -57,6 +67,10 @@ export function Reels() {
           video: item.media_url || '',
         }));
         setReels(formattedReels);
+        console.log('Reels formatted:', formattedReels);
+      } else {
+        console.log('No reels found in database');
+        setReels([]);
       }
     } catch (error) {
       console.error('Error fetching reels:', error);

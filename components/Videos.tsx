@@ -47,7 +47,17 @@ export function Videos() {
   const fetchVideos = async () => {
     try {
       const response = await fetch('/api/content?section=videos');
-      const { data } = await response.json();
+      
+      if (!response.ok) {
+        console.error('Failed to fetch videos:', response.status, response.statusText);
+        setLoading(false);
+        return;
+      }
+      
+      const result = await response.json();
+      const data = result.data || result;
+      
+      console.log('Videos fetched:', data);
       
       if (data && data.length > 0) {
         const formattedVideos = data.map((item: any) => ({
@@ -58,30 +68,13 @@ export function Videos() {
           description: item.description || '',
         }));
         setVideos(formattedVideos);
+        console.log('Videos formatted:', formattedVideos);
       } else {
-        // Fallback to demo videos if no data
-        setVideos([
-          {
-            id: '1',
-            title: 'Wedding Highlights',
-            src: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-            thumbnail: 'https://images.unsplash.com/photo-1519682337058-a94d519337bc?w=1920&q=80',
-            description: 'Capturing the magic of your special day',
-          },
-        ]);
+        console.log('No videos found in database');
+        setVideos([]);
       }
     } catch (error) {
       console.error('Error fetching videos:', error);
-      // Fallback to demo videos on error
-      setVideos([
-        {
-          id: '1',
-          title: 'Wedding Highlights',
-          src: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-          thumbnail: 'https://images.unsplash.com/photo-1519682337058-a94d519337bc?w=1920&q=80',
-          description: 'Capturing the magic of your special day',
-        },
-      ]);
     } finally {
       setLoading(false);
     }

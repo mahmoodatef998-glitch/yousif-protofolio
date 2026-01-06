@@ -21,20 +21,30 @@ export async function GET(request: NextRequest) {
         .eq('name', section)
         .single();
 
-      const { data: sectionData } = await sectionQuery;
+      const { data: sectionData, error: sectionError } = await sectionQuery;
+      
+      if (sectionError) {
+        console.error(`Section '${section}' not found:`, sectionError);
+        return NextResponse.json({ data: [] });
+      }
       
       if (sectionData) {
         query = query.eq('section_id', sectionData.id);
+      } else {
+        console.log(`Section '${section}' not found in database`);
+        return NextResponse.json({ data: [] });
       }
     }
 
     const { data, error } = await query;
 
     if (error) {
+      console.error('Error fetching content:', error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ data });
+    console.log(`Fetched ${data?.length || 0} items for section '${section || 'all'}'`);
+    return NextResponse.json({ data: data || [] });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
