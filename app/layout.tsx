@@ -12,6 +12,11 @@ export const metadata: Metadata = {
   description: 'Professional photography portfolio showcasing stunning images and creative work. Specializing in portraits, weddings, events, and more.',
   keywords: ['photography', 'portfolio', 'wedding photography', 'portrait photography', 'professional photographer'],
   authors: [{ name: 'Photography Portfolio' }],
+  icons: {
+    icon: '/icon.svg',
+    shortcut: '/icon.svg',
+    apple: '/icon.svg',
+  },
   openGraph: {
     title: 'Photography Portfolio | Professional Photography Services',
     description: 'Professional photography portfolio showcasing stunning images and creative work.',
