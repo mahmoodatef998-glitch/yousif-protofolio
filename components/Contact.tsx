@@ -1,11 +1,17 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Mail, Instagram, Linkedin } from 'lucide-react';
+import { Mail, Instagram, Linkedin, User, MessageSquare, Send, Phone } from 'lucide-react';
 
 export function Contact() {
   const sectionRef = useRef<HTMLElement>(null);
   const [isVisible, setIsVisible] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    message: '',
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -28,6 +34,24 @@ export function Contact() {
     };
   }, []);
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    // Simulate form submission
+    setTimeout(() => {
+      setIsSubmitting(false);
+      setFormData({ name: '', email: '', message: '' });
+      alert('Message sent successfully!');
+    }, 1000);
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  };
+
   return (
     <section
       ref={sectionRef}
@@ -36,80 +60,154 @@ export function Contact() {
         isVisible ? 'opacity-100' : 'opacity-0'
       }`}
     >
-      <div className="max-w-4xl mx-auto px-6 lg:px-8 text-center">
-        <h2 className="text-5xl md:text-6xl font-bold text-text-primary mb-12">
-          Contact
-        </h2>
-
-        <div className="space-y-8 mb-16">
-          <div>
-            <p className="text-text-secondary mb-4">Get in touch</p>
-            <a
-              href="mailto:yousif@photography.com"
-              className="block text-2xl md:text-3xl text-text-primary hover:text-accent transition-colors mb-2"
-            >
-              yousif@photography.com
-            </a>
-            <a
-              href="tel:+1234567890"
-              className="block text-xl text-text-secondary hover:text-accent transition-colors"
-            >
-              +1 (234) 567-890
-            </a>
-          </div>
-
-          <div className="flex justify-center space-x-8 pt-8">
-            <a
-              href="https://instagram.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-text-secondary hover:text-accent transition-colors"
-              aria-label="Instagram"
-            >
-              <Instagram className="w-6 h-6" />
-            </a>
-            <a
-              href="https://linkedin.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-text-secondary hover:text-accent transition-colors"
-              aria-label="LinkedIn"
-            >
-              <Linkedin className="w-6 h-6" />
-            </a>
-            <a
-              href="mailto:yousif@photography.com"
-              className="text-text-secondary hover:text-accent transition-colors"
-              aria-label="Email"
-            >
-              <Mail className="w-6 h-6" />
-            </a>
-          </div>
+      <div className="max-w-6xl mx-auto px-6 lg:px-8">
+        <div className="text-center mb-16">
+          <h2 className="text-5xl md:text-6xl font-bold text-text-primary mb-4">
+            Get In Touch
+          </h2>
+          <p className="text-xl text-text-secondary max-w-2xl mx-auto">
+            Let's create something amazing together. Reach out and let's discuss your next project.
+          </p>
         </div>
 
-        <form className="space-y-6 max-w-md mx-auto">
-          <input
-            type="text"
-            placeholder="Name"
-            className="w-full px-4 py-3 bg-dark-section border border-dark-section text-text-primary placeholder-text-secondary focus:border-accent focus:outline-none transition-colors"
-          />
-          <input
-            type="email"
-            placeholder="Email"
-            className="w-full px-4 py-3 bg-dark-section border border-dark-section text-text-primary placeholder-text-secondary focus:border-accent focus:outline-none transition-colors"
-          />
-          <textarea
-            placeholder="Message"
-            rows={6}
-            className="w-full px-4 py-3 bg-dark-section border border-dark-section text-text-primary placeholder-text-secondary focus:border-accent focus:outline-none transition-colors resize-none"
-          />
-          <button
-            type="submit"
-            className="w-full px-8 py-4 bg-transparent border border-text-secondary text-text-primary hover:border-accent hover:text-accent transition-all duration-300"
-          >
-            Send Message
-          </button>
-        </form>
+        <div className="grid md:grid-cols-2 gap-12 lg:gap-16">
+          {/* Contact Info */}
+          <div className="space-y-8">
+            <div>
+              <h3 className="text-2xl font-semibold text-text-primary mb-6">Contact Information</h3>
+              <div className="space-y-6">
+                <a
+                  href="mailto:yousif@photography.com"
+                  className="flex items-center space-x-4 group"
+                >
+                  <div className="w-12 h-12 rounded-lg bg-dark-section flex items-center justify-center group-hover:bg-accent/20 transition-colors">
+                    <Mail className="w-5 h-5 text-accent" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-text-secondary">Email</p>
+                    <p className="text-text-primary group-hover:text-accent transition-colors">
+                      yousif@photography.com
+                    </p>
+                  </div>
+                </a>
+
+                <a
+                  href="tel:+1234567890"
+                  className="flex items-center space-x-4 group"
+                >
+                  <div className="w-12 h-12 rounded-lg bg-dark-section flex items-center justify-center group-hover:bg-accent/20 transition-colors">
+                    <Phone className="w-5 h-5 text-accent" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-text-secondary">Phone</p>
+                    <p className="text-text-primary group-hover:text-accent transition-colors">
+                      +1 (234) 567-890
+                    </p>
+                  </div>
+                </a>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-2xl font-semibold text-text-primary mb-6">Follow Me</h3>
+              <div className="flex space-x-4">
+                <a
+                  href="https://instagram.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-12 h-12 rounded-lg bg-dark-section flex items-center justify-center hover:bg-accent/20 hover:scale-110 transition-all duration-300"
+                  aria-label="Instagram"
+                >
+                  <Instagram className="w-5 h-5 text-accent" />
+                </a>
+                <a
+                  href="https://linkedin.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-12 h-12 rounded-lg bg-dark-section flex items-center justify-center hover:bg-accent/20 hover:scale-110 transition-all duration-300"
+                  aria-label="LinkedIn"
+                >
+                  <Linkedin className="w-5 h-5 text-accent" />
+                </a>
+                <a
+                  href="mailto:yousif@photography.com"
+                  className="w-12 h-12 rounded-lg bg-dark-section flex items-center justify-center hover:bg-accent/20 hover:scale-110 transition-all duration-300"
+                  aria-label="Email"
+                >
+                  <Mail className="w-5 h-5 text-accent" />
+                </a>
+              </div>
+            </div>
+          </div>
+
+          {/* Contact Form */}
+          <div>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="relative group">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-text-secondary group-focus-within:text-accent transition-colors">
+                  <User className="w-5 h-5" />
+                </div>
+                <input
+                  type="text"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  placeholder="Your Name"
+                  required
+                  className="w-full pl-12 pr-4 py-4 bg-dark-section border border-dark-section rounded-lg text-text-primary placeholder-text-secondary focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20 transition-all duration-300"
+                />
+              </div>
+
+              <div className="relative group">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-text-secondary group-focus-within:text-accent transition-colors">
+                  <Mail className="w-5 h-5" />
+                </div>
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  placeholder="Your Email"
+                  required
+                  className="w-full pl-12 pr-4 py-4 bg-dark-section border border-dark-section rounded-lg text-text-primary placeholder-text-secondary focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20 transition-all duration-300"
+                />
+              </div>
+
+              <div className="relative group">
+                <div className="absolute left-4 top-6 text-text-secondary group-focus-within:text-accent transition-colors">
+                  <MessageSquare className="w-5 h-5" />
+                </div>
+                <textarea
+                  name="message"
+                  value={formData.message}
+                  onChange={handleChange}
+                  placeholder="Your Message"
+                  rows={6}
+                  required
+                  className="w-full pl-12 pr-4 py-4 bg-dark-section border border-dark-section rounded-lg text-text-primary placeholder-text-secondary focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20 transition-all duration-300 resize-none"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full px-8 py-4 bg-accent text-dark-bg font-semibold rounded-lg hover:bg-accent/90 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSubmitting ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-dark-bg border-t-transparent rounded-full animate-spin" />
+                    <span>Sending...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Send Message</span>
+                    <Send className="w-5 h-5" />
+                  </>
+                )}
+              </button>
+            </form>
+          </div>
+        </div>
       </div>
     </section>
   );
