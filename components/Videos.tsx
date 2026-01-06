@@ -2,40 +2,66 @@
 
 import { useEffect, useRef, useState } from 'react';
 
-const videos = [
-  {
-    id: 1,
-    title: 'Wedding Highlights',
-    src: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-    thumbnail: 'https://images.unsplash.com/photo-1519682337058-a94d519337bc?w=1920&q=80',
-    description: 'Capturing the magic of your special day',
-  },
-  {
-    id: 2,
-    title: 'Portrait Session',
-    src: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
-    thumbnail: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=1920&q=80',
-    description: 'Professional portraits that tell your story',
-  },
-  {
-    id: 3,
-    title: 'Event Coverage',
-    src: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-    thumbnail: 'https://images.unsplash.com/photo-1511574784320-5b5c2e5c5c5c?w=1920&q=80',
-    description: 'Documenting your events with cinematic style',
-  },
-  {
-    id: 4,
-    title: 'Commercial Work',
-    src: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
-    thumbnail: 'https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?w=1920&q=80',
-    description: 'High-quality commercial videography',
-  },
-];
+interface Video {
+  id: string;
+  title: string;
+  src: string;
+  thumbnail: string;
+  description: string;
+}
 
 export function Videos() {
   const sectionRef = useRef<HTMLElement>(null);
   const [isVisible, setIsVisible] = useState(false);
+  const [videos, setVideos] = useState<Video[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchVideos();
+  }, []);
+
+  const fetchVideos = async () => {
+    try {
+      const response = await fetch('/api/content?section=videos');
+      const { data } = await response.json();
+      
+      if (data && data.length > 0) {
+        const formattedVideos = data.map((item: any) => ({
+          id: item.id,
+          title: item.title || 'Untitled Video',
+          src: item.media_url || '',
+          thumbnail: item.thumbnail_url || '',
+          description: item.description || '',
+        }));
+        setVideos(formattedVideos);
+      } else {
+        // Fallback to demo videos if no data
+        setVideos([
+          {
+            id: '1',
+            title: 'Wedding Highlights',
+            src: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+            thumbnail: 'https://images.unsplash.com/photo-1519682337058-a94d519337bc?w=1920&q=80',
+            description: 'Capturing the magic of your special day',
+          },
+        ]);
+      }
+    } catch (error) {
+      console.error('Error fetching videos:', error);
+      // Fallback to demo videos on error
+      setVideos([
+        {
+          id: '1',
+          title: 'Wedding Highlights',
+          src: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+          thumbnail: 'https://images.unsplash.com/photo-1519682337058-a94d519337bc?w=1920&q=80',
+          description: 'Capturing the magic of your special day',
+        },
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -57,6 +83,18 @@ export function Videos() {
       }
     };
   }, []);
+
+  if (loading) {
+    return (
+      <section id="videos" className="bg-dark-bg min-h-screen flex items-center justify-center">
+        <div className="text-text-secondary">Loading videos...</div>
+      </section>
+    );
+  }
+
+  if (videos.length === 0) {
+    return null;
+  }
 
   return (
     <section

@@ -299,10 +299,43 @@ function UploadSection() {
         });
 
         await new Promise<void>((resolve, reject) => {
-          xhr.onload = () => {
+          xhr.onload = async () => {
             if (xhr.status === 200) {
               progress[file.name] = 100;
               setUploadProgress({ ...progress });
+              
+              try {
+                const response = JSON.parse(xhr.responseText);
+                const uploadResult = response.result;
+                
+                // Save to Supabase
+                const mediaType = file.type.startsWith('video/') ? 'video' : 'image';
+                const saveResponse = await fetch('/api/content', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    section: category,
+                    title: fileName,
+                    media_type: mediaType,
+                    media_url: uploadResult.secure_url || uploadResult.url,
+                    thumbnail_url: uploadResult.secure_url || uploadResult.url,
+                    cloudinary_public_id: uploadResult.public_id,
+                    metadata: {
+                      format: uploadResult.format,
+                      width: uploadResult.width,
+                      height: uploadResult.height,
+                      bytes: uploadResult.bytes,
+                    },
+                  }),
+                });
+
+                if (!saveResponse.ok) {
+                  console.error('Failed to save to database');
+                }
+              } catch (error) {
+                console.error('Error saving to database:', error);
+              }
+              
               resolve();
             } else {
               reject(new Error(`Upload failed for ${file.name}`));
@@ -485,12 +518,75 @@ function UploadSection() {
 function AboutSection({ isEditing }: { isEditing: boolean }) {
   const [title, setTitle] = useState('Yousif');
   const [subtitle, setSubtitle] = useState('Photographer & Videographer');
-  const [description, setDescription] = useState('Capturing moments that tell your story');
-  const [bio, setBio] = useState('Professional photographer with years of experience...');
-  const [backgroundImage, setBackgroundImage] = useState('https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=1920&q=80');
+  const [bio, setBio] = useState('');
+  const [profileImage, setProfileImage] = useState('');
+  const [stats, setStats] = useState({ clients: 0, projects: 0, awards: 0 });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    fetchAbout();
+  }, []);
+
+  const fetchAbout = async () => {
+    try {
+      const response = await fetch('/api/about');
+      const { data } = await response.json();
+      
+      if (data) {
+        setTitle(data.hero_title || 'Yousif');
+        setSubtitle(data.hero_subtitle || 'Photographer & Videographer');
+        setBio(data.bio_text || '');
+        setProfileImage(data.profile_image_url || '');
+        if (data.stats) {
+          setStats(data.stats);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching about:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const response = await fetch('/api/about', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          hero_title: title,
+          hero_subtitle: subtitle,
+          bio_text: bio,
+          profile_image_url: profileImage,
+          stats: stats,
+        }),
+      });
+
+      if (response.ok) {
+        alert('About section saved successfully!');
+      } else {
+        alert('Failed to save about section');
+      }
+    } catch (error) {
+      console.error('Error saving about:', error);
+      alert('Failed to save about section');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-8 h-8 animate-spin text-accent" />
+      </div>
+    );
+  }
 
   return (
-          <div className="space-y-6">
+    <div className="space-y-6">
       <div className="bg-dark-section rounded-lg p-6">
         <h3 className="text-lg font-semibold text-text-primary mb-4">Hero Content</h3>
         <div className="space-y-4">
@@ -514,18 +610,8 @@ function AboutSection({ isEditing }: { isEditing: boolean }) {
               className="w-full px-4 py-2 bg-dark-bg border border-dark-section rounded-lg text-text-primary focus:border-accent focus:outline-none disabled:opacity-50"
             />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-text-secondary mb-2">Description</label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              disabled={!isEditing}
-              rows={3}
-              className="w-full px-4 py-2 bg-dark-bg border border-dark-section rounded-lg text-text-primary focus:border-accent focus:outline-none disabled:opacity-50 resize-none"
-            />
-          </div>
         </div>
-              </div>
+      </div>
 
       <div className="bg-dark-section rounded-lg p-6">
         <h3 className="text-lg font-semibold text-text-primary mb-4">About Content</h3>
@@ -541,225 +627,783 @@ function AboutSection({ isEditing }: { isEditing: boolean }) {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-text-secondary mb-2">Background Image URL</label>
-                    <input
+            <label className="block text-sm font-medium text-text-secondary mb-2">Profile Image URL</label>
+            <input
               type="url"
-              value={backgroundImage}
-              onChange={(e) => setBackgroundImage(e.target.value)}
+              value={profileImage}
+              onChange={(e) => setProfileImage(e.target.value)}
               disabled={!isEditing}
               className="w-full px-4 py-2 bg-dark-bg border border-dark-section rounded-lg text-text-primary focus:border-accent focus:outline-none disabled:opacity-50"
             />
           </div>
+          <div>
+            <label className="block text-sm font-medium text-text-secondary mb-2">Stats</label>
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <label className="block text-xs text-text-secondary mb-1">Clients</label>
+                <input
+                  type="number"
+                  value={stats.clients}
+                  onChange={(e) => setStats({ ...stats, clients: parseInt(e.target.value) || 0 })}
+                  disabled={!isEditing}
+                  className="w-full px-3 py-2 bg-dark-bg border border-dark-section rounded text-text-primary focus:border-accent focus:outline-none disabled:opacity-50"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-text-secondary mb-1">Projects</label>
+                <input
+                  type="number"
+                  value={stats.projects}
+                  onChange={(e) => setStats({ ...stats, projects: parseInt(e.target.value) || 0 })}
+                  disabled={!isEditing}
+                  className="w-full px-3 py-2 bg-dark-bg border border-dark-section rounded text-text-primary focus:border-accent focus:outline-none disabled:opacity-50"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-text-secondary mb-1">Awards</label>
+                <input
+                  type="number"
+                  value={stats.awards}
+                  onChange={(e) => setStats({ ...stats, awards: parseInt(e.target.value) || 0 })}
+                  disabled={!isEditing}
+                  className="w-full px-3 py-2 bg-dark-bg border border-dark-section rounded text-text-primary focus:border-accent focus:outline-none disabled:opacity-50"
+                />
+              </div>
+            </div>
+          </div>
         </div>
-                  </div>
-                </div>
+      </div>
+
+      {isEditing && (
+        <div className="flex justify-end">
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="px-6 py-2 bg-accent text-dark-bg rounded-lg font-semibold hover:bg-accent/90 transition-colors disabled:opacity-50 flex items-center gap-2"
+          >
+            {saving ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <Save className="w-5 h-5" />
+                Save Changes
+              </>
+            )}
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 
 // Videos Section
 function VideosSection({ isEditing }: { isEditing: boolean }) {
-  const [videos, setVideos] = useState([
-    { id: 1, title: 'Wedding Highlights', url: '', thumbnail: '' },
-    { id: 2, title: 'Portrait Session', url: '', thumbnail: '' },
-    { id: 3, title: 'Event Coverage', url: '', thumbnail: '' },
-    { id: 4, title: 'Commercial Work', url: '', thumbnail: '' },
-  ]);
+  const [videos, setVideos] = useState<Array<{
+    id: string;
+    title: string;
+    url: string;
+    thumbnail: string;
+    description?: string;
+  }>>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
 
-                  return (
+  useEffect(() => {
+    fetchVideos();
+  }, []);
+
+  const fetchVideos = async () => {
+    try {
+      const response = await fetch('/api/content?section=videos');
+      const { data } = await response.json();
+      
+      if (data) {
+        const formattedVideos = data.map((item: any) => ({
+          id: item.id,
+          title: item.title || 'Untitled Video',
+          url: item.media_url || '',
+          thumbnail: item.thumbnail_url || '',
+          description: item.description || '',
+        }));
+        setVideos(formattedVideos);
+      }
+    } catch (error) {
+      console.error('Error fetching videos:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAdd = async () => {
+    try {
+      const response = await fetch('/api/content', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          section: 'videos',
+          title: 'New Video',
+          media_type: 'video',
+          media_url: '',
+          thumbnail_url: '',
+        }),
+      });
+
+      if (response.ok) {
+        await fetchVideos();
+      }
+    } catch (error) {
+      console.error('Error adding video:', error);
+      alert('Failed to add video');
+    }
+  };
+
+  const handleSave = async (video: typeof videos[0]) => {
+    setSaving(video.id);
+    try {
+      const response = await fetch('/api/content', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: video.id,
+          title: video.title,
+          media_url: video.url,
+          thumbnail_url: video.thumbnail,
+          description: video.description,
+        }),
+      });
+
+      if (response.ok) {
+        alert('Video saved successfully!');
+      } else {
+        alert('Failed to save video');
+      }
+    } catch (error) {
+      console.error('Error saving video:', error);
+      alert('Failed to save video');
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this video?')) return;
+    
+    setDeleting(id);
+    try {
+      const response = await fetch(`/api/content?id=${id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        setVideos(videos.filter(v => v.id !== id));
+        alert('Video deleted successfully!');
+      } else {
+        alert('Failed to delete video');
+      }
+    } catch (error) {
+      console.error('Error deleting video:', error);
+      alert('Failed to delete video');
+    } finally {
+      setDeleting(null);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-8 h-8 animate-spin text-accent" />
+      </div>
+    );
+  }
+
+  return (
     <div className="space-y-6">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-text-primary">Videos ({videos.length})</h3>
         {isEditing && (
-          <button className="px-4 py-2 bg-accent text-dark-bg rounded-lg hover:bg-accent/90 transition-colors flex items-center gap-2">
+          <button 
+            onClick={handleAdd}
+            className="px-4 py-2 bg-accent text-dark-bg rounded-lg hover:bg-accent/90 transition-colors flex items-center gap-2"
+          >
             <Plus className="w-4 h-4" />
             Add Video
-                    </button>
+          </button>
         )}
-              </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {videos.map((video) => (
-          <div key={video.id} className="bg-dark-section rounded-lg p-4">
-            <div className="flex items-start justify-between mb-3">
-              <h4 className="font-medium text-text-primary">{video.title}</h4>
-              {isEditing && (
-                <div className="flex gap-2">
-                  <button className="p-1 hover:bg-dark-bg rounded">
-                    <Edit2 className="w-4 h-4 text-text-secondary" />
-                  </button>
-                  <button className="p-1 hover:bg-red-500/10 rounded">
-                    <Trash2 className="w-4 h-4 text-red-400" />
-                  </button>
-                </div>
-              )}
-            </div>
-            <div className="space-y-2">
-              <input
-                type="url"
-                placeholder="Video URL"
-                value={video.url}
-                onChange={(e) => {
-                  const updated = videos.map(v => v.id === video.id ? { ...v, url: e.target.value } : v);
-                  setVideos(updated);
-                }}
-                disabled={!isEditing}
-                className="w-full px-3 py-2 bg-dark-bg border border-dark-section rounded text-text-primary text-sm focus:border-accent focus:outline-none disabled:opacity-50"
-              />
-              <input
-                type="url"
-                placeholder="Thumbnail URL"
-                value={video.thumbnail}
-                onChange={(e) => {
-                  const updated = videos.map(v => v.id === video.id ? { ...v, thumbnail: e.target.value } : v);
-                  setVideos(updated);
-                }}
-                disabled={!isEditing}
-                className="w-full px-3 py-2 bg-dark-bg border border-dark-section rounded text-text-primary text-sm focus:border-accent focus:outline-none disabled:opacity-50"
-              />
-            </div>
-          </div>
-        ))}
       </div>
+
+      {videos.length === 0 ? (
+        <div className="text-center py-12 bg-dark-section rounded-lg">
+          <p className="text-text-secondary">No videos yet. Add your first video!</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {videos.map((video) => (
+            <div key={video.id} className="bg-dark-section rounded-lg p-4">
+              <div className="flex items-start justify-between mb-3">
+                <input
+                  type="text"
+                  value={video.title}
+                  onChange={(e) => {
+                    const updated = videos.map(v => v.id === video.id ? { ...v, title: e.target.value } : v);
+                    setVideos(updated);
+                  }}
+                  disabled={!isEditing}
+                  className="flex-1 font-medium text-text-primary bg-transparent border-none focus:outline-none disabled:opacity-50"
+                  placeholder="Video Title"
+                />
+                {isEditing && (
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => handleSave(video)}
+                      disabled={saving === video.id}
+                      className="p-1 hover:bg-dark-bg rounded disabled:opacity-50"
+                    >
+                      {saving === video.id ? (
+                        <Loader2 className="w-4 h-4 text-accent animate-spin" />
+                      ) : (
+                        <Save className="w-4 h-4 text-accent" />
+                      )}
+                    </button>
+                    <button 
+                      onClick={() => handleDelete(video.id)}
+                      disabled={deleting === video.id}
+                      className="p-1 hover:bg-red-500/10 rounded disabled:opacity-50"
+                    >
+                      {deleting === video.id ? (
+                        <Loader2 className="w-4 h-4 text-red-400 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-4 h-4 text-red-400" />
+                      )}
+                    </button>
+                  </div>
+                )}
+              </div>
+              <div className="space-y-2">
+                <input
+                  type="url"
+                  placeholder="Video URL"
+                  value={video.url}
+                  onChange={(e) => {
+                    const updated = videos.map(v => v.id === video.id ? { ...v, url: e.target.value } : v);
+                    setVideos(updated);
+                  }}
+                  disabled={!isEditing}
+                  className="w-full px-3 py-2 bg-dark-bg border border-dark-section rounded text-text-primary text-sm focus:border-accent focus:outline-none disabled:opacity-50"
+                />
+                <input
+                  type="url"
+                  placeholder="Thumbnail URL"
+                  value={video.thumbnail}
+                  onChange={(e) => {
+                    const updated = videos.map(v => v.id === video.id ? { ...v, thumbnail: e.target.value } : v);
+                    setVideos(updated);
+                  }}
+                  disabled={!isEditing}
+                  className="w-full px-3 py-2 bg-dark-bg border border-dark-section rounded text-text-primary text-sm focus:border-accent focus:outline-none disabled:opacity-50"
+                />
+                <textarea
+                  placeholder="Description (optional)"
+                  value={video.description || ''}
+                  onChange={(e) => {
+                    const updated = videos.map(v => v.id === video.id ? { ...v, description: e.target.value } : v);
+                    setVideos(updated);
+                  }}
+                  disabled={!isEditing}
+                  rows={2}
+                  className="w-full px-3 py-2 bg-dark-bg border border-dark-section rounded text-text-primary text-sm focus:border-accent focus:outline-none disabled:opacity-50 resize-none"
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
 // Reels Section
 function ReelsSection({ isEditing }: { isEditing: boolean }) {
-  const [reels, setReels] = useState([
-    { id: 1, title: 'Wedding Reel', video: '', thumbnail: '' },
-    { id: 2, title: 'Portrait Reel', video: '', thumbnail: '' },
-    { id: 3, title: 'Event Reel', video: '', thumbnail: '' },
-    { id: 4, title: 'Fashion Reel', video: '', thumbnail: '' },
-    { id: 5, title: 'Lifestyle Reel', video: '', thumbnail: '' },
-  ]);
+  const [reels, setReels] = useState<Array<{
+    id: string;
+    title: string;
+    video: string;
+    thumbnail: string;
+  }>>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchReels();
+  }, []);
+
+  const fetchReels = async () => {
+    try {
+      const response = await fetch('/api/content?section=reels');
+      const { data } = await response.json();
+      
+      if (data) {
+        const formattedReels = data.map((item: any) => ({
+          id: item.id,
+          title: item.title || 'Untitled Reel',
+          video: item.media_url || '',
+          thumbnail: item.thumbnail_url || '',
+        }));
+        setReels(formattedReels);
+      }
+    } catch (error) {
+      console.error('Error fetching reels:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAdd = async () => {
+    try {
+      const response = await fetch('/api/content', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          section: 'reels',
+          title: 'New Reel',
+          media_type: 'video',
+          media_url: '',
+          thumbnail_url: '',
+        }),
+      });
+
+      if (response.ok) {
+        await fetchReels();
+      }
+    } catch (error) {
+      console.error('Error adding reel:', error);
+      alert('Failed to add reel');
+    }
+  };
+
+  const handleSave = async (reel: typeof reels[0]) => {
+    setSaving(reel.id);
+    try {
+      const response = await fetch('/api/content', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: reel.id,
+          title: reel.title,
+          media_url: reel.video,
+          thumbnail_url: reel.thumbnail,
+        }),
+      });
+
+      if (response.ok) {
+        alert('Reel saved successfully!');
+      } else {
+        alert('Failed to save reel');
+      }
+    } catch (error) {
+      console.error('Error saving reel:', error);
+      alert('Failed to save reel');
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this reel?')) return;
+    
+    setDeleting(id);
+    try {
+      const response = await fetch(`/api/content?id=${id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        setReels(reels.filter(r => r.id !== id));
+        alert('Reel deleted successfully!');
+      } else {
+        alert('Failed to delete reel');
+      }
+    } catch (error) {
+      console.error('Error deleting reel:', error);
+      alert('Failed to delete reel');
+    } finally {
+      setDeleting(null);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-8 h-8 animate-spin text-accent" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-text-primary">Reels ({reels.length})</h3>
         {isEditing && (
-          <button className="px-4 py-2 bg-accent text-dark-bg rounded-lg hover:bg-accent/90 transition-colors flex items-center gap-2">
+          <button 
+            onClick={handleAdd}
+            className="px-4 py-2 bg-accent text-dark-bg rounded-lg hover:bg-accent/90 transition-colors flex items-center gap-2"
+          >
             <Plus className="w-4 h-4" />
             Add Reel
           </button>
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {reels.map((reel) => (
-          <div key={reel.id} className="bg-dark-section rounded-lg p-4">
-            <div className="flex items-start justify-between mb-3">
-              <h4 className="font-medium text-text-primary">{reel.title}</h4>
-              {isEditing && (
-                <div className="flex gap-2">
-                  <button className="p-1 hover:bg-dark-bg rounded">
-                    <Edit2 className="w-4 h-4 text-text-secondary" />
-                  </button>
-                  <button className="p-1 hover:bg-red-500/10 rounded">
-                    <Trash2 className="w-4 h-4 text-red-400" />
-                  </button>
-                </div>
-              )}
-            </div>
-            <div className="space-y-2">
-              <input
-                type="url"
-                placeholder="Video URL"
-                value={reel.video}
-                onChange={(e) => {
-                  const updated = reels.map(r => r.id === reel.id ? { ...r, video: e.target.value } : r);
-                  setReels(updated);
-                }}
-                disabled={!isEditing}
-                className="w-full px-3 py-2 bg-dark-bg border border-dark-section rounded text-text-primary text-sm focus:border-accent focus:outline-none disabled:opacity-50"
-              />
-              <input
-                type="url"
-                placeholder="Thumbnail URL"
-                value={reel.thumbnail}
-                onChange={(e) => {
-                  const updated = reels.map(r => r.id === reel.id ? { ...r, thumbnail: e.target.value } : r);
-                  setReels(updated);
-                }}
-                disabled={!isEditing}
-                className="w-full px-3 py-2 bg-dark-bg border border-dark-section rounded text-text-primary text-sm focus:border-accent focus:outline-none disabled:opacity-50"
-              />
-                        </div>
-                      </div>
-                    ))}
+      {reels.length === 0 ? (
+        <div className="text-center py-12 bg-dark-section rounded-lg">
+          <p className="text-text-secondary">No reels yet. Add your first reel!</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {reels.map((reel) => (
+            <div key={reel.id} className="bg-dark-section rounded-lg p-4">
+              <div className="flex items-start justify-between mb-3">
+                <input
+                  type="text"
+                  value={reel.title}
+                  onChange={(e) => {
+                    const updated = reels.map(r => r.id === reel.id ? { ...r, title: e.target.value } : r);
+                    setReels(updated);
+                  }}
+                  disabled={!isEditing}
+                  className="flex-1 font-medium text-text-primary bg-transparent border-none focus:outline-none disabled:opacity-50"
+                  placeholder="Reel Title"
+                />
+                {isEditing && (
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => handleSave(reel)}
+                      disabled={saving === reel.id}
+                      className="p-1 hover:bg-dark-bg rounded disabled:opacity-50"
+                    >
+                      {saving === reel.id ? (
+                        <Loader2 className="w-4 h-4 text-accent animate-spin" />
+                      ) : (
+                        <Save className="w-4 h-4 text-accent" />
+                      )}
+                    </button>
+                    <button 
+                      onClick={() => handleDelete(reel.id)}
+                      disabled={deleting === reel.id}
+                      className="p-1 hover:bg-red-500/10 rounded disabled:opacity-50"
+                    >
+                      {deleting === reel.id ? (
+                        <Loader2 className="w-4 h-4 text-red-400 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-4 h-4 text-red-400" />
+                      )}
+                    </button>
                   </div>
+                )}
               </div>
+              <div className="space-y-2">
+                <input
+                  type="url"
+                  placeholder="Video URL"
+                  value={reel.video}
+                  onChange={(e) => {
+                    const updated = reels.map(r => r.id === reel.id ? { ...r, video: e.target.value } : r);
+                    setReels(updated);
+                  }}
+                  disabled={!isEditing}
+                  className="w-full px-3 py-2 bg-dark-bg border border-dark-section rounded text-text-primary text-sm focus:border-accent focus:outline-none disabled:opacity-50"
+                />
+                <input
+                  type="url"
+                  placeholder="Thumbnail URL"
+                  value={reel.thumbnail}
+                  onChange={(e) => {
+                    const updated = reels.map(r => r.id === reel.id ? { ...r, thumbnail: e.target.value } : r);
+                    setReels(updated);
+                  }}
+                  disabled={!isEditing}
+                  className="w-full px-3 py-2 bg-dark-bg border border-dark-section rounded text-text-primary text-sm focus:border-accent focus:outline-none disabled:opacity-50"
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
 // Gallery Section (for Wedding, Product, Restaurant)
 function GallerySection({ section, isEditing }: { section: string; isEditing: boolean }) {
-  const [images, setImages] = useState([
-    { id: 1, title: `${section} Image 1`, url: '' },
-    { id: 2, title: `${section} Image 2`, url: '' },
-    { id: 3, title: `${section} Image 3`, url: '' },
-  ]);
+  const [images, setImages] = useState<Array<{
+    id: string;
+    title: string;
+    url: string;
+  }>>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchImages();
+  }, [section]);
+
+  const fetchImages = async () => {
+    try {
+      const response = await fetch(`/api/content?section=${section}`);
+      const { data } = await response.json();
+      
+      if (data) {
+        const formattedImages = data.map((item: any) => ({
+          id: item.id,
+          title: item.title || 'Untitled Image',
+          url: item.media_url || '',
+        }));
+        setImages(formattedImages);
+      }
+    } catch (error) {
+      console.error('Error fetching images:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAdd = async () => {
+    try {
+      const response = await fetch('/api/content', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          section: section,
+          title: 'New Image',
+          media_type: 'image',
+          media_url: '',
+        }),
+      });
+
+      if (response.ok) {
+        await fetchImages();
+      }
+    } catch (error) {
+      console.error('Error adding image:', error);
+      alert('Failed to add image');
+    }
+  };
+
+  const handleSave = async (image: typeof images[0]) => {
+    setSaving(image.id);
+    try {
+      const response = await fetch('/api/content', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: image.id,
+          title: image.title,
+          media_url: image.url,
+        }),
+      });
+
+      if (response.ok) {
+        alert('Image saved successfully!');
+      } else {
+        alert('Failed to save image');
+      }
+    } catch (error) {
+      console.error('Error saving image:', error);
+      alert('Failed to save image');
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this image?')) return;
+    
+    setDeleting(id);
+    try {
+      const response = await fetch(`/api/content?id=${id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        setImages(images.filter(img => img.id !== id));
+        alert('Image deleted successfully!');
+      } else {
+        alert('Failed to delete image');
+      }
+    } catch (error) {
+      console.error('Error deleting image:', error);
+      alert('Failed to delete image');
+    } finally {
+      setDeleting(null);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-8 h-8 animate-spin text-accent" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-text-primary">Gallery ({images.length})</h3>
         {isEditing && (
-          <button className="px-4 py-2 bg-accent text-dark-bg rounded-lg hover:bg-accent/90 transition-colors flex items-center gap-2">
+          <button 
+            onClick={handleAdd}
+            className="px-4 py-2 bg-accent text-dark-bg rounded-lg hover:bg-accent/90 transition-colors flex items-center gap-2"
+          >
             <Plus className="w-4 h-4" />
             Add Image
           </button>
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {images.map((image) => (
-          <div key={image.id} className="bg-dark-section rounded-lg p-4">
-            <div className="flex items-start justify-between mb-3">
-              <h4 className="font-medium text-text-primary">{image.title}</h4>
-              {isEditing && (
-                <div className="flex gap-2">
-                  <button className="p-1 hover:bg-dark-bg rounded">
-                    <Edit2 className="w-4 h-4 text-text-secondary" />
-                  </button>
-                  <button className="p-1 hover:bg-red-500/10 rounded">
-                    <Trash2 className="w-4 h-4 text-red-400" />
-                  </button>
-                </div>
-              )}
+      {images.length === 0 ? (
+        <div className="text-center py-12 bg-dark-section rounded-lg">
+          <p className="text-text-secondary">No images yet. Add your first image!</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {images.map((image) => (
+            <div key={image.id} className="bg-dark-section rounded-lg p-4">
+              <div className="flex items-start justify-between mb-3">
+                <input
+                  type="text"
+                  value={image.title}
+                  onChange={(e) => {
+                    const updated = images.map(img => img.id === image.id ? { ...img, title: e.target.value } : img);
+                    setImages(updated);
+                  }}
+                  disabled={!isEditing}
+                  className="flex-1 font-medium text-text-primary bg-transparent border-none focus:outline-none disabled:opacity-50"
+                  placeholder="Image Title"
+                />
+                {isEditing && (
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => handleSave(image)}
+                      disabled={saving === image.id}
+                      className="p-1 hover:bg-dark-bg rounded disabled:opacity-50"
+                    >
+                      {saving === image.id ? (
+                        <Loader2 className="w-4 h-4 text-accent animate-spin" />
+                      ) : (
+                        <Save className="w-4 h-4 text-accent" />
+                      )}
+                    </button>
+                    <button 
+                      onClick={() => handleDelete(image.id)}
+                      disabled={deleting === image.id}
+                      className="p-1 hover:bg-red-500/10 rounded disabled:opacity-50"
+                    >
+                      {deleting === image.id ? (
+                        <Loader2 className="w-4 h-4 text-red-400 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-4 h-4 text-red-400" />
+                      )}
+                    </button>
+                  </div>
+                )}
+              </div>
+              <input
+                type="url"
+                placeholder="Image URL"
+                value={image.url}
+                onChange={(e) => {
+                  const updated = images.map(img => img.id === image.id ? { ...img, url: e.target.value } : img);
+                  setImages(updated);
+                }}
+                disabled={!isEditing}
+                className="w-full px-3 py-2 bg-dark-bg border border-dark-section rounded text-text-primary text-sm focus:border-accent focus:outline-none disabled:opacity-50"
+              />
             </div>
-            <input
-              type="url"
-              placeholder="Image URL"
-              value={image.url}
-              onChange={(e) => {
-                const updated = images.map(img => img.id === image.id ? { ...img, url: e.target.value } : img);
-                setImages(updated);
-              }}
-              disabled={!isEditing}
-              className="w-full px-3 py-2 bg-dark-bg border border-dark-section rounded text-text-primary text-sm focus:border-accent focus:outline-none disabled:opacity-50"
-                  />
-                </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
 // Contact Section
 function ContactSection({ isEditing }: { isEditing: boolean }) {
-  const [email, setEmail] = useState('yousif@photography.com');
-  const [phone, setPhone] = useState('+1 (234) 567-890');
-  const [instagram, setInstagram] = useState('https://instagram.com');
-  const [linkedin, setLinkedin] = useState('https://linkedin.com');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [instagram, setInstagram] = useState('');
+  const [linkedin, setLinkedin] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    fetchContact();
+  }, []);
+
+  const fetchContact = async () => {
+    try {
+      const response = await fetch('/api/contact');
+      const { data } = await response.json();
+      
+      if (data) {
+        setEmail(data.email || '');
+        setPhone(data.phone || '');
+        setInstagram(data.instagram_url || '');
+        setLinkedin(data.linkedin_url || '');
+      }
+    } catch (error) {
+      console.error('Error fetching contact:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          phone,
+          instagram_url: instagram,
+          linkedin_url: linkedin,
+        }),
+      });
+
+      if (response.ok) {
+        alert('Contact information saved successfully!');
+      } else {
+        alert('Failed to save contact information');
+      }
+    } catch (error) {
+      console.error('Error saving contact:', error);
+      alert('Failed to save contact information');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-8 h-8 animate-spin text-accent" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
       <div className="bg-dark-section rounded-lg p-6">
         <h3 className="text-lg font-semibold text-text-primary mb-4">Contact Information</h3>
-                <div className="space-y-4">
-                  <div>
+        <div className="space-y-4">
+          <div>
             <label className="block text-sm font-medium text-text-secondary mb-2">Email</label>
             <input
               type="email"
@@ -768,18 +1412,18 @@ function ContactSection({ isEditing }: { isEditing: boolean }) {
               disabled={!isEditing}
               className="w-full px-4 py-2 bg-dark-bg border border-dark-section rounded-lg text-text-primary focus:border-accent focus:outline-none disabled:opacity-50"
             />
-                  </div>
-                  <div>
+          </div>
+          <div>
             <label className="block text-sm font-medium text-text-secondary mb-2">Phone</label>
-                    <input
+            <input
               type="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               disabled={!isEditing}
               className="w-full px-4 py-2 bg-dark-bg border border-dark-section rounded-lg text-text-primary focus:border-accent focus:outline-none disabled:opacity-50"
-                    />
-                  </div>
-                  <div>
+            />
+          </div>
+          <div>
             <label className="block text-sm font-medium text-text-secondary mb-2">Instagram URL</label>
             <input
               type="url"
@@ -787,8 +1431,8 @@ function ContactSection({ isEditing }: { isEditing: boolean }) {
               onChange={(e) => setInstagram(e.target.value)}
               disabled={!isEditing}
               className="w-full px-4 py-2 bg-dark-bg border border-dark-section rounded-lg text-text-primary focus:border-accent focus:outline-none disabled:opacity-50"
-                    />
-                  </div>
+            />
+          </div>
           <div>
             <label className="block text-sm font-medium text-text-secondary mb-2">LinkedIn URL</label>
             <input
@@ -799,6 +1443,30 @@ function ContactSection({ isEditing }: { isEditing: boolean }) {
               className="w-full px-4 py-2 bg-dark-bg border border-dark-section rounded-lg text-text-primary focus:border-accent focus:outline-none disabled:opacity-50"
             />
           </div>
+        </div>
+      </div>
+
+      {isEditing && (
+        <div className="flex justify-end">
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="px-6 py-2 bg-accent text-dark-bg rounded-lg font-semibold hover:bg-accent/90 transition-colors disabled:opacity-50 flex items-center gap-2"
+          >
+            {saving ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <Save className="w-5 h-5" />
+                Save Changes
+              </>
+            )}
+          </button>
+        </div>
+      )}
         </div>
       </div>
     </div>
