@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, Lock } from 'lucide-react';
+import Link from 'next/link';
 
 const navItems = [
   { name: 'About', href: '#about' },
@@ -61,6 +62,13 @@ export function Navbar() {
                 {item.name}
               </a>
             ))}
+            <Link
+              href="/admin/login"
+              className="text-sm text-text-secondary hover:text-accent transition-colors flex items-center gap-2"
+            >
+              <Lock className="w-4 h-4" />
+              <span>Admin</span>
+            </Link>
           </div>
 
           <button
@@ -85,6 +93,14 @@ export function Navbar() {
                 {item.name}
               </a>
             ))}
+            <Link
+              href="/admin/login"
+              onClick={() => setMobileOpen(false)}
+              className="block text-text-secondary hover:text-accent transition-colors flex items-center gap-2"
+            >
+              <Lock className="w-4 h-4" />
+              <span>Admin</span>
+            </Link>
           </div>
         </div>
       )}
