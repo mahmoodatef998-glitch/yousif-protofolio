@@ -83,12 +83,10 @@ export function Reels() {
                 className="group relative aspect-[9/16] overflow-hidden cursor-pointer"
                 onClick={() => setSelectedReel(reel.video)}
               >
-                <Image
+                <img
                   src={reel.thumbnail}
                   alt={reel.title}
-                  fill
-                  className="object-cover transition-transform duration-700 group-hover:scale-110"
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 20vw"
+                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                 />
                 <div className="absolute inset-0 bg-dark-bg/0 group-hover:bg-dark-bg/70 transition-all duration-300 flex items-center justify-center">
                   <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-center">

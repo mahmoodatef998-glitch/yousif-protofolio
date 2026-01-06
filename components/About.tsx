@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import Image from 'next/image';
 import { motion } from 'framer-motion';
 
 export function About() {
@@ -39,13 +38,10 @@ export function About() {
     >
       {/* Background Image */}
       <div className="absolute inset-0">
-        <Image
+        <img
           src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=1920&q=80"
           alt="About Background"
-          fill
-          className="object-cover"
-          priority
-          quality={90}
+          className="absolute inset-0 w-full h-full object-cover"
         />
         <div className="absolute inset-0 bg-dark-bg/80" />
       </div>
@@ -60,12 +56,10 @@ export function About() {
             transition={{ duration: 0.8 }}
             className="relative aspect-[3/4] order-2 lg:order-1"
           >
-            <Image
+            <img
               src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&q=80"
               alt="Yousif"
-              fill
-              className="object-cover"
-              sizes="(max-width: 1024px) 100vw, 50vw"
+              className="absolute inset-0 w-full h-full object-cover"
             />
           </motion.div>
 
