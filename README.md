@@ -14,6 +14,8 @@ A modern, professional, and fully responsive photography portfolio website built
 - ⚡ **Performance Optimized** - Fast loading with Next.js Image optimization
 - 🔍 **SEO Optimized** - Meta tags, sitemap, and robots.txt
 - ✨ **Smooth Animations** - Beautiful transitions and hover effects
+- 🔐 **Admin Dashboard** - Secure content management with Supabase authentication
+- 📊 **Dynamic Content** - Manage all sections and content from admin panel
 
 ## Technology Stack
 
@@ -21,6 +23,7 @@ A modern, professional, and fully responsive photography portfolio website built
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS
 - **Image Management**: Cloudinary
+- **Database & Auth**: Supabase
 - **Forms**: Formspree
 - **Animations**: Framer Motion
 - **Icons**: Lucide React
@@ -32,6 +35,7 @@ A modern, professional, and fully responsive photography portfolio website built
 
 - Node.js 18+ and npm/yarn/pnpm
 - Cloudinary account (free tier available)
+- Supabase account (free tier available)
 - Formspree account (free tier available)
 
 ### Installation
@@ -61,6 +65,12 @@ Create a `.env.local` file in the root directory:
 NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=your_cloud_name
 NEXT_PUBLIC_CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
+NEXT_PUBLIC_CLOUDINARY_FOLDER=portfolio
+
+# Supabase Configuration
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 
 # Formspree Configuration
 NEXT_PUBLIC_FORMSPREE_ID=your_formspree_id
@@ -77,6 +87,16 @@ NEXT_PUBLIC_SITE_URL=https://yourdomain.com
 4. Upload your images to the `portfolio` folder
 5. Add tags to images for categorization (e.g., "wedding", "portrait", "events")
 6. Optionally add custom metadata (alt text, captions) in the image context
+
+### Supabase Setup
+
+1. Sign up for a free account at [supabase.com](https://supabase.com)
+2. Create a new project
+3. Get your project URL and API keys from Settings > API
+4. Add them to your `.env.local` file
+5. Run the SQL schema from `supabase/schema.sql` in the SQL Editor
+6. Create an admin user in Authentication > Users
+7. See `SUPABASE_SETUP.md` for detailed instructions
 
 ### Formspree Setup
 

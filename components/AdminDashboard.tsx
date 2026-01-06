@@ -1,8 +1,10 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Upload, Trash2, Edit2, X, Check, Loader2, Plus, Folder, Image as ImageIcon, Video, Grid, Settings } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Upload, Trash2, Edit2, X, Check, Loader2, Plus, Folder, Image as ImageIcon, Video, Grid, Settings, LogOut } from 'lucide-react';
 import { ImageUploadForm } from './ImageUploadForm';
+import { createClient } from '@/lib/supabase/client';
 
 interface Image {
   public_id: string;
@@ -23,6 +25,8 @@ interface CategoryImages {
 }
 
 export default function AdminDashboard() {
+  const router = useRouter();
+  const supabase = createClient();
   const [images, setImages] = useState<Image[]>([]);
   const [categories, setCategories] = useState<CategoryImages>({});
   const [loading, setLoading] = useState(true);
@@ -34,6 +38,12 @@ export default function AdminDashboard() {
   const [showAddSection, setShowAddSection] = useState(false);
   const [showUploadForm, setShowUploadForm] = useState(false);
   const [activeTab, setActiveTab] = useState<'upload' | 'manage'>('upload');
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push('/admin/login');
+    router.refresh();
+  };
 
   // Fetch images
   const fetchImages = useCallback(async () => {
@@ -201,13 +211,22 @@ export default function AdminDashboard() {
                 Manage your portfolio sections and content
               </p>
             </div>
-            <a
-              href="/"
-              target="_blank"
-              className="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-            >
-              View Site
-            </a>
+            <div className="flex items-center gap-3">
+              <a
+                href="/"
+                target="_blank"
+                className="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              >
+                View Site
+              </a>
+              <button
+                onClick={handleLogout}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2"
+              >
+                <LogOut className="w-4 h-4" />
+                Logout
+              </button>
+            </div>
           </div>
         </div>
 
