@@ -25,6 +25,12 @@ import {
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
+declare global {
+  interface Window {
+    cloudinary: any;
+  }
+}
+
 type SectionType = 'about' | 'videos' | 'reels' | 'wedding' | 'product' | 'restaurant' | 'contact' | 'upload';
 
 interface Section {
@@ -222,8 +228,47 @@ function UploadSection() {
   const [category, setCategory] = useState('wedding');
   const [imageName, setImageName] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const widgetRef = useRef<any>(null);
+  const [widgetScriptLoaded, setWidgetScriptLoaded] = useState(false);
 
   const categories = ['wedding', 'product', 'restaurant', 'videos', 'reels'];
+
+  // Load Cloudinary Widget Script
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    // Check if script already exists
+    if (document.querySelector('script[src*="upload-widget.cloudinary.com"]')) {
+      setWidgetScriptLoaded(true);
+      return;
+    }
+
+    // Check if cloudinary is already available
+    if (window.cloudinary) {
+      setWidgetScriptLoaded(true);
+      return;
+    }
+
+    // Load Cloudinary widget script
+    const script = document.createElement('script');
+    script.src = 'https://upload-widget.cloudinary.com/global/all.js';
+    script.async = true;
+    document.body.appendChild(script);
+
+    script.onload = () => {
+      setWidgetScriptLoaded(true);
+    };
+
+    script.onerror = () => {
+      console.error('Failed to load Cloudinary widget script');
+    };
+
+    return () => {
+      if (script.parentNode) {
+        script.parentNode.removeChild(script);
+      }
+    };
+  }, []);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -395,6 +440,102 @@ function UploadSection() {
     }
   };
 
+  // Handle Cloudinary Widget Upload for large files (up to 50MB)
+  const handleCloudinaryWidgetUpload = () => {
+    if (!category) {
+      alert('Please select a category first');
+      return;
+    }
+
+    if (!window.cloudinary || !widgetScriptLoaded) {
+      alert('Cloudinary widget is loading, please try again in a moment');
+      return;
+    }
+
+    if (!widgetRef.current) {
+      const folder = process.env.NEXT_PUBLIC_CLOUDINARY_FOLDER || 'portfolio';
+      
+      widgetRef.current = window.cloudinary.createUploadWidget(
+        {
+          cloudName: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
+          uploadPreset: process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || undefined,
+          folder: `${folder}/${category}`,
+          multiple: true,
+          resourceType: 'auto',
+          maxFileSize: 50000000, // 50MB
+          clientAllowedFormats: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'mp4', 'mov', 'avi', 'mkv', 'webm'],
+          cropping: false,
+          showAdvancedOptions: true,
+          tags: [category],
+        },
+        async (error: any, result: any) => {
+          if (error) {
+            console.error('Cloudinary upload error:', error);
+            alert('Upload error: ' + (error.message || 'Unknown error'));
+            return;
+          }
+
+          if (result && result.event === 'success') {
+            console.log('Cloudinary upload successful:', result.info);
+            
+            try {
+              // Save to Supabase automatically
+              const mediaType = result.info.resource_type === 'video' ? 'video' : 'image';
+              const fileName = result.info.original_filename || result.info.public_id.split('/').pop();
+              
+              const saveResponse = await fetch('/api/content', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  section: category,
+                  title: fileName,
+                  media_type: mediaType,
+                  media_url: result.info.secure_url || result.info.url,
+                  thumbnail_url: result.info.thumbnail_url || result.info.secure_url || result.info.url,
+                  cloudinary_public_id: result.info.public_id,
+                  metadata: {
+                    format: result.info.format,
+                    width: result.info.width,
+                    height: result.info.height,
+                    bytes: result.info.bytes,
+                    duration: result.info.duration,
+                  },
+                }),
+              });
+
+              if (!saveResponse.ok) {
+                const errorData = await saveResponse.json().catch(() => ({ error: 'Unknown error' }));
+                console.error('Failed to save to database:', errorData);
+                alert(`Upload successful but failed to save to database: ${errorData.error || 'Unknown error'}`);
+                return;
+              }
+
+              console.log('Saved to database successfully');
+              
+              // Notify other components
+              if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+                const channel = new BroadcastChannel('content-updated');
+                channel.postMessage({ type: 'content-updated', section: category });
+                channel.close();
+              }
+
+              alert(`✅ Upload successful! "${fileName}" has been saved to ${category} section.`);
+            } catch (saveError: any) {
+              console.error('Error saving to database:', saveError);
+              alert(`Upload successful but failed to save to database: ${saveError.message || 'Unknown error'}`);
+            }
+          }
+
+          if (result && result.event === 'close') {
+            // Widget closed
+          }
+        }
+      );
+    }
+    
+    widgetRef.current.open();
+  };
+
     return (
     <div className="space-y-6">
       <div className="bg-dark-section rounded-lg p-6">
@@ -536,10 +677,25 @@ function UploadSection() {
             ) : (
               <>
                 <Upload className="w-5 h-5" />
-                Upload {selectedFiles.length > 0 ? `${selectedFiles.length} file(s)` : 'Files'}
+                Upload {selectedFiles.length > 0 ? `${selectedFiles.length} file(s)` : 'Files'} (Max 4.5 MB)
               </>
               )}
             </button>
+
+            {/* Cloudinary Widget Button for Large Files */}
+            <div className="mt-4 pt-4 border-t border-dark-section">
+              <p className="text-sm text-text-secondary mb-3 text-center">
+                For files larger than 4.5 MB (up to 50 MB), use Cloudinary Widget:
+              </p>
+              <button
+                onClick={handleCloudinaryWidgetUpload}
+                disabled={!category || !widgetScriptLoaded || uploading}
+                className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                <Upload className="w-5 h-5" />
+                Upload Large Files (Up to 50 MB)
+              </button>
+            </div>
           </div>
         </div>
     </div>
