@@ -593,7 +593,13 @@ function AboutSection({ isEditing }: { isEditing: boolean }) {
       } else {
         const errorMessage = result.error || result.details || 'Failed to save about section';
         console.error('Save error:', result);
-        alert(`Failed to save: ${errorMessage}`);
+        
+        // Check if it's a schema error
+        if (result.fixRequired && result.sqlScript) {
+          alert(`Database Schema Error!\n\n${errorMessage}\n\nPlease run the SQL script "${result.sqlScript}" in your Supabase SQL Editor to fix the schema.`);
+        } else {
+          alert(`Failed to save: ${errorMessage}`);
+        }
       }
     } catch (error: any) {
       console.error('Error saving about:', error);

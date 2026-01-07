@@ -160,6 +160,21 @@ export async function POST(request: NextRequest) {
 
       if (error) {
         console.error('Error updating about content:', error);
+        
+        // Check if it's a schema error (missing column)
+        if (error.code === 'PGRST204' || error.message?.includes('column') || error.message?.includes('schema cache')) {
+          return NextResponse.json(
+            { 
+              error: error.message,
+              code: error.code,
+              details: 'Database schema mismatch. The about_content table is missing required columns. Please run the SQL script: supabase/fix_about_content_schema.sql in your Supabase SQL Editor to fix the schema.',
+              fixRequired: true,
+              sqlScript: 'supabase/fix_about_content_schema.sql'
+            },
+            { status: 500 }
+          );
+        }
+        
         return NextResponse.json(
           { 
             error: error.message,
@@ -182,6 +197,21 @@ export async function POST(request: NextRequest) {
 
       if (error) {
         console.error('Error inserting about content:', error);
+        
+        // Check if it's a schema error (missing column)
+        if (error.code === 'PGRST204' || error.message?.includes('column') || error.message?.includes('schema cache')) {
+          return NextResponse.json(
+            { 
+              error: error.message,
+              code: error.code,
+              details: 'Database schema mismatch. The about_content table is missing required columns. Please run the SQL script: supabase/fix_about_content_schema.sql in your Supabase SQL Editor to fix the schema.',
+              fixRequired: true,
+              sqlScript: 'supabase/fix_about_content_schema.sql'
+            },
+            { status: 500 }
+          );
+        }
+        
         return NextResponse.json(
           { 
             error: error.message,
