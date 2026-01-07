@@ -70,6 +70,18 @@ export async function GET(request: NextRequest) {
     }
 
     console.log(`Fetched ${data?.length || 0} items for section '${section || 'all'}'`);
+    
+    // Log details for debugging
+    if (data && data.length > 0) {
+      console.log('Sample item:', {
+        id: data[0].id,
+        title: data[0].title,
+        media_url: data[0].media_url,
+        is_active: data[0].is_active,
+        section_id: data[0].section_id,
+      });
+    }
+    
     return NextResponse.json({ data: data || [] });
   } catch (error: any) {
     console.error('API route error:', error);
@@ -86,8 +98,31 @@ export async function GET(request: NextRequest) {
 // POST - Create new content
 export async function POST(request: NextRequest) {
   try {
+    // Check environment variables
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+      console.error('Missing Supabase environment variables');
+      return NextResponse.json(
+        { 
+          error: 'Supabase configuration missing',
+          details: 'NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY must be set'
+        },
+        { status: 500 }
+      );
+    }
+
     const supabase = await createClient();
     const body = await request.json();
+
+    // Validate required fields
+    if (!body.section) {
+      return NextResponse.json({ error: 'Section is required' }, { status: 400 });
+    }
+
+    if (!body.media_url) {
+      return NextResponse.json({ error: 'Media URL is required' }, { status: 400 });
+    }
+
+    console.log(`Creating content for section: ${body.section}`);
 
     // Get section ID
     const { data: sectionData, error: sectionError } = await supabase
@@ -97,11 +132,18 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (sectionError || !sectionData) {
-      return NextResponse.json({ error: 'Section not found' }, { status: 404 });
+      console.error(`Section '${body.section}' not found:`, sectionError);
+      return NextResponse.json(
+        { 
+          error: 'Section not found',
+          details: `Section '${body.section}' does not exist. Make sure you ran the schema.sql and seed.sql files in Supabase.`
+        },
+        { status: 404 }
+      );
     }
 
     // Get max order_index
-    const { data: maxOrder } = await supabase
+    const { data: maxOrder, error: maxOrderError } = await supabase
       .from('content_items')
       .select('order_index')
       .eq('section_id', sectionData.id)
@@ -109,17 +151,30 @@ export async function POST(request: NextRequest) {
       .limit(1)
       .single();
 
+    if (maxOrderError && maxOrderError.code !== 'PGRST116') {
+      console.error('Error getting max order_index:', maxOrderError);
+    }
+
     const newContent = {
       section_id: sectionData.id,
       title: body.title || '',
       description: body.description || '',
       media_type: body.media_type || 'image',
       media_url: body.media_url || '',
-      thumbnail_url: body.thumbnail_url || '',
+      thumbnail_url: body.thumbnail_url || body.media_url || '',
       cloudinary_public_id: body.cloudinary_public_id || '',
-      order_index: (maxOrder?.order_index || 0) + 1,
+      order_index: (maxOrder?.order_index ?? 0) + 1,
       metadata: body.metadata || {},
+      is_active: true, // ✅ إضافة is_active صراحة
     };
+
+    console.log('Inserting content:', {
+      section: body.section,
+      section_id: sectionData.id,
+      title: newContent.title,
+      media_type: newContent.media_type,
+      is_active: newContent.is_active,
+    });
 
     const { data, error } = await supabase
       .from('content_items')
@@ -128,18 +183,46 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      console.error('Error inserting content:', error);
+      return NextResponse.json(
+        { 
+          error: error.message,
+          code: error.code,
+          details: 'Failed to insert content into Supabase. Check your database connection and RLS policies.'
+        },
+        { status: 500 }
+      );
     }
 
+    console.log('Content created successfully:', data);
     return NextResponse.json({ data });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error('API route error:', error);
+    return NextResponse.json(
+      { 
+        error: error.message || 'Internal server error',
+        details: 'An unexpected error occurred while processing the request'
+      },
+      { status: 500 }
+    );
   }
 }
 
 // DELETE - Delete content
 export async function DELETE(request: NextRequest) {
   try {
+    // Check environment variables
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+      console.error('Missing Supabase environment variables');
+      return NextResponse.json(
+        { 
+          error: 'Supabase configuration missing',
+          details: 'NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY must be set'
+        },
+        { status: 500 }
+      );
+    }
+
     const supabase = await createClient();
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
@@ -148,24 +231,54 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'ID is required' }, { status: 400 });
     }
 
+    console.log(`Deleting content with ID: ${id}`);
+
     const { error } = await supabase
       .from('content_items')
       .delete()
       .eq('id', id);
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      console.error('Error deleting content:', error);
+      return NextResponse.json(
+        { 
+          error: error.message,
+          code: error.code,
+          details: 'Failed to delete content from Supabase. Check your database connection and RLS policies.'
+        },
+        { status: 500 }
+      );
     }
 
+    console.log('Content deleted successfully');
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error('API route error:', error);
+    return NextResponse.json(
+      { 
+        error: error.message || 'Internal server error',
+        details: 'An unexpected error occurred while processing the request'
+      },
+      { status: 500 }
+    );
   }
 }
 
 // PATCH - Update content
 export async function PATCH(request: NextRequest) {
   try {
+    // Check environment variables
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+      console.error('Missing Supabase environment variables');
+      return NextResponse.json(
+        { 
+          error: 'Supabase configuration missing',
+          details: 'NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY must be set'
+        },
+        { status: 500 }
+      );
+    }
+
     const supabase = await createClient();
     const body = await request.json();
     const { id, ...updates } = body;
@@ -173,6 +286,8 @@ export async function PATCH(request: NextRequest) {
     if (!id) {
       return NextResponse.json({ error: 'ID is required' }, { status: 400 });
     }
+
+    console.log(`Updating content with ID: ${id}`, updates);
 
     const { data, error } = await supabase
       .from('content_items')
@@ -182,12 +297,28 @@ export async function PATCH(request: NextRequest) {
       .single();
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      console.error('Error updating content:', error);
+      return NextResponse.json(
+        { 
+          error: error.message,
+          code: error.code,
+          details: 'Failed to update content in Supabase. Check your database connection and RLS policies.'
+        },
+        { status: 500 }
+      );
     }
 
+    console.log('Content updated successfully:', data);
     return NextResponse.json({ data });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error('API route error:', error);
+    return NextResponse.json(
+      { 
+        error: error.message || 'Internal server error',
+        details: 'An unexpected error occurred while processing the request'
+      },
+      { status: 500 }
+    );
   }
 }
 
