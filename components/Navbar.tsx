@@ -46,9 +46,9 @@ export function Navbar() {
           <a
             href="#home"
             onClick={(e) => handleNavClick(e, '#home')}
-            className="text-xl font-semibold text-text-primary hover:text-accent transition-colors"
+            className="text-2xl font-semibold text-text-primary hover:text-accent transition-colors"
           >
-            Yousif
+            YOUSEF RABEA
           </a>
 
           <div className="hidden md:flex items-center space-x-8">
