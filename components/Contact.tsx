@@ -5,7 +5,6 @@ import { Mail, Instagram, Linkedin, User, MessageSquare, Send, Phone } from 'luc
 
 export function Contact() {
   const sectionRef = useRef<HTMLElement>(null);
-  const [isVisible, setIsVisible] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -72,26 +71,6 @@ export function Contact() {
     };
   }, [fetchContact]);
 
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-        }
-      },
-      { threshold: 0.1 }
-    );
-
-    if (sectionRef.current) {
-      observer.observe(sectionRef.current);
-    }
-
-    return () => {
-      if (sectionRef.current) {
-        observer.unobserve(sectionRef.current);
-      }
-    };
-  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -115,9 +94,7 @@ export function Contact() {
     <section
       ref={sectionRef}
       id="contact"
-      className={`py-24 md:py-32 bg-dark-bg transition-opacity duration-1000 ${
-        isVisible ? 'opacity-100' : 'opacity-0'
-      }`}
+      className="py-24 md:py-32 bg-dark-bg"
     >
       <div className="max-w-6xl mx-auto px-6 lg:px-8">
         <div className="text-center mb-16">

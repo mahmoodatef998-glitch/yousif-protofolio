@@ -1,11 +1,9 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { motion } from 'framer-motion';
 
 export function About() {
   const sectionRef = useRef<HTMLElement>(null);
-  const [isVisible, setIsVisible] = useState(false);
   const [aboutData, setAboutData] = useState({
     heroTitle: 'About',
     heroSubtitle: '',
@@ -79,34 +77,12 @@ export function About() {
     };
   }, [fetchAbout]);
 
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-        }
-      },
-      { threshold: 0.1 }
-    );
-
-    if (sectionRef.current) {
-      observer.observe(sectionRef.current);
-    }
-
-    return () => {
-      if (sectionRef.current) {
-        observer.unobserve(sectionRef.current);
-      }
-    };
-  }, []);
 
   return (
     <section
       ref={sectionRef}
       id="about"
-      className={`relative min-h-screen flex items-center justify-center overflow-hidden bg-dark-bg transition-opacity duration-1000 ${
-        isVisible ? 'opacity-100' : 'opacity-0'
-      }`}
+      className="relative min-h-screen flex items-center justify-center overflow-hidden bg-dark-bg"
     >
       {/* Background Image */}
       <div className="absolute inset-0">
@@ -122,26 +98,16 @@ export function About() {
       <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
           {/* Image Side */}
-          <motion.div
-            initial={{ opacity: 0, x: -50 }}
-            animate={isVisible ? { opacity: 1, x: 0 } : { opacity: 0, x: -50 }}
-            transition={{ duration: 0.8 }}
-            className="relative aspect-[3/4] order-2 lg:order-1"
-          >
+          <div className="relative aspect-[3/4] order-2 lg:order-1">
             <img
               src={aboutData.profileImage}
               alt={aboutData.heroTitle}
               className="absolute inset-0 w-full h-full object-cover"
             />
-          </motion.div>
+          </div>
 
           {/* Text Side */}
-          <motion.div
-            initial={{ opacity: 0, x: 50 }}
-            animate={isVisible ? { opacity: 1, x: 0 } : { opacity: 0, x: 50 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            className="order-1 lg:order-2"
-          >
+          <div className="order-1 lg:order-2">
             <h2 className="text-5xl md:text-6xl lg:text-7xl font-bold text-text-primary mb-8">
               {aboutData.heroTitle}
             </h2>
@@ -170,7 +136,7 @@ export function About() {
                 <div className="text-sm text-text-secondary">Awards</div>
               </div>
             </div>
-          </motion.div>
+          </div>
         </div>
       </div>
     </section>

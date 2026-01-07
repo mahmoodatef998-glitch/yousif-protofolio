@@ -12,7 +12,6 @@ interface Video {
 
 export function Videos() {
   const sectionRef = useRef<HTMLElement>(null);
-  const [isVisible, setIsVisible] = useState(true);
   const [videos, setVideos] = useState<Video[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -97,26 +96,6 @@ export function Videos() {
     };
   }, [fetchVideos]);
 
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-        }
-      },
-      { threshold: 0.1 }
-    );
-
-    if (sectionRef.current) {
-      observer.observe(sectionRef.current);
-    }
-
-    return () => {
-      if (sectionRef.current) {
-        observer.unobserve(sectionRef.current);
-      }
-    };
-  }, []);
 
   if (loading) {
     return (
@@ -141,9 +120,7 @@ export function Videos() {
     <section
       ref={sectionRef}
       id="videos"
-      className={`bg-dark-bg transition-opacity duration-1000 ${
-        isVisible ? 'opacity-100' : 'opacity-0'
-      }`}
+      className="bg-dark-bg"
     >
       <div className="space-y-0">
         {videos.map((video, index) => (

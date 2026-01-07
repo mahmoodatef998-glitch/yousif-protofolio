@@ -11,7 +11,6 @@ interface Reel {
 
 export function Reels() {
   const sectionRef = useRef<HTMLElement>(null);
-  const [isVisible, setIsVisible] = useState(true);
   const [selectedReel, setSelectedReel] = useState<string | null>(null);
   const [reels, setReels] = useState<Reel[]>([]);
   const [loading, setLoading] = useState(true);
@@ -96,26 +95,6 @@ export function Reels() {
     };
   }, [fetchReels]);
 
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-        }
-      },
-      { threshold: 0.1 }
-    );
-
-    if (sectionRef.current) {
-      observer.observe(sectionRef.current);
-    }
-
-    return () => {
-      if (sectionRef.current) {
-        observer.unobserve(sectionRef.current);
-      }
-    };
-  }, []);
 
   if (loading) {
     return (
@@ -143,9 +122,7 @@ export function Reels() {
       <section
         ref={sectionRef}
         id="reels"
-        className={`py-24 md:py-32 bg-dark-section transition-opacity duration-1000 ${
-          isVisible ? 'opacity-100' : 'opacity-0'
-        }`}
+        className="py-24 md:py-32 bg-dark-section"
       >
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <h2 className="text-5xl md:text-6xl font-bold text-text-primary mb-16 text-center">
