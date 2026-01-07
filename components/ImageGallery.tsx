@@ -1,12 +1,10 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { PortfolioImage } from '@/types';
 import { getResponsiveImageUrls } from '@/lib/cloudinary-url';
 import { ImageModal } from './ImageModal';
-import { useInView } from 'react-intersection-observer';
-import { motion } from 'framer-motion';
 
 interface ImageGalleryProps {
   images: PortfolioImage[];
@@ -97,18 +95,36 @@ interface ImageGalleryItemProps {
 }
 
 function ImageGalleryItem({ image, imageUrls, index, onClick }: ImageGalleryItemProps) {
-  const { ref, inView } = useInView({
-    triggerOnce: true,
-    threshold: 0.1,
-  });
+  const [isVisible, setIsVisible] = useState(false);
+  const itemRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const currentRef = itemRef.current;
+    if (!currentRef) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    observer.observe(currentRef);
+
+    return () => {
+      observer.unobserve(currentRef);
+    };
+  }, []);
 
   return (
-    <motion.div
-      ref={ref}
-      initial={{ opacity: 0, y: 20 }}
-      animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-      transition={{ duration: 0.5, delay: index * 0.1 }}
-      className="group relative aspect-square overflow-hidden rounded-lg bg-gray-200 dark:bg-gray-800 cursor-pointer"
+    <div
+      ref={itemRef}
+      className={`group relative aspect-square overflow-hidden rounded-lg bg-gray-200 dark:bg-gray-800 cursor-pointer transition-all duration-500 ${
+        isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'
+      }`}
+      style={{ transitionDelay: `${index * 0.1}s` }}
       onClick={onClick}
     >
       <Image
@@ -126,7 +142,7 @@ function ImageGalleryItem({ image, imageUrls, index, onClick }: ImageGalleryItem
           </p>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 }
 

@@ -2,7 +2,6 @@
 
 import { useEffect } from 'react';
 import { X, ChevronLeft, ChevronRight } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import { PortfolioImage } from '@/types';
 import { getResponsiveImageUrls } from '@/lib/cloudinary-url';
@@ -57,31 +56,23 @@ export function ImageModal({
     };
   }, [isOpen, onClose, onNext, onPrevious]);
 
-  if (!image) return null;
+  if (!image || !isOpen) return null;
 
   const imageUrls = getResponsiveImageUrls(image.public_id);
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <>
-          {/* Backdrop */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="fixed inset-0 z-50 bg-black/95 backdrop-blur-sm"
-          />
+    <>
+      {/* Backdrop */}
+      <div
+        onClick={onClose}
+        className="fixed inset-0 z-50 bg-black/95 backdrop-blur-sm transition-opacity duration-300"
+      />
 
-          {/* Modal Content */}
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="relative max-w-7xl w-full max-h-full"
-            >
+      {/* Modal Content */}
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div
+          className="relative max-w-7xl w-full max-h-full transition-all duration-300"
+        >
               {/* Close Button */}
               <button
                 onClick={onClose}
@@ -141,11 +132,9 @@ export function ImageModal({
                   {images.findIndex((img) => img.public_id === image.public_id) + 1} / {images.length}
                 </div>
               )}
-            </motion.div>
+            </div>
           </div>
-        </>
-      )}
-    </AnimatePresence>
+    </>
   );
 }
 
