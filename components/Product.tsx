@@ -29,6 +29,7 @@ export function Product() {
       channel.onmessage = (event) => {
         if (event.data.type === 'content-updated' && 
             (event.data.section === 'product' || !event.data.section)) {
+          console.log('Product section: Content updated, refreshing...');
           fetchImages();
         }
       };

@@ -29,6 +29,7 @@ export function Wedding() {
       channel.onmessage = (event) => {
         if (event.data.type === 'content-updated' && 
             (event.data.section === 'wedding' || !event.data.section)) {
+          console.log('Wedding section: Content updated, refreshing...');
           fetchImages();
         }
       };

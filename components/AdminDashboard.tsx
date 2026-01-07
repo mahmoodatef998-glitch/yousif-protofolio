@@ -358,12 +358,16 @@ function UploadSection() {
       // Show success message
       alert('Files uploaded successfully! The homepage will automatically update within 30 seconds, or you can refresh it manually.');
       
-      // Broadcast message to homepage to refresh immediately (if open)
+      // Broadcast message to refresh immediately (if open)
       if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
         const channel = new BroadcastChannel('content-updated');
         channel.postMessage({ type: 'content-updated', section: category });
+        console.log(`Broadcasted content-updated for section: ${category}`);
         channel.close();
       }
+      
+      // Also trigger a page refresh for the gallery section if it's currently open
+      // This will be handled by the BroadcastChannel listener in GallerySection
     } catch (error: any) {
       console.error('Upload error:', error);
       alert(`Upload failed: ${error.message || 'Unknown error'}\n\nPlease check the browser console and network tab for more details.`);
@@ -1160,23 +1164,63 @@ function GallerySection({ section, isEditing }: { section: string; isEditing: bo
 
   useEffect(() => {
     fetchImages();
+    
+    // Listen for content updates from upload section
+    let channel: BroadcastChannel | null = null;
+    if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+      channel = new BroadcastChannel('content-updated');
+      channel.onmessage = (event) => {
+        if (event.data.type === 'content-updated' && 
+            (event.data.section === section || !event.data.section)) {
+          console.log(`Content updated for section: ${section}, refreshing...`);
+          fetchImages();
+        }
+      };
+    }
+    
+    return () => {
+      if (channel) {
+        channel.close();
+      }
+    };
   }, [section]);
 
   const fetchImages = async () => {
     try {
-      const response = await fetch(`/api/content?section=${section}`);
-      const { data } = await response.json();
+      setLoading(true);
+      console.log(`Fetching images for section: ${section}`);
+      const response = await fetch(`/api/content?section=${section}`, {
+        cache: 'no-store', // Ensure fresh data
+      });
       
-      if (data) {
-        const formattedImages = data.map((item: any) => ({
-          id: item.id,
-          title: item.title || 'Untitled Image',
-          url: item.media_url || '',
-        }));
+      if (!response.ok) {
+        console.error(`Failed to fetch ${section} images:`, response.status, response.statusText);
+        setImages([]);
+        return;
+      }
+      
+      const result = await response.json();
+      const data = result.data || result;
+      
+      console.log(`Fetched ${section} images:`, data);
+      
+      if (data && Array.isArray(data) && data.length > 0) {
+        const formattedImages = data
+          .filter((item: any) => item.media_url && item.media_url.trim() !== '')
+          .map((item: any) => ({
+            id: item.id,
+            title: item.title || 'Untitled Image',
+            url: item.media_url || '',
+          }));
+        console.log(`Formatted ${section} images:`, formattedImages);
         setImages(formattedImages);
+      } else {
+        console.log(`No ${section} images found in database`);
+        setImages([]);
       }
     } catch (error) {
-      console.error('Error fetching images:', error);
+      console.error(`Error fetching ${section} images:`, error);
+      setImages([]);
     } finally {
       setLoading(false);
     }

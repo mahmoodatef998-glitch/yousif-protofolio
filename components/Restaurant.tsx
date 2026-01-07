@@ -29,6 +29,7 @@ export function Restaurant() {
       channel.onmessage = (event) => {
         if (event.data.type === 'content-updated' && 
             (event.data.section === 'restaurant' || !event.data.section)) {
+          console.log('Restaurant section: Content updated, refreshing...');
           fetchImages();
         }
       };
