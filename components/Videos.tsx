@@ -83,12 +83,12 @@ export function Videos() {
       };
     }
     
-    // Refresh data every 30 seconds to show new uploads
+    // Refresh data every 5 minutes to show new uploads (reduced from 30s to prevent lag)
     interval = setInterval(() => {
       if (mounted) {
         fetchVideos();
       }
-    }, 30000);
+    }, 300000); // 5 minutes instead of 30 seconds
     
     return () => {
       mounted = false;

@@ -82,12 +82,12 @@ export function Reels() {
       };
     }
     
-    // Refresh data every 30 seconds to show new uploads
+    // Refresh data every 5 minutes to show new uploads (reduced from 30s to prevent lag)
     interval = setInterval(() => {
       if (mounted) {
         fetchReels();
       }
-    }, 30000);
+    }, 300000); // 5 minutes instead of 30 seconds
     
     return () => {
       mounted = false;

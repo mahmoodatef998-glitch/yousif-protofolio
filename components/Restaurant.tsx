@@ -19,47 +19,54 @@ export function Restaurant() {
 
   const fetchImages = useCallback(async () => {
     try {
-      setLoading(true);
+      // Only show loading on initial fetch
+      if (images.length === 0) {
+        setLoading(true);
+      }
+      
       const response = await fetch('/api/content?section=restaurant', {
-        cache: 'no-store', // Ensure fresh data
+        cache: 'no-store',
       });
       
       if (!response.ok) {
-        console.error('Failed to fetch restaurant images:', response.status, response.statusText);
-        const errorText = await response.text();
-        console.error('Error response:', errorText);
-        setLoading(false);
-        setImages([]);
+        if (images.length === 0) {
+          setLoading(false);
+          setImages([]);
+        }
         return;
       }
       
       const result = await response.json();
       const data = result.data || result;
       
-      console.log('Restaurant images fetched:', data);
-      
       if (data && Array.isArray(data) && data.length > 0) {
         const formattedImages = data
-          .filter((item: any) => item.media_url && item.media_url.trim() !== '') // Filter out empty URLs
+          .filter((item: any) => item.media_url && item.media_url.trim() !== '')
           .map((item: any) => ({
             id: item.id,
             title: item.title || 'Untitled Image',
             image: item.media_url || '',
           }));
         
-        console.log('Restaurant images formatted:', formattedImages);
-        setImages(formattedImages);
-      } else {
-        console.log('No restaurant images found in database or empty array');
+        // Only update if data actually changed (compare IDs)
+        const currentIds = images.map(img => img.id).sort().join(',');
+        const newIds = formattedImages.map(img => img.id).sort().join(',');
+        
+        if (currentIds !== newIds) {
+          setImages(formattedImages);
+        }
+      } else if (images.length === 0) {
         setImages([]);
       }
     } catch (error) {
       console.error('Error fetching restaurant images:', error);
-      setImages([]);
+      if (images.length === 0) {
+        setImages([]);
+      }
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [images]);
 
   useEffect(() => {
     let mounted = true;
@@ -83,12 +90,12 @@ export function Restaurant() {
       };
     }
     
-    // Refresh data every 30 seconds to show new uploads
+    // Refresh data every 5 minutes to show new uploads (reduced from 30s to prevent lag)
     interval = setInterval(() => {
       if (mounted) {
         fetchImages();
       }
-    }, 30000);
+    }, 300000); // 5 minutes instead of 30 seconds
     
     return () => {
       mounted = false;
@@ -97,9 +104,10 @@ export function Restaurant() {
     };
   }, [fetchImages]);
 
-  // Staggered reveal animation for cards
+  // Staggered reveal animation for cards - memoize to prevent re-calculation
+  const imagesLength = images.length;
   const { ref: animationRef, visibleCount } = useStaggeredReveal(
-    images.length,
+    imagesLength,
     100 // 100ms delay between each card
   );
 
