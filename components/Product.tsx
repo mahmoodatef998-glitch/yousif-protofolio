@@ -12,7 +12,7 @@ interface GalleryImage {
 
 export function Product() {
   const sectionRef = useRef<HTMLElement>(null);
-  const [isVisible, setIsVisible] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [images, setImages] = useState<GalleryImage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -247,4 +247,3 @@ export function Product() {
     </>
   );
 }
-

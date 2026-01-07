@@ -11,7 +11,7 @@ interface Reel {
 
 export function Reels() {
   const sectionRef = useRef<HTMLElement>(null);
-  const [isVisible, setIsVisible] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
   const [selectedReel, setSelectedReel] = useState<string | null>(null);
   const [reels, setReels] = useState<Reel[]>([]);
   const [loading, setLoading] = useState(true);
