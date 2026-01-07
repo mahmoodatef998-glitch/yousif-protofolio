@@ -282,7 +282,18 @@ function UploadSection() {
           ? imageName || file.name.replace(/\.[^/.]+$/, '')
           : `${imageName || 'image'}-${i + 1}`;
 
-        console.log(`Uploading file ${i + 1}/${selectedFiles.length}: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`);
+        const fileSizeMB = file.size / 1024 / 1024;
+        const maxSizeMB = 4.5; // Vercel's limit
+        
+        console.log(`Uploading file ${i + 1}/${selectedFiles.length}: ${file.name} (${fileSizeMB.toFixed(2)} MB)`);
+
+        // Check file size before upload
+        if (fileSizeMB > maxSizeMB) {
+          const errorMsg = `File "${file.name}" is too large (${fileSizeMB.toFixed(2)} MB). Maximum allowed size is ${maxSizeMB} MB. Please compress the file or use Cloudinary Upload Widget for larger files.`;
+          console.error(errorMsg);
+          alert(errorMsg);
+          continue; // Skip this file and continue with others
+        }
 
         const formData = new FormData();
         formData.append('file', file);
@@ -302,7 +313,14 @@ function UploadSection() {
           if (!uploadResponse.ok) {
             const errorData = await uploadResponse.json().catch(() => ({ error: 'Unknown error' }));
             console.error('Upload failed:', errorData);
-            throw new Error(`Upload failed for ${file.name}: ${errorData.error || 'Unknown error'}`);
+            
+            // Handle 413 (Content Too Large) specifically
+            if (uploadResponse.status === 413) {
+              const errorMsg = errorData.details || errorData.error || 'File too large';
+              throw new Error(`File "${file.name}" is too large. ${errorMsg}`);
+            }
+            
+            throw new Error(`Upload failed for ${file.name}: ${errorData.error || errorData.details || 'Unknown error'}`);
           }
 
           progress[file.name] = 100;

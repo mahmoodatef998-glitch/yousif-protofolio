@@ -42,7 +42,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(`Uploading file: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB) to category: ${category}`);
+    const fileSizeMB = file.size / 1024 / 1024;
+    const maxSizeMB = 4.5; // Vercel's limit
+    
+    console.log(`Uploading file: ${file.name} (${fileSizeMB.toFixed(2)} MB) to category: ${category}`);
+
+    // Check file size before processing
+    if (fileSizeMB > maxSizeMB) {
+      return NextResponse.json(
+        { 
+          error: 'File too large',
+          details: `File size (${fileSizeMB.toFixed(2)} MB) exceeds the maximum allowed size (${maxSizeMB} MB). For larger files, please use Cloudinary Upload Widget directly or compress the file first.`,
+          fileSize: fileSizeMB,
+          maxSize: maxSizeMB,
+          suggestion: 'Use Cloudinary Upload Widget for files larger than 4.5MB'
+        },
+        { status: 413 }
+      );
+    }
 
     // Convert File to Buffer
     const bytes = await file.arrayBuffer();
@@ -87,10 +104,23 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Cloudinary upload error:', error);
+    
+    // Check if it's a size limit error
+    if (error.message?.includes('too large') || error.message?.includes('413') || error.message?.includes('Content Too Large')) {
+      return NextResponse.json(
+        { 
+          error: 'File too large',
+          details: 'File size exceeds the maximum allowed size (4.5 MB). For larger files, please use Cloudinary Upload Widget directly or compress the file first.',
+          suggestion: 'Use Cloudinary Upload Widget for files larger than 4.5MB'
+        },
+        { status: 413 }
+      );
+    }
+    
     return NextResponse.json(
       { 
         error: error.message || 'Failed to upload file',
-        details: 'Check Cloudinary configuration and file size limits'
+        details: 'Check Cloudinary configuration and file size limits. Maximum file size is 4.5 MB due to Vercel serverless function limits.'
       },
       { status: 500 }
     );

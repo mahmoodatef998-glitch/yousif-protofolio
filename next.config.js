@@ -26,6 +26,14 @@ const nextConfig = {
   experimental: {
     optimizePackageImports: ['lucide-react'],
   },
+  // Increase body size limit for file uploads (Note: Vercel has a 4.5MB limit for serverless functions)
+  // For larger files, use Cloudinary Upload Widget directly
+  api: {
+    bodyParser: {
+      sizeLimit: '4.5mb', // Vercel's maximum limit
+    },
+    responseLimit: false,
+  },
   // Disable Vercel Analytics in development if causing issues
   ...(process.env.NODE_ENV === 'production' && {
     // Production-only config
