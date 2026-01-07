@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import Image from 'next/image';
 import { X } from 'lucide-react';
+import { motion, useInView } from 'framer-motion';
+import { staggerContainer, galleryItem, fadeInDown } from '@/lib/animations';
 
 interface GalleryImage {
   id: string;
@@ -12,7 +14,7 @@ interface GalleryImage {
 
 export function Restaurant() {
   const sectionRef = useRef<HTMLElement>(null);
-  const [isVisible, setIsVisible] = useState(true);
+  const isInView = useInView(sectionRef, { once: true, amount: 0.2 });
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [images, setImages] = useState<GalleryImage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -97,26 +99,6 @@ export function Restaurant() {
     };
   }, [fetchImages]);
 
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-        }
-      },
-      { threshold: 0.1 }
-    );
-
-    if (sectionRef.current) {
-      observer.observe(sectionRef.current);
-    }
-
-    return () => {
-      if (sectionRef.current) {
-        observer.unobserve(sectionRef.current);
-      }
-    };
-  }, []);
 
   if (loading) {
     return (
@@ -144,26 +126,37 @@ export function Restaurant() {
       <section
         ref={sectionRef}
         id="restaurant"
-        className={`py-24 md:py-32 bg-dark-section transition-opacity duration-1000 ${
-          isVisible ? 'opacity-100' : 'opacity-0'
-        }`}
+        className="py-24 md:py-32 bg-dark-section"
       >
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
-          <h2 className="text-5xl md:text-6xl font-bold text-text-primary mb-16 text-center">
+          <motion.h2
+            variants={fadeInDown}
+            initial="hidden"
+            animate={isInView ? 'visible' : 'hidden'}
+            className="text-5xl md:text-6xl font-bold text-text-primary mb-16 text-center"
+          >
             Restaurant
-          </h2>
+          </motion.h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <motion.div
+            variants={staggerContainer}
+            initial="hidden"
+            animate={isInView ? 'visible' : 'hidden'}
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+          >
             {images.map((item) => (
-              <div
+              <motion.div
                 key={item.id}
-                className="group relative aspect-[4/3] overflow-hidden cursor-pointer"
+                variants={galleryItem}
+                className="group relative aspect-[4/3] overflow-hidden cursor-pointer rounded-lg"
                 onClick={() => setSelectedImage(item.image)}
+                whileHover={{ scale: 1.02, y: -5 }}
+                transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
               >
-                <img
+                <motion.img
                   src={item.image}
                   alt={item.title}
-                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                  className="absolute inset-0 w-full h-full object-cover"
                   onError={(e) => {
                     console.error('❌ Image failed to load:', {
                       src: item.image,
@@ -178,32 +171,54 @@ export function Restaurant() {
                       title: item.title,
                     });
                   }}
+                  whileHover={{ scale: 1.1 }}
+                  transition={{ duration: 0.7, ease: [0.4, 0, 0.2, 1] }}
                 />
-                <div className="absolute inset-0 bg-dark-bg/0 group-hover:bg-dark-bg/80 transition-all duration-300 flex items-center justify-center">
-                  <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-center">
+                <motion.div
+                  className="absolute inset-0 bg-gradient-to-t from-dark-bg/90 via-dark-bg/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-center p-6"
+                  initial={{ opacity: 0 }}
+                  whileHover={{ opacity: 1 }}
+                >
+                  <motion.div
+                    className="text-center transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300"
+                    initial={{ y: 20, opacity: 0 }}
+                    whileHover={{ y: 0, opacity: 1 }}
+                  >
                     <p className="text-text-primary text-xl font-semibold mb-2">{item.title}</p>
                     <p className="text-text-secondary text-sm">Restaurant</p>
-                  </div>
-                </div>
-              </div>
+                  </motion.div>
+                </motion.div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         </div>
       </section>
 
       {/* Lightbox */}
       {selectedImage && (
-        <div
-          className="fixed inset-0 z-50 bg-dark-bg/95 flex items-center justify-center p-4"
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 bg-dark-bg/95 backdrop-blur-sm flex items-center justify-center p-4"
           onClick={() => setSelectedImage(null)}
         >
-          <button
+          <motion.button
             onClick={() => setSelectedImage(null)}
-            className="absolute top-6 right-6 text-text-primary hover:text-accent transition-colors"
+            className="absolute top-6 right-6 text-text-primary hover:text-accent transition-colors z-10"
+            whileHover={{ scale: 1.1, rotate: 90 }}
+            whileTap={{ scale: 0.9 }}
           >
             <X className="w-8 h-8" />
-          </button>
-          <div className="relative w-full h-full max-w-7xl max-h-[90vh]">
+          </motion.button>
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.8, opacity: 0 }}
+            transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+            className="relative w-full h-full max-w-7xl max-h-[90vh]"
+            onClick={(e) => e.stopPropagation()}
+          >
             <Image
               src={selectedImage}
               alt="Lightbox"
@@ -211,8 +226,8 @@ export function Restaurant() {
               className="object-contain"
               sizes="100vw"
             />
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       )}
     </>
   );
