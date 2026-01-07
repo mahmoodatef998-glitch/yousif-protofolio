@@ -20,41 +20,70 @@ export function Product() {
   const fetchImages = useCallback(async () => {
     try {
       setLoading(true);
+      console.log('🔍 Fetching product images...');
+      
       const response = await fetch('/api/content?section=product', {
         cache: 'no-store', // Ensure fresh data
       });
       
+      console.log('📡 Response status:', response.status, response.statusText);
+      
       if (!response.ok) {
-        console.error('Failed to fetch product images:', response.status, response.statusText);
         const errorText = await response.text();
-        console.error('Error response:', errorText);
+        console.error('❌ Failed to fetch product images:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorText,
+        });
         setLoading(false);
         setImages([]);
         return;
       }
       
       const result = await response.json();
-      const data = result.data || result;
+      console.log('📦 Raw API response:', result);
       
-      console.log('Product images fetched:', data);
+      const data = result.data || result;
+      console.log('📊 Parsed data:', {
+        isArray: Array.isArray(data),
+        length: data?.length || 0,
+        data: data,
+      });
       
       if (data && Array.isArray(data) && data.length > 0) {
         const formattedImages = data
-          .filter((item: any) => item.media_url && item.media_url.trim() !== '') // Filter out empty URLs
+          .filter((item: any) => {
+            const hasUrl = item.media_url && item.media_url.trim() !== '';
+            if (!hasUrl) {
+              console.warn('⚠️ Item filtered out (no media_url):', item);
+            }
+            return hasUrl;
+          })
           .map((item: any) => ({
             id: item.id,
             title: item.title || 'Untitled Image',
             image: item.media_url || '',
           }));
         
-        console.log('Product images formatted:', formattedImages);
+        console.log('✅ Product images formatted:', {
+          count: formattedImages.length,
+          images: formattedImages,
+        });
         setImages(formattedImages);
       } else {
-        console.log('No product images found in database or empty array');
+        console.warn('⚠️ No product images found:', {
+          dataExists: !!data,
+          isArray: Array.isArray(data),
+          length: data?.length || 0,
+          message: result.message || 'No data returned',
+        });
         setImages([]);
       }
-    } catch (error) {
-      console.error('Error fetching product images:', error);
+    } catch (error: any) {
+      console.error('❌ Error fetching product images:', {
+        error: error.message,
+        stack: error.stack,
+      });
       setImages([]);
     } finally {
       setLoading(false);
