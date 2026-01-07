@@ -106,9 +106,9 @@ export function About() {
 
       {/* Content */}
       <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center min-h-[80vh]">
           {/* Image Side */}
-          <div className="relative aspect-[3/4] order-2 lg:order-1">
+          <div className="relative h-[50%] order-2 lg:order-1">
             <img
               src={aboutData.profileImage}
               alt={aboutData.heroTitle}
