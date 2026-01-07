@@ -8,7 +8,7 @@ import { Contact } from '@/components/Contact';
 
 export default function Home() {
   return (
-    <main className="bg-dark-bg">
+    <>
       {/* About Section - Hero at top */}
       <About />
       
@@ -29,6 +29,6 @@ export default function Home() {
       
       {/* Contact Section */}
       <Contact />
-    </main>
+    </>
   );
 }

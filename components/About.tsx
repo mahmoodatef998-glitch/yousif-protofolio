@@ -21,6 +21,7 @@ export function About() {
       
       if (!response.ok) {
         console.error('Failed to fetch about:', response.status);
+        setLoading(false);
         return;
       }
       
