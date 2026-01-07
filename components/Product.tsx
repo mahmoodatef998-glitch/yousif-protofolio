@@ -15,9 +15,25 @@ interface GalleryImage {
 export function Product() {
   const sectionRef = useRef<HTMLElement>(null);
   const isInView = useInView(sectionRef, { once: true, amount: 0.1 });
+  const [isVisible, setIsVisible] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [images, setImages] = useState<GalleryImage[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Fallback: Show content after a short delay if useInView doesn't trigger
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsVisible(true);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Also trigger when in view
+  useEffect(() => {
+    if (isInView) {
+      setIsVisible(true);
+    }
+  }, [isInView]);
 
   const fetchImages = useCallback(async () => {
     try {
@@ -72,6 +88,8 @@ export function Product() {
           images: formattedImages,
         });
         setImages(formattedImages);
+        // Show content immediately after images are loaded
+        setIsVisible(true);
       } else {
         console.warn('⚠️ No product images found:', {
           dataExists: !!data,
@@ -161,7 +179,7 @@ export function Product() {
           <motion.h2
             variants={fadeInDown}
             initial="hidden"
-            animate={isInView ? 'visible' : 'hidden'}
+            animate={isVisible ? 'visible' : 'hidden'}
             className="text-5xl md:text-6xl font-bold text-text-primary mb-16 text-center"
           >
             Product
@@ -170,7 +188,7 @@ export function Product() {
           <motion.div
             variants={staggerContainer}
             initial="hidden"
-            animate={isInView ? 'visible' : 'hidden'}
+            animate={isVisible ? 'visible' : 'hidden'}
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
           >
             {images.map((item) => (
