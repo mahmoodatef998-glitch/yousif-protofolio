@@ -164,6 +164,20 @@ export function Restaurant() {
                   src={item.image}
                   alt={item.title}
                   className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                  onError={(e) => {
+                    console.error('❌ Image failed to load:', {
+                      src: item.image,
+                      title: item.title,
+                      id: item.id,
+                    });
+                    (e.target as HTMLImageElement).src = 'https://via.placeholder.com/800x600?text=Image+Not+Found';
+                  }}
+                  onLoad={() => {
+                    console.log('✅ Image loaded successfully:', {
+                      src: item.image,
+                      title: item.title,
+                    });
+                  }}
                 />
                 <div className="absolute inset-0 bg-dark-bg/0 group-hover:bg-dark-bg/80 transition-all duration-300 flex items-center justify-center">
                   <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-center">

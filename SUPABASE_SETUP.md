@@ -53,3 +53,4 @@ SUPABASE_SERVICE_ROLE_KEY=sb_secret_Pcl55RhwiTCroFJo2a8luQ_G6DyUk0F
 - الصفحة الرئيسية ستجلب البيانات من Supabase
 - كل التعديلات ستظهر تلقائياً
 
+

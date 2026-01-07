@@ -1,105 +1,144 @@
-# Troubleshooting Guide
+# دليل حل المشاكل - الصور لا تظهر
 
-## مشكلة صور Unsplash (404 Error)
+## المشكلة
+البيانات موجودة في Database وكلها تحتوي على `media_url`، لكن الصور لا تظهر على الموقع.
 
-### المشكلة:
+## خطوات التشخيص
+
+### 1. التحقق من API Response
+
+افتح Browser Console (F12) وتحقق من:
+
+#### أ. Network Tab
+- افتح Network Tab
+- ابحث عن `/api/content?section=product` (أو أي section)
+- تحقق من:
+  - Status Code: يجب أن يكون `200`
+  - Response: يجب أن يحتوي على `data` array
+  - كل item في `data` يجب أن يحتوي على `media_url`
+
+#### ب. Console Logs
+ابحث عن هذه الرسائل:
+- `🔍 Fetching product images...`
+- `📦 Raw API response:`
+- `✅ Product images formatted:`
+- `❌ Image failed to load:` (إذا كانت الصور لا تحمل)
+
+### 2. اختبار API مباشرة
+
+افتح في المتصفح:
 ```
-GET /_next/image?url=https%3A%2F%2Fimages.unsplash.com%2F... 404 (Not Found)
+https://your-domain.vercel.app/api/test-content?section=product
 ```
 
-### الحل:
-تم استبدال `Image` component من Next.js بـ `img` tag مباشرة للصور من Unsplash في:
-- `components/Reels.tsx`
-- `components/Wedding.tsx`
-- `components/Product.tsx`
-- `components/Restaurant.tsx`
-- `components/About.tsx`
+يجب أن ترى:
+```json
+{
+  "success": true,
+  "section": {
+    "id": "...",
+    "name": "product",
+    "is_active": true
+  },
+  "content": {
+    "total": 6,
+    "items_with_url": 6,
+    "items_without_url": 0,
+    "items": [...]
+  }
+}
+```
 
-### السبب:
-Next.js Image Optimization لا يعمل بشكل صحيح مع Unsplash URLs في Vercel بسبب CORS أو مشاكل في الـ optimization.
+### 3. التحقق من الصور مباشرة
 
----
+افتح `media_url` مباشرة في المتصفح:
+```
+https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1200&q=80
+```
 
-## مشكلة Admin Dashboard لا يفتح
+إذا لم تفتح الصورة:
+- المشكلة في الصور نفسها (CORS أو محظورة)
+- يجب استخدام صور من Cloudinary بدلاً من Unsplash
 
-### التحقق من:
+### 4. التحقق من RLS Policies
 
-1. **Environment Variables في Vercel:**
-   تأكد من إضافة هذه المتغيرات في Vercel Dashboard:
-   ```
-   NEXT_PUBLIC_SUPABASE_URL=https://lybpxzruyjphnaffnvuy.supabase.co
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_4H5_eqpm52vYNibTCw48Ag_emEFeaq2
-   SUPABASE_SERVICE_ROLE_KEY=sb_secret_Pcl55RhwiTCroFJo2a8luQ_G6DyUk0F
-   ```
+شغّل في Supabase SQL Editor:
+```sql
+-- التحقق من Policies
+SELECT 
+    policyname,
+    cmd,
+    qual
+FROM pg_policies
+WHERE tablename = 'content_items'
+ORDER BY policyname;
+```
 
-2. **Database Setup:**
-   - افتح Supabase Dashboard
-   - اذهب إلى SQL Editor
-   - انسخ محتوى `supabase/schema.sql`
-   - الصق واضغط Run
+يجب أن ترى:
+- `Allow public read access to content_items` (FOR SELECT)
+- `Allow authenticated users full access to content_items` (FOR ALL)
 
-3. **Create Admin User:**
-   - Authentication > Users
-   - Add User > Create new user
-   - أدخل Email و Password
+### 5. التحقق من Environment Variables
 
-4. **Test Login:**
-   - افتح `/admin/login`
-   - سجل دخول بالبيانات اللي أنشأتها
+في Vercel Dashboard:
+- Settings > Environment Variables
+- تأكد من وجود:
+  - `NEXT_PUBLIC_SUPABASE_URL`
+  - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 
-### إذا استمرت المشكلة:
+### 6. التحقق من Console Errors
 
-1. **تحقق من Console:**
-   - افتح Developer Tools (F12)
-   - اذهب إلى Console
-   - ابحث عن أخطاء Supabase
+ابحث في Browser Console عن:
+- `CORS` errors
+- `Failed to load resource`
+- `Image failed to load`
 
-2. **تحقق من Network:**
-   - افتح Developer Tools (F12)
-   - اذهب إلى Network
-   - حاول تسجيل الدخول
-   - تحقق من requests إلى Supabase
+## الحلول المحتملة
 
-3. **تحقق من Vercel Logs:**
-   - اذهب إلى Vercel Dashboard
-   - افتح المشروع
-   - اذهب إلى Logs
-   - ابحث عن أخطاء
+### الحل 1: استخدام Cloudinary بدلاً من Unsplash
 
----
+إذا كانت الصور من Unsplash لا تعمل:
+1. ارفع الصور إلى Cloudinary من Admin Dashboard
+2. أو استبدل URLs في Database بـ Cloudinary URLs
 
-## مشاكل أخرى محتملة
+### الحل 2: إصلاح RLS Policies
 
-### Favicon 404:
-- تم إضافة `app/icon.svg` - Next.js 14 يتعامل معه تلقائياً
-- بعد إعادة البناء على Vercel، يجب أن يظهر Favicon
+شغّل في Supabase SQL Editor:
+```sql
+-- إعادة إنشاء Policy للقراءة العامة
+DROP POLICY IF EXISTS "Allow public read access to content_items" ON content_items;
+CREATE POLICY "Allow public read access to content_items"
+ON content_items FOR SELECT
+USING (is_active = true);
+```
 
-### Vercel Analytics Errors:
-- أخطاء `instrument.js` من Vercel Analytics
-- لا تؤثر على عمل الموقع
-- يمكن تجاهلها أو تعطيل Vercel Analytics من Dashboard
+### الحل 3: التحقق من CORS
 
----
+إذا كانت هناك مشاكل CORS:
+- تأكد من أن Supabase URL صحيح
+- تأكد من أن `NEXT_PUBLIC_SUPABASE_ANON_KEY` صحيح
 
-## خطوات إصلاح سريعة
+### الحل 4: إعادة بناء المشروع
 
-1. **Push التعديلات:**
-   ```bash
-   git add .
-   git commit -m "Fix images and admin dashboard"
-   git push origin main
-   ```
+```bash
+# في Vercel
+# Settings > General > Clear Build Cache
+# ثم إعادة Deploy
+```
 
-2. **في Vercel:**
-   - انتظر إعادة البناء التلقائي
-   - أو اضغط "Redeploy" يدوياً
+## اختبار سريع
 
-3. **تحقق من Environment Variables:**
-   - Settings > Environment Variables
-   - تأكد من وجود جميع المتغيرات
+1. افتح Browser Console (F12)
+2. افتح Network Tab
+3. أعد تحميل الصفحة
+4. ابحث عن `/api/content?section=product`
+5. افتح Response وتحقق من البيانات
+6. افتح Console Tab وابحث عن رسائل الخطأ
 
-4. **Test:**
-   - افتح الموقع
-   - تحقق من الصور
-   - جرب `/admin/login`
+## إذا لم تحل المشكلة
 
+أرسل:
+1. Screenshot من Network Tab (للـ API request)
+2. Screenshot من Console Tab (للأخطاء)
+3. Response من `/api/test-content?section=product`
+4. Response من `/api/debug`

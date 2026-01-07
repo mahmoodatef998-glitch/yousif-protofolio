@@ -80,9 +80,29 @@ export async function GET(request: NextRequest) {
         is_active: data[0].is_active,
         section_id: data[0].section_id,
       });
+      
+      // Log all items with media_url status
+      const itemsWithUrl = data.filter((item: any) => item.media_url && item.media_url.trim() !== '');
+      const itemsWithoutUrl = data.filter((item: any) => !item.media_url || item.media_url.trim() === '');
+      
+      console.log(`Items with media_url: ${itemsWithUrl.length}, without: ${itemsWithoutUrl.length}`);
+      
+      if (itemsWithoutUrl.length > 0) {
+        console.warn('Items without media_url:', itemsWithoutUrl.map((item: any) => ({
+          id: item.id,
+          title: item.title,
+          media_type: item.media_type,
+        })));
+      }
+    } else {
+      console.warn(`No data returned for section '${section || 'all'}'`);
     }
     
-    return NextResponse.json({ data: data || [] });
+    return NextResponse.json({ 
+      data: data || [],
+      count: data?.length || 0,
+      section: section || 'all',
+    });
   } catch (error: any) {
     console.error('API route error:', error);
     return NextResponse.json(

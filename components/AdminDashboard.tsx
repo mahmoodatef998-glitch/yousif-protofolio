@@ -1207,11 +1207,15 @@ function GallerySection({ section, isEditing }: { section: string; isEditing: bo
       if (data && Array.isArray(data) && data.length > 0) {
         const formattedImages = data
           .filter((item: any) => item.media_url && item.media_url.trim() !== '')
-          .map((item: any) => ({
-            id: item.id,
-            title: item.title || 'Untitled Image',
-            url: item.media_url || '',
-          }));
+          .map((item: any) => {
+            const url = item.media_url || '';
+            console.log(`Image ${item.id} (${item.title}): URL length = ${url.length}, URL = ${url.substring(0, 100)}...`);
+            return {
+              id: item.id,
+              title: item.title || 'Untitled Image',
+              url: url,
+            };
+          });
         console.log(`Formatted ${section} images:`, formattedImages);
         setImages(formattedImages);
       } else {
@@ -1377,7 +1381,13 @@ function GallerySection({ section, isEditing }: { section: string; isEditing: bo
                 }}
                 disabled={!isEditing}
                 className="w-full px-3 py-2 bg-dark-bg border border-dark-section rounded text-text-primary text-sm focus:border-accent focus:outline-none disabled:opacity-50"
+                title={image.url} // Show full URL on hover
               />
+              {image.url && (
+                <div className="text-xs text-text-secondary mt-1 truncate" title={image.url}>
+                  {image.url.length > 60 ? `${image.url.substring(0, 60)}...` : image.url}
+                </div>
+              )}
             </div>
           ))}
         </div>
