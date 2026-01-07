@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { useScrollReveal } from '@/lib/animations';
 
 export function About() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -87,6 +88,18 @@ export function About() {
     };
   }, [fetchAbout]);
 
+  // Animation hooks - separate for image and text
+  const { ref: imageRef, isVisible: imageVisible } = useScrollReveal({
+    threshold: 0.2,
+    triggerOnce: true,
+    delay: 0,
+  });
+
+  const { ref: textRef, isVisible: textVisible } = useScrollReveal({
+    threshold: 0.2,
+    triggerOnce: true,
+    delay: 200,
+  });
 
   return (
     <section
@@ -115,15 +128,20 @@ export function About() {
         */}
         <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-16 min-h-[80vh]">
           {/* 
-            Image Container:
-            - w-full lg:w-[40%]: 100% width on mobile, 40% on desktop (reduced by 15% from 47%)
-            - flex-shrink-0: prevent image from shrinking
-            - max-w-full: prevent overflow
-            - aspect-[3/4]: fixed aspect ratio (prevents layout shift)
-            - order-1: image first on mobile, stays first on desktop
+            Image Container with Animation:
+            - Safe animation: only opacity and transform (no layout shift)
+            - Default visible if reduced-motion or JS fails
+            - Fade + scale animation
           */}
-          <div className="relative w-full lg:w-[40%] flex-shrink-0 max-w-full order-1">
-            <div className="relative w-full aspect-[3/4] overflow-hidden rounded-lg">
+          <div
+            ref={imageRef as React.RefObject<HTMLDivElement>}
+            className="relative w-full lg:w-[40%] flex-shrink-0 max-w-full order-1 transition-opacity-smooth transition-transform-smooth"
+            style={{
+              opacity: imageVisible ? 1 : 0,
+              transform: imageVisible ? 'scale(1)' : 'scale(0.95)',
+            }}
+          >
+            <div className="relative w-full aspect-[3/4] overflow-hidden rounded-lg hover-scale">
               <img
                 src={aboutData.profileImage}
                 alt={aboutData.heroTitle}
@@ -133,13 +151,19 @@ export function About() {
           </div>
 
           {/* 
-            Text Content Container:
-            - w-full lg:w-[60%]: 100% width on mobile, 60% on desktop (increased to balance layout)
-            - flex-shrink: allow text to shrink if needed
-            - order-2: text second on mobile, stays second on desktop
-            - self-center: center vertically within flex container
+            Text Content Container with Animation:
+            - Safe animation: only opacity and transform (no layout shift)
+            - Staggered delay for smooth reveal
+            - Default visible if reduced-motion or JS fails
           */}
-          <div className="w-full lg:w-[60%] flex-shrink self-center order-2">
+          <div
+            ref={textRef as React.RefObject<HTMLDivElement>}
+            className="w-full lg:w-[60%] flex-shrink self-center order-2 transition-opacity-smooth transition-transform-smooth"
+            style={{
+              opacity: textVisible ? 1 : 0,
+              transform: textVisible ? 'translateY(0)' : 'translateY(20px)',
+            }}
+          >
             <h2 className="text-5xl md:text-6xl lg:text-7xl font-bold text-text-primary mb-8">
               {aboutData.heroTitle}
             </h2>

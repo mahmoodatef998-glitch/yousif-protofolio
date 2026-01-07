@@ -138,3 +138,106 @@ html {
   }
 }
 
+/* ============================================
+   Safe Animation Keyframes
+   Only use transform and opacity (GPU-accelerated)
+   No width/height changes = No layout shift
+   ============================================ */
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ============================================
+   Respect Reduced Motion Preference
+   Disable animations for users who prefer reduced motion
+   ============================================ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ============================================
+   Animation Utility Classes
+   Safe animations that don't break layout
+   ============================================ */
+@layer utilities {
+  /* Fade in with slight upward movement */
+  .animate-fade-in-up {
+    animation: fadeInUp 0.7s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+  
+  /* Fade in with subtle scale */
+  .animate-fade-in-scale {
+    animation: fadeInScale 0.7s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+  
+  /* Simple fade in */
+  .animate-fade-in {
+    animation: fadeIn 0.6s ease-out forwards;
+  }
+  
+  /* Hover micro-interactions - safe transforms only */
+  .hover-lift {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .hover-lift:hover {
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  }
+  
+  /* Image hover effect - subtle scale */
+  .hover-scale {
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .hover-scale:hover {
+    transform: scale(1.03);
+  }
+  
+  /* Smooth opacity transition */
+  .transition-opacity-smooth {
+    transition: opacity 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  /* Smooth transform transition */
+  .transition-transform-smooth {
+    transition: transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
