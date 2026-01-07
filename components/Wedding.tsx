@@ -96,6 +96,7 @@ export function Wedding() {
     };
   }, [fetchImages]);
 
+
   if (loading) {
     return (
       <section id="wedding" className="py-24 md:py-32 bg-dark-bg">
@@ -193,3 +194,4 @@ export function Wedding() {
     </>
   );
 }
+

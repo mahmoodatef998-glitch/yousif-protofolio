@@ -96,6 +96,7 @@ export function Restaurant() {
     };
   }, [fetchImages]);
 
+
   if (loading) {
     return (
       <section id="restaurant" className="py-24 md:py-32 bg-dark-section">
@@ -193,3 +194,4 @@ export function Restaurant() {
     </>
   );
 }
+

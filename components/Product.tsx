@@ -125,6 +125,7 @@ export function Product() {
     };
   }, [fetchImages]);
 
+
   if (loading) {
     return (
       <section id="product" className="py-24 md:py-32 bg-dark-section">
@@ -175,6 +176,7 @@ export function Product() {
                       title: item.title,
                       id: item.id,
                     });
+                    // Optionally set a placeholder
                     (e.target as HTMLImageElement).src = 'https://via.placeholder.com/800x600?text=Image+Not+Found';
                   }}
                   onLoad={() => {
