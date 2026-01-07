@@ -20,12 +20,18 @@ export function About() {
       });
       
       if (!response.ok) {
-        console.error('Failed to fetch about:', response.status);
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Failed to fetch about:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorData.error || errorData.details || 'Unknown error',
+        });
         setLoading(false);
         return;
       }
       
-      const { data } = await response.json();
+      const result = await response.json();
+      const { data } = result;
       
       if (data) {
         setAboutData({
@@ -33,11 +39,14 @@ export function About() {
           heroSubtitle: data.hero_subtitle || '',
           bio: data.bio_text || '',
           profileImage: data.profile_image_url || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&q=80',
-          stats: data.stats || { clients: 500, projects: 10, awards: 100 },
+          stats: data.stats && typeof data.stats === 'object' ? data.stats : { clients: 500, projects: 10, awards: 100 },
         });
       }
-    } catch (error) {
-      console.error('Error fetching about:', error);
+    } catch (error: any) {
+      console.error('Error fetching about:', {
+        error: error.message,
+        stack: error.stack,
+      });
     } finally {
       setLoading(false);
     }

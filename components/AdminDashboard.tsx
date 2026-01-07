@@ -578,14 +578,26 @@ function AboutSection({ isEditing }: { isEditing: boolean }) {
         }),
       });
 
+      const result = await response.json();
+
       if (response.ok) {
         alert('About section saved successfully!');
+        // Refresh the data to show updated content
+        fetchAbout();
+        // Notify other components
+        if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+          const channel = new BroadcastChannel('content-updated');
+          channel.postMessage({ type: 'content-updated', section: 'about' });
+          channel.close();
+        }
       } else {
-        alert('Failed to save about section');
+        const errorMessage = result.error || result.details || 'Failed to save about section';
+        console.error('Save error:', result);
+        alert(`Failed to save: ${errorMessage}`);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving about:', error);
-      alert('Failed to save about section');
+      alert(`Failed to save about section: ${error.message || 'Unknown error'}`);
     } finally {
       setSaving(false);
     }
