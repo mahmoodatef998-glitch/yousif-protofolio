@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { Mail, Instagram, Linkedin, User, MessageSquare, Send, Phone } from 'lucide-react';
 
 export function Contact() {
@@ -19,35 +19,7 @@ export function Contact() {
     linkedin: 'https://linkedin.com',
   });
 
-  useEffect(() => {
-    fetchContact();
-    
-    let channel: BroadcastChannel | null = null;
-    let interval: NodeJS.Timeout | null = null;
-    
-    // Listen for content updates from admin dashboard
-    if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
-      channel = new BroadcastChannel('content-updated');
-      channel.onmessage = (event) => {
-        if (event.data.type === 'content-updated' && 
-            (event.data.section === 'contact' || !event.data.section)) {
-          fetchContact();
-        }
-      };
-    }
-    
-    // Refresh data every 30 seconds to show new updates
-    interval = setInterval(() => {
-      fetchContact();
-    }, 30000);
-    
-    return () => {
-      if (channel) channel.close();
-      if (interval) clearInterval(interval);
-    };
-  }, []);
-
-  const fetchContact = async () => {
+  const fetchContact = useCallback(async () => {
     try {
       const response = await fetch('/api/contact');
       const { data } = await response.json();
@@ -63,7 +35,42 @@ export function Contact() {
     } catch (error) {
       console.error('Error fetching contact:', error);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    let channel: BroadcastChannel | null = null;
+    let interval: NodeJS.Timeout | null = null;
+    
+    // Initial fetch
+    if (mounted) {
+      fetchContact();
+    }
+    
+    // Listen for content updates from admin dashboard
+    if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+      channel = new BroadcastChannel('content-updated');
+      channel.onmessage = (event) => {
+        if (mounted && event.data.type === 'content-updated' && 
+            (event.data.section === 'contact' || !event.data.section)) {
+          fetchContact();
+        }
+      };
+    }
+    
+    // Refresh data every 30 seconds to show new updates
+    interval = setInterval(() => {
+      if (mounted) {
+        fetchContact();
+      }
+    }, 30000);
+    
+    return () => {
+      mounted = false;
+      if (channel) channel.close();
+      if (interval) clearInterval(interval);
+    };
+  }, [fetchContact]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(

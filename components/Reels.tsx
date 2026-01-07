@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 
 interface Reel {
   id: string;
@@ -16,35 +16,7 @@ export function Reels() {
   const [reels, setReels] = useState<Reel[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchReels();
-    
-    let channel: BroadcastChannel | null = null;
-    let interval: NodeJS.Timeout | null = null;
-    
-    // Listen for content updates from admin dashboard
-    if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
-      channel = new BroadcastChannel('content-updated');
-      channel.onmessage = (event) => {
-        if (event.data.type === 'content-updated' && 
-            (event.data.section === 'reels' || !event.data.section)) {
-          fetchReels();
-        }
-      };
-    }
-    
-    // Refresh data every 30 seconds to show new uploads
-    interval = setInterval(() => {
-      fetchReels();
-    }, 30000);
-    
-    return () => {
-      if (channel) channel.close();
-      if (interval) clearInterval(interval);
-    };
-  }, []);
-
-  const fetchReels = async () => {
+  const fetchReels = useCallback(async () => {
     try {
       setLoading(true);
       const response = await fetch('/api/content?section=reels', {
@@ -87,7 +59,42 @@ export function Reels() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    let channel: BroadcastChannel | null = null;
+    let interval: NodeJS.Timeout | null = null;
+    
+    // Initial fetch
+    if (mounted) {
+      fetchReels();
+    }
+    
+    // Listen for content updates from admin dashboard
+    if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+      channel = new BroadcastChannel('content-updated');
+      channel.onmessage = (event) => {
+        if (mounted && event.data.type === 'content-updated' && 
+            (event.data.section === 'reels' || !event.data.section)) {
+          fetchReels();
+        }
+      };
+    }
+    
+    // Refresh data every 30 seconds to show new uploads
+    interval = setInterval(() => {
+      if (mounted) {
+        fetchReels();
+      }
+    }, 30000);
+    
+    return () => {
+      mounted = false;
+      if (channel) channel.close();
+      if (interval) clearInterval(interval);
+    };
+  }, [fetchReels]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(

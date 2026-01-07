@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import Image from 'next/image';
 import { X } from 'lucide-react';
 
@@ -17,36 +17,7 @@ export function Product() {
   const [images, setImages] = useState<GalleryImage[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchImages();
-    
-    let channel: BroadcastChannel | null = null;
-    let interval: NodeJS.Timeout | null = null;
-    
-    // Listen for content updates from admin dashboard
-    if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
-      channel = new BroadcastChannel('content-updated');
-      channel.onmessage = (event) => {
-        if (event.data.type === 'content-updated' && 
-            (event.data.section === 'product' || !event.data.section)) {
-          console.log('Product section: Content updated, refreshing...');
-          fetchImages();
-        }
-      };
-    }
-    
-    // Refresh data every 30 seconds to show new uploads
-    interval = setInterval(() => {
-      fetchImages();
-    }, 30000);
-    
-    return () => {
-      if (channel) channel.close();
-      if (interval) clearInterval(interval);
-    };
-  }, []);
-
-  const fetchImages = async () => {
+  const fetchImages = useCallback(async () => {
     try {
       setLoading(true);
       const response = await fetch('/api/content?section=product', {
@@ -88,7 +59,43 @@ export function Product() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    let channel: BroadcastChannel | null = null;
+    let interval: NodeJS.Timeout | null = null;
+    
+    // Initial fetch
+    if (mounted) {
+      fetchImages();
+    }
+    
+    // Listen for content updates from admin dashboard
+    if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+      channel = new BroadcastChannel('content-updated');
+      channel.onmessage = (event) => {
+        if (mounted && event.data.type === 'content-updated' && 
+            (event.data.section === 'product' || !event.data.section)) {
+          console.log('Product section: Content updated, refreshing...');
+          fetchImages();
+        }
+      };
+    }
+    
+    // Refresh data every 30 seconds to show new uploads
+    interval = setInterval(() => {
+      if (mounted) {
+        fetchImages();
+      }
+    }, 30000);
+    
+    return () => {
+      mounted = false;
+      if (channel) channel.close();
+      if (interval) clearInterval(interval);
+    };
+  }, [fetchImages]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
