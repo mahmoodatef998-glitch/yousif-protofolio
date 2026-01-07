@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import Image from 'next/image';
 import { X } from 'lucide-react';
+import { useStaggeredReveal } from '@/lib/animations';
 
 interface GalleryImage {
   id: string;
@@ -11,7 +12,7 @@ interface GalleryImage {
 }
 
 export function Restaurant() {
-  const sectionRef = useRef<HTMLElement>(null);
+  const sectionRef = useRef<HTMLElement | null>(null);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [images, setImages] = useState<GalleryImage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -96,6 +97,21 @@ export function Restaurant() {
     };
   }, [fetchImages]);
 
+  // Staggered reveal animation for cards
+  const { ref: animationRef, visibleCount } = useStaggeredReveal(
+    images.length,
+    100 // 100ms delay between each card
+  );
+
+  // Combine refs
+  const combinedRef = useCallback((node: HTMLElement | null) => {
+    if (animationRef && 'current' in animationRef) {
+      (animationRef as React.MutableRefObject<HTMLElement | null>).current = node;
+    }
+    if (sectionRef) {
+      sectionRef.current = node;
+    }
+  }, [animationRef]);
 
   if (loading) {
     return (
@@ -121,7 +137,7 @@ export function Restaurant() {
   return (
     <>
       <section
-        ref={sectionRef}
+        ref={combinedRef}
         id="restaurant"
         className="py-24 md:py-32 bg-dark-section"
       >
@@ -131,10 +147,15 @@ export function Restaurant() {
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {images.map((item) => (
+            {images.map((item, index) => (
               <div
                 key={item.id}
-                className="group relative aspect-[4/3] overflow-hidden cursor-pointer"
+                className={`group relative aspect-[4/3] overflow-hidden cursor-pointer hover-lift transition-opacity-smooth transition-transform-smooth ${
+                  index < visibleCount ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+                }`}
+                style={{
+                  transitionDelay: `${index * 0.1}s`,
+                }}
                 onClick={() => setSelectedImage(item.image)}
               >
                 <img

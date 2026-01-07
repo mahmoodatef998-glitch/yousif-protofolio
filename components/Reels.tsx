@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { useStaggeredReveal } from '@/lib/animations';
 
 interface Reel {
   id: string;
@@ -10,7 +11,7 @@ interface Reel {
 }
 
 export function Reels() {
-  const sectionRef = useRef<HTMLElement>(null);
+  const sectionRef = useRef<HTMLElement | null>(null);
   const [selectedReel, setSelectedReel] = useState<string | null>(null);
   const [reels, setReels] = useState<Reel[]>([]);
   const [loading, setLoading] = useState(true);
@@ -95,6 +96,21 @@ export function Reels() {
     };
   }, [fetchReels]);
 
+  // Staggered reveal animation for reels
+  const { ref: animationRef, visibleCount } = useStaggeredReveal(
+    reels.length,
+    80 // 80ms delay between each reel (faster for reels)
+  );
+
+  // Combine refs
+  const combinedRef = useCallback((node: HTMLElement | null) => {
+    if (animationRef && 'current' in animationRef) {
+      (animationRef as React.MutableRefObject<HTMLElement | null>).current = node;
+    }
+    if (sectionRef) {
+      sectionRef.current = node;
+    }
+  }, [animationRef]);
 
   if (loading) {
     return (
@@ -120,7 +136,7 @@ export function Reels() {
   return (
     <>
       <section
-        ref={sectionRef}
+        ref={combinedRef}
         id="reels"
         className="py-24 md:py-32 bg-dark-section"
       >
@@ -130,10 +146,15 @@ export function Reels() {
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-            {reels.map((reel) => (
+            {reels.map((reel, index) => (
               <div
                 key={reel.id}
-                className="group relative aspect-[9/16] overflow-hidden cursor-pointer"
+                className={`group relative aspect-[9/16] overflow-hidden cursor-pointer hover-lift transition-opacity-smooth transition-transform-smooth ${
+                  index < visibleCount ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+                }`}
+                style={{
+                  transitionDelay: `${index * 0.08}s`,
+                }}
                 onClick={() => setSelectedReel(reel.video)}
               >
                 <img

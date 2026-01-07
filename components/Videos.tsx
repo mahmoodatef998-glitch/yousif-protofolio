@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { useScrollReveal } from '@/lib/animations';
 
 interface Video {
   id: string;
@@ -123,33 +124,50 @@ export function Videos() {
       className="bg-dark-bg"
     >
       <div className="space-y-0">
-        {videos.map((video, index) => (
-          <div
-            key={video.id}
-            className="relative w-full h-screen flex items-center justify-center overflow-hidden"
-          >
-            <video
-              autoPlay
-              loop
-              muted
-              playsInline
-              className="absolute inset-0 w-full h-full object-cover"
-              poster={video.thumbnail}
-            >
-              <source src={video.src} type="video/mp4" />
-              Your browser does not support the video tag.
-            </video>
-            <div className="absolute inset-0 bg-dark-bg/50" />
-            <div className="relative z-10 text-center px-6">
-              <h3 className="text-5xl md:text-7xl lg:text-8xl font-bold text-text-primary mb-4">
-                {video.title}
-              </h3>
-              <p className="text-xl md:text-2xl text-text-secondary max-w-2xl mx-auto">
-                {video.description}
-              </p>
-            </div>
-          </div>
-        ))}
+        {videos.map((video, index) => {
+          // Individual scroll reveal for each video section
+          const VideoSection = ({ video, index }: { video: Video; index: number }) => {
+            const { ref, isVisible } = useScrollReveal({
+              threshold: 0.3,
+              triggerOnce: true,
+              delay: index * 100, // Staggered delay
+            });
+
+            return (
+              <div
+                ref={ref as React.RefObject<HTMLDivElement>}
+                className="relative w-full h-screen flex items-center justify-center overflow-hidden transition-opacity-smooth transition-transform-smooth"
+                style={{
+                  opacity: isVisible ? 1 : 0,
+                  transform: isVisible ? 'translateY(0)' : 'translateY(30px)',
+                }}
+              >
+                <video
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  className="absolute inset-0 w-full h-full object-cover"
+                  poster={video.thumbnail}
+                >
+                  <source src={video.src} type="video/mp4" />
+                  Your browser does not support the video tag.
+                </video>
+                <div className="absolute inset-0 bg-dark-bg/50" />
+                <div className="relative z-10 text-center px-6">
+                  <h3 className="text-5xl md:text-7xl lg:text-8xl font-bold text-text-primary mb-4">
+                    {video.title}
+                  </h3>
+                  <p className="text-xl md:text-2xl text-text-secondary max-w-2xl mx-auto">
+                    {video.description}
+                  </p>
+                </div>
+              </div>
+            );
+          };
+
+          return <VideoSection key={video.id} video={video} index={index} />;
+        })}
       </div>
     </section>
   );
