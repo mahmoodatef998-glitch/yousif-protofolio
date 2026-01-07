@@ -14,7 +14,7 @@ interface GalleryImage {
 
 export function Restaurant() {
   const sectionRef = useRef<HTMLElement>(null);
-  const isInView = useInView(sectionRef, { once: true, amount: 0.2 });
+  const isInView = useInView(sectionRef, { once: true, amount: 0.1 });
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [images, setImages] = useState<GalleryImage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -153,41 +153,33 @@ export function Restaurant() {
                 whileHover={{ scale: 1.02, y: -5 }}
                 transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
               >
-                <motion.img
-                  src={item.image}
-                  alt={item.title}
-                  className="absolute inset-0 w-full h-full object-cover"
-                  onError={(e) => {
-                    console.error('❌ Image failed to load:', {
-                      src: item.image,
-                      title: item.title,
-                      id: item.id,
-                    });
-                    (e.target as HTMLImageElement).src = 'https://via.placeholder.com/800x600?text=Image+Not+Found';
-                  }}
-                  onLoad={() => {
-                    console.log('✅ Image loaded successfully:', {
-                      src: item.image,
-                      title: item.title,
-                    });
-                  }}
-                  whileHover={{ scale: 1.1 }}
-                  transition={{ duration: 0.7, ease: [0.4, 0, 0.2, 1] }}
-                />
-                <motion.div
-                  className="absolute inset-0 bg-gradient-to-t from-dark-bg/90 via-dark-bg/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-center p-6"
-                  initial={{ opacity: 0 }}
-                  whileHover={{ opacity: 1 }}
-                >
-                  <motion.div
-                    className="text-center transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300"
-                    initial={{ y: 20, opacity: 0 }}
-                    whileHover={{ y: 0, opacity: 1 }}
-                  >
+                <div className="absolute inset-0 w-full h-full">
+                  <img
+                    src={item.image}
+                    alt={item.title}
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                    onError={(e) => {
+                      console.error('❌ Image failed to load:', {
+                        src: item.image,
+                        title: item.title,
+                        id: item.id,
+                      });
+                      (e.target as HTMLImageElement).src = 'https://via.placeholder.com/800x600?text=Image+Not+Found';
+                    }}
+                    onLoad={() => {
+                      console.log('✅ Image loaded successfully:', {
+                        src: item.image,
+                        title: item.title,
+                      });
+                    }}
+                  />
+                </div>
+                <div className="absolute inset-0 bg-dark-bg/0 group-hover:bg-dark-bg/80 transition-all duration-300 flex items-center justify-center">
+                  <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-center">
                     <p className="text-text-primary text-xl font-semibold mb-2">{item.title}</p>
                     <p className="text-text-secondary text-sm">Restaurant</p>
-                  </motion.div>
-                </motion.div>
+                  </div>
+                </div>
               </motion.div>
             ))}
           </motion.div>
