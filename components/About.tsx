@@ -116,13 +116,13 @@ export function About() {
         <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-16 min-h-[80vh]">
           {/* 
             Image Container:
-            - w-full lg:w-[55%]: 100% width on mobile, 55% on desktop
+            - w-full lg:w-[47%]: 100% width on mobile, 47% on desktop (reduced by 15% from 55%)
             - flex-shrink-0: prevent image from shrinking
             - max-w-full: prevent overflow
             - aspect-[3/4]: fixed aspect ratio (prevents layout shift)
             - order-1: image first on mobile, stays first on desktop
           */}
-          <div className="relative w-full lg:w-[55%] flex-shrink-0 max-w-full order-1">
+          <div className="relative w-full lg:w-[47%] flex-shrink-0 max-w-full order-1">
             <div className="relative w-full aspect-[3/4] overflow-hidden rounded-lg">
               <img
                 src={aboutData.profileImage}
@@ -134,12 +134,12 @@ export function About() {
 
           {/* 
             Text Content Container:
-            - w-full lg:w-[45%]: 100% width on mobile, 45% on desktop
+            - w-full lg:w-[53%]: 100% width on mobile, 53% on desktop (increased to balance layout)
             - flex-shrink: allow text to shrink if needed
             - order-2: text second on mobile, stays second on desktop
             - self-center: center vertically within flex container
           */}
-          <div className="w-full lg:w-[45%] flex-shrink self-center order-2">
+          <div className="w-full lg:w-[53%] flex-shrink self-center order-2">
             <h2 className="text-5xl md:text-6xl lg:text-7xl font-bold text-text-primary mb-8">
               {aboutData.heroTitle}
             </h2>
