@@ -274,11 +274,15 @@ function UploadSection() {
     const progress: { [key: string]: number } = {};
 
     try {
+      console.log(`Starting upload of ${selectedFiles.length} file(s) to category: ${category}`);
+      
       for (let i = 0; i < selectedFiles.length; i++) {
         const file = selectedFiles[i];
         const fileName = selectedFiles.length === 1 
           ? imageName || file.name.replace(/\.[^/.]+$/, '')
           : `${imageName || 'image'}-${i + 1}`;
+
+        console.log(`Uploading file ${i + 1}/${selectedFiles.length}: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`);
 
         const formData = new FormData();
         formData.append('file', file);
@@ -288,73 +292,64 @@ function UploadSection() {
         progress[file.name] = 0;
         setUploadProgress({ ...progress });
 
-        const xhr = new XMLHttpRequest();
+        try {
+          // Use fetch instead of XMLHttpRequest so it shows in network tab
+          const uploadResponse = await fetch('/api/cloudinary/upload', {
+            method: 'POST',
+            body: formData,
+          });
 
-        xhr.upload.addEventListener('progress', (e) => {
-          if (e.lengthComputable) {
-            const percentComplete = (e.loaded / e.total) * 100;
-            progress[file.name] = percentComplete;
-            setUploadProgress({ ...progress });
+          if (!uploadResponse.ok) {
+            const errorData = await uploadResponse.json().catch(() => ({ error: 'Unknown error' }));
+            console.error('Upload failed:', errorData);
+            throw new Error(`Upload failed for ${file.name}: ${errorData.error || 'Unknown error'}`);
           }
-        });
 
-        await new Promise<void>((resolve, reject) => {
-          xhr.onload = async () => {
-            if (xhr.status === 200) {
-              progress[file.name] = 100;
-              setUploadProgress({ ...progress });
-              
-              try {
-                const response = JSON.parse(xhr.responseText);
-                const uploadResult = response.result;
-                
-                // Save to Supabase
-                const mediaType = file.type.startsWith('video/') ? 'video' : 'image';
-                const saveResponse = await fetch('/api/content', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    section: category,
-                    title: fileName,
-                    media_type: mediaType,
-                    media_url: uploadResult.secure_url || uploadResult.url,
-                    thumbnail_url: uploadResult.secure_url || uploadResult.url,
-                    cloudinary_public_id: uploadResult.public_id,
-                    metadata: {
-                      format: uploadResult.format,
-                      width: uploadResult.width,
-                      height: uploadResult.height,
-                      bytes: uploadResult.bytes,
-                    },
-                  }),
-                });
+          progress[file.name] = 100;
+          setUploadProgress({ ...progress });
 
-                if (!saveResponse.ok) {
-                  const errorData = await saveResponse.json();
-                  console.error('Failed to save to database:', errorData);
-                  reject(new Error(`Failed to save to database: ${errorData.error || 'Unknown error'}`));
-                  return;
-                }
-                
-                const savedData = await saveResponse.json();
-                console.log('Successfully saved to database:', savedData);
-                resolve();
-              } catch (error: any) {
-                console.error('Error saving to database:', error);
-                reject(new Error(`Failed to save to database: ${error.message || 'Unknown error'}`));
-              }
-            } else {
-              reject(new Error(`Upload failed for ${file.name}`));
-            }
-          };
+          const uploadData = await uploadResponse.json();
+          console.log('Upload successful:', uploadData);
+          const uploadResult = uploadData.result;
+          
+          if (!uploadResult) {
+            throw new Error(`Upload response missing result for ${file.name}`);
+          }
+          
+          // Save to Supabase
+          console.log(`Saving ${file.name} to database...`);
+          const mediaType = file.type.startsWith('video/') ? 'video' : 'image';
+          const saveResponse = await fetch('/api/content', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              section: category,
+              title: fileName,
+              media_type: mediaType,
+              media_url: uploadResult.secure_url || uploadResult.url,
+              thumbnail_url: uploadResult.secure_url || uploadResult.url,
+              cloudinary_public_id: uploadResult.public_id,
+              metadata: {
+                format: uploadResult.format,
+                width: uploadResult.width,
+                height: uploadResult.height,
+                bytes: uploadResult.bytes,
+              },
+            }),
+          });
 
-          xhr.onerror = () => {
-            reject(new Error(`Upload failed for ${file.name}`));
-          };
-
-          xhr.open('POST', '/api/cloudinary/upload');
-          xhr.send(formData);
-        });
+          if (!saveResponse.ok) {
+            const errorData = await saveResponse.json().catch(() => ({ error: 'Unknown error' }));
+            console.error('Failed to save to database:', errorData);
+            throw new Error(`Failed to save ${file.name} to database: ${errorData.error || 'Unknown error'}`);
+          }
+          
+          const savedData = await saveResponse.json();
+          console.log(`Successfully saved ${file.name} to database:`, savedData);
+        } catch (error: any) {
+          console.error(`Error uploading ${file.name}:`, error);
+          throw error; // Re-throw to be caught by outer catch
+        }
       }
 
       setSelectedFiles([]);
@@ -371,7 +366,7 @@ function UploadSection() {
       }
     } catch (error: any) {
       console.error('Upload error:', error);
-      alert(`Upload failed: ${error.message || 'Unknown error'}\n\nPlease check the browser console for more details.`);
+      alert(`Upload failed: ${error.message || 'Unknown error'}\n\nPlease check the browser console and network tab for more details.`);
     } finally {
       setUploading(false);
       setUploadProgress({});

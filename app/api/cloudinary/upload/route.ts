@@ -9,6 +9,20 @@ cloudinary.config({
 
 export async function POST(request: NextRequest) {
   try {
+    // Check environment variables
+    if (!process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 
+        !process.env.NEXT_PUBLIC_CLOUDINARY_API_KEY || 
+        !process.env.CLOUDINARY_API_SECRET) {
+      console.error('Missing Cloudinary environment variables');
+      return NextResponse.json(
+        { 
+          error: 'Cloudinary configuration missing',
+          details: 'NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME, NEXT_PUBLIC_CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET must be set'
+        },
+        { status: 500 }
+      );
+    }
+
     const formData = await request.formData();
     const file = formData.get('file') as File;
     const category = formData.get('category') as string;
@@ -27,6 +41,8 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    console.log(`Uploading file: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB) to category: ${category}`);
 
     // Convert File to Buffer
     const bytes = await file.arrayBuffer();
@@ -64,14 +80,18 @@ export async function POST(request: NextRequest) {
       );
     });
 
+    console.log('Upload successful:', uploadResult);
     return NextResponse.json({
       success: true,
       result: uploadResult,
     });
   } catch (error: any) {
-    console.error('Upload error:', error);
+    console.error('Cloudinary upload error:', error);
     return NextResponse.json(
-      { error: error.message || 'Failed to upload file' },
+      { 
+        error: error.message || 'Failed to upload file',
+        details: 'Check Cloudinary configuration and file size limits'
+      },
       { status: 500 }
     );
   }
