@@ -596,7 +596,9 @@ function AboutSection({ isEditing }: { isEditing: boolean }) {
         
         // Check if it's a schema error
         if (result.fixRequired && result.sqlScript) {
-          alert(`Database Schema Error!\n\n${errorMessage}\n\nPlease run the SQL script "${result.sqlScript}" in your Supabase SQL Editor to fix the schema.`);
+          const instructions = result.instructions ? `\n\n📖 ${result.instructions}` : '';
+          const altScript = result.alternativeScript ? `\n\nAlternative: ${result.alternativeScript}` : '';
+          alert(`Database Schema Error!\n\n${errorMessage}\n\n⚠️ IMPORTANT: Run "${result.sqlScript}" in Supabase SQL Editor${altScript}${instructions}\n\n⏱️ Wait 30-60 seconds after running the script before trying again.`);
         } else {
           alert(`Failed to save: ${errorMessage}`);
         }

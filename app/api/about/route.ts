@@ -167,9 +167,11 @@ export async function POST(request: NextRequest) {
             { 
               error: error.message,
               code: error.code,
-              details: 'Database schema mismatch. The about_content table is missing required columns. Please run the SQL script: supabase/fix_about_content_schema.sql in your Supabase SQL Editor to fix the schema.',
+              details: 'Database schema mismatch. The about_content table is missing required columns or schema cache needs refresh. Try: 1) Run supabase/recreate_about_content_table.sql in Supabase SQL Editor (⚠️ will delete existing data), 2) Wait 30-60 seconds, 3) Try again. If problem persists, restart your Supabase project to refresh schema cache.',
               fixRequired: true,
-              sqlScript: 'supabase/fix_about_content_schema.sql'
+              sqlScript: 'supabase/recreate_about_content_table.sql',
+              alternativeScript: 'supabase/fix_about_content_schema.sql',
+              instructions: 'See FIX_ABOUT_SCHEMA_CACHE.md for detailed steps'
             },
             { status: 500 }
           );
@@ -204,9 +206,11 @@ export async function POST(request: NextRequest) {
             { 
               error: error.message,
               code: error.code,
-              details: 'Database schema mismatch. The about_content table is missing required columns. Please run the SQL script: supabase/fix_about_content_schema.sql in your Supabase SQL Editor to fix the schema.',
+              details: 'Database schema mismatch. The about_content table is missing required columns or schema cache needs refresh. Try: 1) Run supabase/recreate_about_content_table.sql in Supabase SQL Editor (⚠️ will delete existing data), 2) Wait 30-60 seconds, 3) Try again. If problem persists, restart your Supabase project to refresh schema cache.',
               fixRequired: true,
-              sqlScript: 'supabase/fix_about_content_schema.sql'
+              sqlScript: 'supabase/recreate_about_content_table.sql',
+              alternativeScript: 'supabase/fix_about_content_schema.sql',
+              instructions: 'See FIX_ABOUT_SCHEMA_CACHE.md for detailed steps'
             },
             { status: 500 }
           );
