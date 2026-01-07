@@ -3,8 +3,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import Image from 'next/image';
 import { X } from 'lucide-react';
-import { motion, useInView } from 'framer-motion';
-import { staggerContainer, galleryItem, fadeInDown } from '@/lib/animations';
 
 interface GalleryImage {
   id: string;
@@ -14,26 +12,9 @@ interface GalleryImage {
 
 export function Product() {
   const sectionRef = useRef<HTMLElement>(null);
-  const isInView = useInView(sectionRef, { once: true, amount: 0.1 });
-  const [isVisible, setIsVisible] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [images, setImages] = useState<GalleryImage[]>([]);
   const [loading, setLoading] = useState(true);
-
-  // Fallback: Show content after a short delay if useInView doesn't trigger
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsVisible(true);
-    }, 500);
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Also trigger when in view
-  useEffect(() => {
-    if (isInView) {
-      setIsVisible(true);
-    }
-  }, [isInView]);
 
   const fetchImages = useCallback(async () => {
     try {
@@ -88,8 +69,6 @@ export function Product() {
           images: formattedImages,
         });
         setImages(formattedImages);
-        // Show content immediately after images are loaded
-        setIsVisible(true);
       } else {
         console.warn('⚠️ No product images found:', {
           dataExists: !!data,
@@ -146,7 +125,6 @@ export function Product() {
     };
   }, [fetchImages]);
 
-
   if (loading) {
     return (
       <section id="product" className="py-24 md:py-32 bg-dark-section">
@@ -176,88 +154,61 @@ export function Product() {
         className="py-24 md:py-32 bg-dark-section"
       >
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
-          <motion.h2
-            variants={fadeInDown}
-            initial="hidden"
-            animate={isVisible ? 'visible' : 'hidden'}
-            className="text-5xl md:text-6xl font-bold text-text-primary mb-16 text-center"
-          >
+          <h2 className="text-5xl md:text-6xl font-bold text-text-primary mb-16 text-center">
             Product
-          </motion.h2>
+          </h2>
 
-          <motion.div
-            variants={staggerContainer}
-            initial="hidden"
-            animate={isVisible ? 'visible' : 'hidden'}
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-          >
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {images.map((item) => (
-              <motion.div
+              <div
                 key={item.id}
-                variants={galleryItem}
-                className="group relative aspect-[4/3] overflow-hidden cursor-pointer rounded-lg"
+                className="group relative aspect-[4/3] overflow-hidden cursor-pointer"
                 onClick={() => setSelectedImage(item.image)}
-                whileHover={{ scale: 1.02, y: -5 }}
-                transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
               >
-                <div className="absolute inset-0 w-full h-full">
-                  <img
-                    src={item.image}
-                    alt={item.title}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                    onError={(e) => {
-                      console.error('❌ Image failed to load:', {
-                        src: item.image,
-                        title: item.title,
-                        id: item.id,
-                      });
-                      (e.target as HTMLImageElement).src = 'https://via.placeholder.com/800x600?text=Image+Not+Found';
-                    }}
-                    onLoad={() => {
-                      console.log('✅ Image loaded successfully:', {
-                        src: item.image,
-                        title: item.title,
-                      });
-                    }}
-                  />
-                </div>
+                <img
+                  src={item.image}
+                  alt={item.title}
+                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                  onError={(e) => {
+                    console.error('❌ Image failed to load:', {
+                      src: item.image,
+                      title: item.title,
+                      id: item.id,
+                    });
+                    (e.target as HTMLImageElement).src = 'https://via.placeholder.com/800x600?text=Image+Not+Found';
+                  }}
+                  onLoad={() => {
+                    console.log('✅ Image loaded successfully:', {
+                      src: item.image,
+                      title: item.title,
+                    });
+                  }}
+                />
                 <div className="absolute inset-0 bg-dark-bg/0 group-hover:bg-dark-bg/80 transition-all duration-300 flex items-center justify-center">
                   <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-center">
                     <p className="text-text-primary text-xl font-semibold mb-2">{item.title}</p>
                     <p className="text-text-secondary text-sm">Product</p>
                   </div>
                 </div>
-              </motion.div>
+              </div>
             ))}
-          </motion.div>
+          </div>
         </div>
       </section>
 
       {/* Lightbox */}
       {selectedImage && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 bg-dark-bg/95 backdrop-blur-sm flex items-center justify-center p-4"
+        <div
+          className="fixed inset-0 z-50 bg-dark-bg/95 flex items-center justify-center p-4"
           onClick={() => setSelectedImage(null)}
         >
-          <motion.button
+          <button
             onClick={() => setSelectedImage(null)}
-            className="absolute top-6 right-6 text-text-primary hover:text-accent transition-colors z-10"
-            whileHover={{ scale: 1.1, rotate: 90 }}
-            whileTap={{ scale: 0.9 }}
+            className="absolute top-6 right-6 text-text-primary hover:text-accent transition-colors"
           >
             <X className="w-8 h-8" />
-          </motion.button>
-          <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.8, opacity: 0 }}
-            transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-            className="relative w-full h-full max-w-7xl max-h-[90vh]"
-            onClick={(e) => e.stopPropagation()}
-          >
+          </button>
+          <div className="relative w-full h-full max-w-7xl max-h-[90vh]">
             <Image
               src={selectedImage}
               alt="Lightbox"
@@ -265,8 +216,8 @@ export function Product() {
               className="object-contain"
               sizes="100vw"
             />
-          </motion.div>
-        </motion.div>
+          </div>
+        </div>
       )}
     </>
   );
