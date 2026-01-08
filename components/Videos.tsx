@@ -147,7 +147,7 @@ export function Videos() {
                   loop
                   muted
                   playsInline
-                  className="absolute inset-0 w-full h-full object-scale-down"
+                  className="absolute inset-0 w-full h-full object-cover"
                   poster={video.thumbnail}
                 >
                   <source src={video.src} type="video/mp4" />
