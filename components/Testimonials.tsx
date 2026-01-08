@@ -68,18 +68,21 @@ export function Testimonials() {
         if (response.ok) {
           const data = await response.json();
           if (data.testimonials && data.testimonials.length > 0) {
-            // Combine database reviews with default testimonials
-            // Prioritize database reviews, fill with defaults if needed
-            const combined = [
+            // Take first 4 for grid, rest for carousel
+            const allReviews = [
               ...data.testimonials,
               ...defaultTestimonials.filter((t, i) => !data.testimonials.some((r: any) => r.id === t.id))
-            ].slice(0, 10);
-            setTestimonials(combined);
+            ];
+            setTestimonials(allReviews);
+          } else {
+            // Use default testimonials if no database reviews
+            setTestimonials(defaultTestimonials);
           }
         }
       } catch (error) {
         console.error('Error fetching featured reviews:', error);
         // Keep default testimonials on error
+        setTestimonials(defaultTestimonials);
       } finally {
         setLoading(false);
       }
@@ -88,7 +91,7 @@ export function Testimonials() {
     fetchFeaturedReviews();
   }, []);
 
-  // Auto-rotate testimonials
+  // Auto-rotate testimonials in carousel (every 5 seconds)
   useEffect(() => {
     if (testimonials.length === 0) return;
     const interval = setInterval(() => {
@@ -96,6 +99,11 @@ export function Testimonials() {
     }, 5000);
     return () => clearInterval(interval);
   }, [testimonials.length]);
+
+  // Get first 4 reviews for grid
+  const gridReviews = testimonials.slice(0, 4);
+  // All reviews for carousel
+  const carouselReviews = testimonials;
 
   // Staggered reveal animation
   const { ref: animationRef, visibleCount } = useStaggeredReveal(
@@ -136,7 +144,7 @@ export function Testimonials() {
           </p>
         </div>
 
-        {/* Testimonials Grid */}
+        {/* Testimonials Grid - 4 reviews only */}
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
             {[...Array(4)].map((_, i) => (
@@ -148,7 +156,7 @@ export function Testimonials() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-            {testimonials.map((testimonial, index) => (
+            {gridReviews.map((testimonial, index) => (
             <div
               key={testimonial.id}
               className={`group card-premium card-glow relative bg-dark-bg/50 backdrop-blur-sm rounded-2xl p-6 border border-dark-section/50 transition-all duration-500 ${
@@ -214,15 +222,15 @@ export function Testimonials() {
           </div>
         )}
 
-        {/* Featured Testimonial (Carousel) */}
-        {!loading && testimonials.length > 0 && (
+        {/* Featured Testimonial (Carousel) - Main testimonial that rotates */}
+        {!loading && carouselReviews.length > 0 && (
           <div className="relative max-w-4xl mx-auto">
           <div className="bg-dark-bg/80 backdrop-blur-sm rounded-3xl p-8 md:p-12 border border-dark-section/50">
             <div className="flex items-start gap-6">
               <div className="flex-shrink-0 relative w-20 h-20">
                 <Image
-                  src={testimonials[currentIndex].image}
-                  alt={testimonials[currentIndex].name}
+                  src={carouselReviews[currentIndex].image}
+                  alt={carouselReviews[currentIndex].name}
                   width={80}
                   height={80}
                   className="rounded-full object-cover ring-4 ring-accent/30"
@@ -230,7 +238,7 @@ export function Testimonials() {
               </div>
               <div className="flex-1">
                 <div className="flex items-center gap-1 mb-4">
-                  {[...Array(testimonials[currentIndex].rating)].map((_, i) => (
+                  {[...Array(carouselReviews[currentIndex].rating)].map((_, i) => (
                     <Star
                       key={i}
                       className="w-5 h-5 fill-accent text-accent"
@@ -239,16 +247,16 @@ export function Testimonials() {
                 </div>
                 <Quote className="w-8 h-8 text-accent/50 mb-4" />
                 <p className="text-text-primary text-lg md:text-xl leading-relaxed mb-6">
-                  "{testimonials[currentIndex].text}"
+                  "{carouselReviews[currentIndex].text}"
                 </p>
                 <div>
                   <h4 className="text-text-primary font-bold text-lg mb-1">
-                    {testimonials[currentIndex].name}
+                    {carouselReviews[currentIndex].name}
                   </h4>
                   <p className="text-text-secondary">
-                    {testimonials[currentIndex].role}
-                    {testimonials[currentIndex].project && (
-                      <span className="text-accent"> • {testimonials[currentIndex].project}</span>
+                    {carouselReviews[currentIndex].role}
+                    {carouselReviews[currentIndex].project && (
+                      <span className="text-accent"> • {carouselReviews[currentIndex].project}</span>
                     )}
                   </p>
                 </div>
@@ -258,7 +266,7 @@ export function Testimonials() {
 
           {/* Navigation Dots */}
           <div className="flex justify-center gap-2 mt-6">
-            {testimonials.map((_, index) => (
+            {carouselReviews.map((_, index) => (
               <button
                 key={index}
                 onClick={() => setCurrentIndex(index)}

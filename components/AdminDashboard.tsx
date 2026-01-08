@@ -25,6 +25,10 @@ import {
   Star,
   Check,
   XCircle
+  Eye,
+  EyeOff,
+  Trash2,
+  RefreshCw,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
@@ -34,7 +38,7 @@ declare global {
   }
 }
 
-type SectionType = 'about' | 'videos' | 'reels' | 'wedding' | 'product' | 'restaurant' | 'contact' | 'upload' | 'reviews';
+type SectionType = 'about' | 'videos' | 'reels' | 'wedding' | 'product' | 'restaurant' | 'contact' | 'upload' | 'reviews' | 'preview';
 
 interface Section {
   id: SectionType;
@@ -53,6 +57,7 @@ const sections: Section[] = [
   { id: 'restaurant', name: 'Restaurant', icon: UtensilsCrossed, description: 'Manage restaurant photography' },
   { id: 'contact', name: 'Contact', icon: Mail, description: 'Manage contact information' },
   { id: 'reviews', name: 'Reviews', icon: Star, description: 'Review and approve user reviews' },
+  { id: 'preview', name: 'Preview', icon: Eye, description: 'Manage approved reviews displayed on website' },
 ];
 
 export default function AdminDashboard() {
@@ -220,6 +225,8 @@ function SectionContent({
       return <ContactSection isEditing={isEditing} />;
     case 'reviews':
       return <ReviewsSection />;
+    case 'preview':
+      return <PreviewSection />;
     default:
       return <div className="text-text-secondary">Select a section to manage</div>;
   }
@@ -2424,6 +2431,218 @@ function ReviewsSection() {
           );
         })}
       </div>
+    </div>
+  );
+}
+
+// Preview Section - Manage approved reviews displayed on website
+function PreviewSection() {
+  const [approvedReviews, setApprovedReviews] = useState<Array<{
+    id: string;
+    content_item_id: string;
+    user_name: string;
+    rating: number;
+    comment: string;
+    created_at: string;
+    content_items?: {
+      title: string;
+      media_type: string;
+      sections?: {
+        name: string;
+      };
+    };
+  }>>([]);
+  const [loading, setLoading] = useState(true);
+  const [processing, setProcessing] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchApprovedReviews();
+  }, []);
+
+  const fetchApprovedReviews = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/reviews/approved');
+      if (response.ok) {
+        const data = await response.json();
+        setApprovedReviews(data.reviews || []);
+      }
+    } catch (error) {
+      console.error('Error fetching approved reviews:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (reviewId: string) => {
+    if (!confirm('Are you sure you want to delete this review from the preview? It will be removed from the website.')) {
+      return;
+    }
+
+    try {
+      setProcessing(reviewId);
+      const response = await fetch('/api/reviews/approve', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reviewId }),
+      });
+
+      if (response.ok) {
+        setApprovedReviews((prev) => prev.filter((r) => r.id !== reviewId));
+        // Notify frontend to refresh
+        if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+          const channel = new BroadcastChannel('content-updated');
+          channel.postMessage({ type: 'content-updated', section: 'testimonials' });
+          channel.close();
+        }
+      } else {
+        const error = await response.json();
+        alert(`Error: ${error.error || 'Failed to delete review'}`);
+      }
+    } catch (error) {
+      console.error('Error deleting review:', error);
+      alert('Failed to delete review');
+    } finally {
+      setProcessing(null);
+    }
+  };
+
+  const handleUnapprove = async (reviewId: string) => {
+    if (!confirm('Are you sure you want to unapprove this review? It will be removed from the website and moved back to pending reviews.')) {
+      return;
+    }
+
+    try {
+      setProcessing(reviewId);
+      const response = await fetch('/api/reviews/approve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reviewId, isApproved: false }),
+      });
+
+      if (response.ok) {
+        setApprovedReviews((prev) => prev.filter((r) => r.id !== reviewId));
+        // Notify frontend to refresh
+        if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+          const channel = new BroadcastChannel('content-updated');
+          channel.postMessage({ type: 'content-updated', section: 'testimonials' });
+          channel.close();
+        }
+      } else {
+        const error = await response.json();
+        alert(`Error: ${error.error || 'Failed to unapprove review'}`);
+      }
+    } catch (error) {
+      console.error('Error unapproving review:', error);
+      alert('Failed to unapprove review');
+    } finally {
+      setProcessing(null);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-8 h-8 animate-spin text-accent" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-3xl font-bold text-text-primary mb-2">Preview Reviews</h2>
+          <p className="text-text-secondary">
+            Manage approved reviews displayed on the website. These reviews appear in the "What Clients Say" section.
+          </p>
+        </div>
+        <button
+          onClick={fetchApprovedReviews}
+          className="px-4 py-2 bg-accent text-dark-bg rounded-lg font-semibold hover:bg-accent/90 transition-colors flex items-center gap-2"
+        >
+          <RefreshCw className="w-4 h-4" />
+          Refresh
+        </button>
+      </div>
+
+      {approvedReviews.length === 0 ? (
+        <div className="text-center py-12 text-text-secondary">
+          <Eye className="w-16 h-16 mx-auto mb-4 opacity-50" />
+          <p>No approved reviews to preview.</p>
+          <p className="text-sm mt-2">Approve reviews from the "Reviews" section to see them here.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {approvedReviews.map((review) => (
+            <div
+              key={review.id}
+              className="bg-dark-bg/50 backdrop-blur-sm rounded-xl p-6 border border-dark-section/50"
+            >
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <h3 className="text-text-primary font-semibold">{review.user_name || 'Anonymous'}</h3>
+                    <div className="flex items-center gap-1">
+                      {[...Array(5)].map((_, i) => (
+                        <Star
+                          key={i}
+                          className={`w-4 h-4 ${
+                            i < review.rating
+                              ? 'fill-accent text-accent'
+                              : 'fill-dark-section text-dark-section'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  {review.content_items && (
+                    <p className="text-xs text-text-secondary mb-1">
+                      {review.content_items.sections?.name || 'General'} • {review.content_items.title}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <p className="text-text-secondary text-sm mb-4 line-clamp-3">{review.comment}</p>
+
+              <div className="flex items-center justify-between pt-4 border-t border-dark-section/50">
+                <span className="text-xs text-text-secondary">
+                  {new Date(review.created_at).toLocaleDateString()}
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleUnapprove(review.id)}
+                    disabled={processing === review.id}
+                    className="px-3 py-1.5 bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 rounded-lg text-xs font-semibold hover:bg-yellow-500/30 transition-colors disabled:opacity-50 flex items-center gap-1"
+                    title="Unapprove and move back to pending"
+                  >
+                    {processing === review.id ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <EyeOff className="w-3 h-3" />
+                    )}
+                    Unapprove
+                  </button>
+                  <button
+                    onClick={() => handleDelete(review.id)}
+                    disabled={processing === review.id}
+                    className="px-3 py-1.5 bg-red-500/20 text-red-400 border border-red-500/30 rounded-lg text-xs font-semibold hover:bg-red-500/30 transition-colors disabled:opacity-50 flex items-center gap-1"
+                    title="Delete permanently"
+                  >
+                    {processing === review.id ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <Trash2 className="w-3 h-3" />
+                    )}
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

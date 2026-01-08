@@ -11,11 +11,36 @@ interface Reel {
   video: string;
 }
 
+// Helper function to extract frame from video as cover image
+const getVideoCover = (videoUrl: string): string => {
+  // For Cloudinary videos, we can use transformation to get a frame at 1 second
+  if (videoUrl.includes('cloudinary.com')) {
+    try {
+      const url = new URL(videoUrl);
+      const pathParts = url.pathname.split('/');
+      const uploadIndex = pathParts.indexOf('upload');
+      if (uploadIndex !== -1 && uploadIndex < pathParts.length - 1) {
+        // Insert thumbnail transformation: so_0 = start offset 0, w_400 = width, h_600 = height, c_fill = crop fill
+        // This creates a thumbnail from the first frame of the video
+        const transformations = ['so_0', 'w_400', 'h_600', 'c_fill', 'q_auto', 'f_jpg'];
+        pathParts.splice(uploadIndex + 1, 0, ...transformations);
+        return url.origin + pathParts.join('/');
+      }
+    } catch (e) {
+      console.error('Error parsing Cloudinary URL:', e);
+    }
+  }
+  // Fallback: return empty, will use thumbnail_url from database
+  return '';
+};
+
 export function Reels() {
   const sectionRef = useRef<HTMLElement | null>(null);
   const [selectedReel, setSelectedReel] = useState<string | null>(null);
   const [reels, setReels] = useState<Reel[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hoveredReel, setHoveredReel] = useState<string | null>(null);
+  const videoRefs = useRef<Map<string, HTMLVideoElement>>(new Map());
 
   const fetchReels = useCallback(async () => {
     try {
@@ -41,12 +66,16 @@ export function Reels() {
       if (data && Array.isArray(data) && data.length > 0) {
         const formattedReels = data
           .filter((item: any) => item.media_url && item.media_url.trim() !== '') // Filter out empty URLs
-          .map((item: any) => ({
-            id: item.id,
-            title: item.title || 'Untitled Reel',
-            thumbnail: item.thumbnail_url || item.media_url || '',
-            video: item.media_url || '',
-          }));
+          .map((item: any) => {
+            const videoUrl = item.media_url || '';
+            const coverImage = getVideoCover(videoUrl) || item.thumbnail_url || '';
+            return {
+              id: item.id,
+              title: item.title || 'Untitled Reel',
+              thumbnail: coverImage || videoUrl, // Use cover image or fallback to video
+              video: videoUrl,
+            };
+          });
         
         console.log('Reels formatted:', formattedReels);
         setReels(formattedReels);
@@ -170,9 +199,27 @@ export function Reels() {
                   filter: index < visibleCount ? 'blur(0)' : 'blur(4px)',
                 }}
                 onClick={() => setSelectedReel(reel.video)}
+                onMouseEnter={() => {
+                  setHoveredReel(reel.id);
+                  const video = videoRefs.current.get(reel.id);
+                  if (video) {
+                    video.currentTime = 0; // Start from beginning
+                    video.play().catch(console.error);
+                  }
+                }}
+                onMouseLeave={() => {
+                  setHoveredReel(null);
+                  const video = videoRefs.current.get(reel.id);
+                  if (video) {
+                    video.pause();
+                    video.currentTime = 0; // Reset to beginning
+                  }
+                }}
               >
-                {/* Image with parallax and blur placeholder */}
-                <div className="absolute inset-0">
+                {/* Cover Image - shown when not hovering */}
+                <div className={`absolute inset-0 transition-opacity duration-300 ${
+                  hoveredReel === reel.id ? 'opacity-0' : 'opacity-100'
+                }`}>
                   {/* Blur placeholder */}
                   <img
                     src={reel.thumbnail}
@@ -180,7 +227,7 @@ export function Reels() {
                     className="absolute inset-0 w-full h-full object-cover blur-xl scale-110 opacity-50"
                     aria-hidden="true"
                   />
-                  {/* Main image */}
+                  {/* Main cover image */}
                   <img
                     src={reel.thumbnail}
                     alt={reel.title}
@@ -192,6 +239,31 @@ export function Reels() {
                     }}
                   />
                 </div>
+
+                {/* Video - plays on hover */}
+                <video
+                  ref={(el) => {
+                    if (el) {
+                      videoRefs.current.set(reel.id, el);
+                    } else {
+                      videoRefs.current.delete(reel.id);
+                    }
+                  }}
+                  src={reel.video}
+                  loop
+                  muted
+                  playsInline
+                  className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${
+                    hoveredReel === reel.id ? 'opacity-100' : 'opacity-0'
+                  }`}
+                  onLoadedData={(e) => {
+                    // Extract frame at 1 second as cover if no thumbnail
+                    const video = e.currentTarget;
+                    if (!reel.thumbnail && video.readyState >= 2) {
+                      video.currentTime = 1; // Seek to 1 second for cover
+                    }
+                  }}
+                />
                 
                 {/* Enhanced gradient overlay */}
                 <div className="card-overlay" />
