@@ -451,7 +451,7 @@ function UploadSection() {
     }
   };
 
-  // Handle Cloudinary Widget Upload for large files (up to 50MB)
+  // Handle Cloudinary Widget Upload for large files (up to 200MB)
   const handleCloudinaryWidgetUpload = () => {
     if (!category) {
       alert('Please select a category first');
@@ -473,7 +473,7 @@ function UploadSection() {
           folder: `${folder}/${category}`,
           multiple: true,
           resourceType: 'auto',
-          maxFileSize: 50000000, // 50MB
+          maxFileSize: 200000000, // 200MB
           clientAllowedFormats: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'mp4', 'mov', 'avi', 'mkv', 'webm'],
           cropping: false,
           showAdvancedOptions: true,
@@ -696,7 +696,7 @@ function UploadSection() {
             {/* Cloudinary Widget Button for Large Files */}
             <div className="mt-4 pt-4 border-t border-dark-section">
               <p className="text-sm text-text-secondary mb-3 text-center">
-                For files larger than 4.5 MB (up to 50 MB), use Cloudinary Widget:
+                For files larger than 4.5 MB (up to 200 MB), use Cloudinary Widget:
               </p>
               <button
                 onClick={handleCloudinaryWidgetUpload}
@@ -704,7 +704,7 @@ function UploadSection() {
                 className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 <Upload className="w-5 h-5" />
-                Upload Large Files (Up to 50 MB)
+                Upload Large Files (Up to 200 MB)
               </button>
             </div>
           </div>
@@ -1133,8 +1133,8 @@ function VideosSection({ isEditing }: { isEditing: boolean }) {
   const handleVideoUpload = async (file: File, videoId: string) => {
     const fileSizeMB = file.size / 1024 / 1024;
     
-    if (fileSizeMB > 50) {
-      alert('Video is too large (max 50 MB). Please compress or use a smaller video.');
+    if (fileSizeMB > 200) {
+      alert('Video is too large (max 200 MB). Please compress or use a smaller video.');
       return;
     }
     
@@ -1205,11 +1205,11 @@ function VideosSection({ isEditing }: { isEditing: boolean }) {
         folder: process.env.NEXT_PUBLIC_CLOUDINARY_FOLDER || 'portfolio',
         multiple: false,
         resourceType: 'video',
-        maxFileSize: 50000000, // 50MB in bytes
+        maxFileSize: 200000000, // 200MB in bytes
         clientAllowedFormats: ['mp4', 'mov', 'avi', 'mkv', 'webm'],
         maxImageWidth: 0, // No limit
         maxImageHeight: 0, // No limit
-        maxVideoFileSize: 50000000, // 50MB explicitly for videos
+        maxVideoFileSize: 200000000, // 200MB explicitly for videos
         sources: ['local', 'camera', 'url'],
         showAdvancedOptions: true,
         cropping: false,
@@ -1421,7 +1421,7 @@ function VideosSection({ isEditing }: { isEditing: boolean }) {
                     <>
                       <Video className="w-8 h-8 mx-auto mb-2 text-text-secondary" />
                       <p className="text-text-secondary text-sm">Drag & drop video or click to upload</p>
-                      <p className="text-xs text-text-secondary mt-1">Max 50 MB</p>
+                      <p className="text-xs text-text-secondary mt-1">Max 200 MB</p>
                     </>
                   )}
                 </div>
@@ -1433,7 +1433,7 @@ function VideosSection({ isEditing }: { isEditing: boolean }) {
                     disabled={!widgetScriptLoaded || uploadingVideo === video.id}
                     className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Upload Large Video (Up to 50 MB)
+                    Upload Large Video (Up to 200 MB)
                   </button>
                 )}
                 
@@ -1573,8 +1573,8 @@ function ReelsSection({ isEditing }: { isEditing: boolean }) {
   const handleReelUpload = async (file: File, reelId: string) => {
     const fileSizeMB = file.size / 1024 / 1024;
     
-    if (fileSizeMB > 50) {
-      alert('Video is too large (max 50 MB). Please compress or use a smaller video.');
+    if (fileSizeMB > 200) {
+      alert('Video is too large (max 200 MB). Please compress or use a smaller video.');
       return;
     }
     
@@ -1645,11 +1645,11 @@ function ReelsSection({ isEditing }: { isEditing: boolean }) {
         folder: process.env.NEXT_PUBLIC_CLOUDINARY_FOLDER || 'portfolio',
         multiple: false,
         resourceType: 'video',
-        maxFileSize: 50000000, // 50MB in bytes
+        maxFileSize: 200000000, // 200MB in bytes
         clientAllowedFormats: ['mp4', 'mov', 'avi', 'mkv', 'webm'],
         maxImageWidth: 0, // No limit
         maxImageHeight: 0, // No limit
-        maxVideoFileSize: 50000000, // 50MB explicitly for videos
+        maxVideoFileSize: 200000000, // 200MB explicitly for videos
         sources: ['local', 'camera', 'url'],
         showAdvancedOptions: true,
         cropping: false,
@@ -1860,7 +1860,7 @@ function ReelsSection({ isEditing }: { isEditing: boolean }) {
                     <>
                       <Film className="w-8 h-8 mx-auto mb-2 text-text-secondary" />
                       <p className="text-text-secondary text-sm">Drag & drop video or click to upload</p>
-                      <p className="text-xs text-text-secondary mt-1">Max 50 MB</p>
+                      <p className="text-xs text-text-secondary mt-1">Max 200 MB</p>
                     </>
                   )}
                 </div>
@@ -1872,7 +1872,7 @@ function ReelsSection({ isEditing }: { isEditing: boolean }) {
                     disabled={!widgetScriptLoaded || uploadingReel === reel.id}
                     className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Upload Large Video (Up to 50 MB)
+                    Upload Large Video (Up to 200 MB)
                   </button>
                 )}
                 
