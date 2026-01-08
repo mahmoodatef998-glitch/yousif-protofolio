@@ -311,6 +311,8 @@ CREATE POLICY "Allow public read approved reviews"
 ON content_reviews FOR SELECT
 USING (is_approved = true);
 
+-- Policy للـ INSERT (يسمح للجميع بإضافة reviews)
+-- مهم: يجب أن يكون TO public للسماح للمستخدمين غير المسجلين
 CREATE POLICY "Allow public insert to content_reviews"
 ON content_reviews FOR INSERT
 TO public
