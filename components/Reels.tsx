@@ -211,6 +211,12 @@ export function Reels() {
                     <path d="M8 5v14l11-7z" />
                   </svg>
                 </div>
+
+                {/* Content Interaction (Like, Review, Views) */}
+                <ContentInteraction
+                  contentId={reel.id}
+                  showReviewButton={true}
+                />
               </div>
             ))}
           </div>

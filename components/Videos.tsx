@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useScrollReveal } from '@/lib/animations';
+import { ContentInteraction } from '@/components/ContentInteraction';
 
 interface Video {
   id: string;
@@ -161,6 +162,14 @@ export function Videos() {
                   <p className="text-xl md:text-2xl text-text-secondary max-w-2xl mx-auto">
                     {video.description}
                   </p>
+                </div>
+
+                {/* Content Interaction (Like, Review, Views) */}
+                <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20">
+                  <ContentInteraction
+                    contentId={video.id}
+                    showReviewButton={true}
+                  />
                 </div>
               </div>
             );

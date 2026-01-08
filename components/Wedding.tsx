@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import Image from 'next/image';
 import { X } from 'lucide-react';
 import { useStaggeredReveal } from '@/lib/animations';
+import { ContentInteraction } from '@/components/ContentInteraction';
 
 interface GalleryImage {
   id: string;
@@ -236,6 +237,12 @@ export function Wedding() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                   </svg>
                 </div>
+
+                {/* Content Interaction (Like, Review, Views) */}
+                <ContentInteraction
+                  contentId={item.id}
+                  showReviewButton={true}
+                />
               </div>
             ))}
           </div>
