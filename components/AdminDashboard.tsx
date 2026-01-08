@@ -711,6 +711,8 @@ function AboutSection({ isEditing }: { isEditing: boolean }) {
   const [stats, setStats] = useState({ clients: 0, projects: 0, awards: 0 });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchAbout();
@@ -734,6 +736,42 @@ function AboutSection({ isEditing }: { isEditing: boolean }) {
       console.error('Error fetching about:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleImageUpload = async (file: File) => {
+    const fileSizeMB = file.size / 1024 / 1024;
+    
+    if (fileSizeMB > 4.5) {
+      alert('Image is too large (max 4.5 MB). Please compress or use a smaller image.');
+      return;
+    }
+    
+    setUploadingImage(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('category', 'about');
+      formData.append('name', 'profile-image');
+      
+      const response = await fetch('/api/cloudinary/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || 'Upload failed');
+      }
+      
+      const { result } = await response.json();
+      setProfileImage(result.secure_url || result.url);
+      alert('Image uploaded successfully!');
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      alert(`Failed to upload image: ${error.message || 'Please try again.'}`);
+    } finally {
+      setUploadingImage(false);
     }
   };
 
@@ -835,14 +873,96 @@ function AboutSection({ isEditing }: { isEditing: boolean }) {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-text-secondary mb-2">Profile Image URL</label>
+            <label className="block text-sm font-medium text-text-secondary mb-2">Profile Image</label>
+            
+            {/* Drag & Drop Area */}
+            {!profileImage ? (
+              <div
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  if (isEditing) {
+                    e.currentTarget.classList.add('border-accent', 'bg-accent/10');
+                  }
+                }}
+                onDragLeave={(e) => {
+                  e.preventDefault();
+                  e.currentTarget.classList.remove('border-accent', 'bg-accent/10');
+                }}
+                onDrop={async (e) => {
+                  e.preventDefault();
+                  e.currentTarget.classList.remove('border-accent', 'bg-accent/10');
+                  if (!isEditing) return;
+                  const file = e.dataTransfer.files[0];
+                  if (file && file.type.startsWith('image/')) {
+                    await handleImageUpload(file);
+                  }
+                }}
+                onClick={() => {
+                  if (isEditing) {
+                    fileInputRef.current?.click();
+                  }
+                }}
+                className={`border-2 border-dashed border-dark-section rounded-lg p-8 text-center transition-colors ${
+                  isEditing ? 'cursor-pointer hover:border-accent' : 'opacity-50 cursor-not-allowed'
+                }`}
+              >
+                {uploadingImage ? (
+                  <>
+                    <Loader2 className="w-12 h-12 mx-auto mb-2 text-accent animate-spin" />
+                    <p className="text-text-secondary">Uploading image...</p>
+                  </>
+                ) : (
+                  <>
+                    <ImageIcon className="w-12 h-12 mx-auto mb-2 text-text-secondary" />
+                    <p className="text-text-secondary">Drag & drop image here or click to upload</p>
+                    <p className="text-xs text-text-secondary mt-1">Max 4.5 MB</p>
+                  </>
+                )}
+              </div>
+            ) : (
+              <div className="relative">
+                <img
+                  src={profileImage}
+                  alt="Profile"
+                  className="w-full h-64 object-cover rounded-lg"
+                />
+                {isEditing && (
+                  <button
+                    onClick={() => setProfileImage('')}
+                    className="absolute top-2 right-2 p-2 bg-red-500/80 hover:bg-red-500 rounded-lg transition-colors"
+                  >
+                    <X className="w-4 h-4 text-white" />
+                  </button>
+                )}
+              </div>
+            )}
+            
             <input
-              type="url"
-              value={profileImage}
-              onChange={(e) => setProfileImage(e.target.value)}
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file && isEditing) {
+                  handleImageUpload(file);
+                }
+              }}
+              className="hidden"
               disabled={!isEditing}
-              className="w-full px-4 py-2 bg-dark-bg border border-dark-section rounded-lg text-text-primary focus:border-accent focus:outline-none disabled:opacity-50"
             />
+            
+            {/* Fallback URL Input */}
+            <div className="mt-2">
+              <label className="block text-xs text-text-secondary mb-1">Or enter URL:</label>
+              <input
+                type="url"
+                value={profileImage}
+                onChange={(e) => setProfileImage(e.target.value)}
+                disabled={!isEditing}
+                placeholder="https://..."
+                className="w-full px-3 py-2 bg-dark-bg border border-dark-section rounded text-text-primary text-sm focus:border-accent focus:outline-none disabled:opacity-50"
+              />
+            </div>
           </div>
           <div>
             <label className="block text-sm font-medium text-text-secondary mb-2">Stats</label>
@@ -919,6 +1039,36 @@ function VideosSection({ isEditing }: { isEditing: boolean }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [uploadingVideo, setUploadingVideo] = useState<string | null>(null);
+  const widgetRef = useRef<any>(null);
+  const [widgetScriptLoaded, setWidgetScriptLoaded] = useState(false);
+
+  // Load Cloudinary Widget Script
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    if (document.querySelector('script[src*="upload-widget.cloudinary.com"]')) {
+      setWidgetScriptLoaded(true);
+      return;
+    }
+
+    if (window.cloudinary) {
+      setWidgetScriptLoaded(true);
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = 'https://upload-widget.cloudinary.com/global/all.js';
+    script.async = true;
+    document.body.appendChild(script);
+
+    script.onload = () => setWidgetScriptLoaded(true);
+    script.onerror = () => console.error('Failed to load Cloudinary widget script');
+
+    return () => {
+      if (script.parentNode) script.parentNode.removeChild(script);
+    };
+  }, []);
 
   useEffect(() => {
     fetchVideos();
@@ -967,6 +1117,105 @@ function VideosSection({ isEditing }: { isEditing: boolean }) {
       console.error('Error adding video:', error);
       alert('Failed to add video');
     }
+  };
+
+  const handleVideoUpload = async (file: File, videoId: string) => {
+    const fileSizeMB = file.size / 1024 / 1024;
+    
+    if (fileSizeMB > 50) {
+      alert('Video is too large (max 50 MB). Please compress or use a smaller video.');
+      return;
+    }
+    
+    setUploadingVideo(videoId);
+    
+    try {
+      // For files <= 4.5MB, use API route
+      if (fileSizeMB <= 4.5) {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('category', 'videos');
+        formData.append('name', `video-${videoId}`);
+        
+        const response = await fetch('/api/cloudinary/upload', {
+          method: 'POST',
+          body: formData,
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+          throw new Error(errorData.error || 'Upload failed');
+        }
+        
+        const { result } = await response.json();
+        const updated = videos.map(v => 
+          v.id === videoId 
+            ? { 
+                ...v, 
+                url: result.secure_url || result.url,
+                thumbnail: result.thumbnail_url || result.secure_url || result.url
+              }
+            : v
+        );
+        setVideos(updated);
+        alert('Video uploaded successfully!');
+      } else {
+        // For larger files, use Cloudinary Widget
+        handleCloudinaryWidgetUpload(videoId);
+      }
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      alert(`Failed to upload video: ${error.message || 'Please try Cloudinary Widget for large files.'}`);
+      setUploadingVideo(null);
+    }
+  };
+
+  const handleCloudinaryWidgetUpload = (videoId: string) => {
+    if (!window.cloudinary || !widgetScriptLoaded) {
+      alert('Cloudinary widget is loading, please try again in a moment');
+      setUploadingVideo(null);
+      return;
+    }
+    
+    if (!widgetRef.current) {
+      widgetRef.current = window.cloudinary.createUploadWidget(
+        {
+          cloudName: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
+          uploadPreset: process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || undefined,
+          folder: process.env.NEXT_PUBLIC_CLOUDINARY_FOLDER || 'portfolio',
+          multiple: false,
+          resourceType: 'video',
+          maxFileSize: 50000000, // 50MB
+          clientAllowedFormats: ['mp4', 'mov', 'avi', 'mkv', 'webm'],
+        },
+        async (error: any, result: any) => {
+          if (error) {
+            console.error('Cloudinary Widget Upload error:', error);
+            alert('Upload error: ' + (error.message || 'Unknown error'));
+            setUploadingVideo(null);
+            return;
+          }
+          
+          if (result && result.event === 'success') {
+            const uploadResult = result.info;
+            const updated = videos.map(v => 
+              v.id === videoId 
+                ? { 
+                    ...v, 
+                    url: uploadResult.secure_url || uploadResult.url,
+                    thumbnail: uploadResult.thumbnail_url || uploadResult.secure_url || uploadResult.url
+                  }
+                : v
+            );
+            setVideos(updated);
+            setUploadingVideo(null);
+            alert('Video uploaded successfully!');
+          }
+        }
+      );
+    }
+    
+    widgetRef.current.open();
   };
 
   const handleSave = async (video: typeof videos[0]) => {
@@ -1091,9 +1340,71 @@ function VideosSection({ isEditing }: { isEditing: boolean }) {
                 )}
               </div>
               <div className="space-y-2">
+                {/* Drag & Drop Area */}
+                <div
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    if (isEditing) {
+                      e.currentTarget.classList.add('border-accent', 'bg-accent/10');
+                    }
+                  }}
+                  onDragLeave={(e) => {
+                    e.preventDefault();
+                    e.currentTarget.classList.remove('border-accent', 'bg-accent/10');
+                  }}
+                  onDrop={async (e) => {
+                    e.preventDefault();
+                    e.currentTarget.classList.remove('border-accent', 'bg-accent/10');
+                    if (!isEditing) return;
+                    const file = e.dataTransfer.files[0];
+                    if (file && file.type.startsWith('video/')) {
+                      await handleVideoUpload(file, video.id);
+                    }
+                  }}
+                  onClick={() => {
+                    if (!isEditing) return;
+                    const input = document.createElement('input');
+                    input.type = 'file';
+                    input.accept = 'video/*';
+                    input.onchange = (e: any) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleVideoUpload(file, video.id);
+                    };
+                    input.click();
+                  }}
+                  className={`border-2 border-dashed border-dark-section rounded-lg p-4 text-center transition-colors ${
+                    isEditing ? 'cursor-pointer hover:border-accent' : 'opacity-50 cursor-not-allowed'
+                  }`}
+                >
+                  {uploadingVideo === video.id ? (
+                    <>
+                      <Loader2 className="w-8 h-8 mx-auto mb-2 text-accent animate-spin" />
+                      <p className="text-text-secondary text-sm">Uploading video...</p>
+                    </>
+                  ) : (
+                    <>
+                      <Video className="w-8 h-8 mx-auto mb-2 text-text-secondary" />
+                      <p className="text-text-secondary text-sm">Drag & drop video or click to upload</p>
+                      <p className="text-xs text-text-secondary mt-1">Max 50 MB</p>
+                    </>
+                  )}
+                </div>
+                
+                {/* Cloudinary Widget Button for Large Files */}
+                {isEditing && (
+                  <button
+                    onClick={() => handleCloudinaryWidgetUpload(video.id)}
+                    disabled={!widgetScriptLoaded || uploadingVideo === video.id}
+                    className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Upload Large Video (Up to 50 MB)
+                  </button>
+                )}
+                
+                {/* Fallback URL Input */}
                 <input
                   type="url"
-                  placeholder="Video URL"
+                  placeholder="Or enter Video URL"
                   value={video.url}
                   onChange={(e) => {
                     const updated = videos.map(v => v.id === video.id ? { ...v, url: e.target.value } : v);
@@ -1144,6 +1455,36 @@ function ReelsSection({ isEditing }: { isEditing: boolean }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [uploadingReel, setUploadingReel] = useState<string | null>(null);
+  const widgetRef = useRef<any>(null);
+  const [widgetScriptLoaded, setWidgetScriptLoaded] = useState(false);
+
+  // Load Cloudinary Widget Script
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    if (document.querySelector('script[src*="upload-widget.cloudinary.com"]')) {
+      setWidgetScriptLoaded(true);
+      return;
+    }
+
+    if (window.cloudinary) {
+      setWidgetScriptLoaded(true);
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = 'https://upload-widget.cloudinary.com/global/all.js';
+    script.async = true;
+    document.body.appendChild(script);
+
+    script.onload = () => setWidgetScriptLoaded(true);
+    script.onerror = () => console.error('Failed to load Cloudinary widget script');
+
+    return () => {
+      if (script.parentNode) script.parentNode.removeChild(script);
+    };
+  }, []);
 
   useEffect(() => {
     fetchReels();
@@ -1191,6 +1532,105 @@ function ReelsSection({ isEditing }: { isEditing: boolean }) {
       console.error('Error adding reel:', error);
       alert('Failed to add reel');
     }
+  };
+
+  const handleReelUpload = async (file: File, reelId: string) => {
+    const fileSizeMB = file.size / 1024 / 1024;
+    
+    if (fileSizeMB > 50) {
+      alert('Video is too large (max 50 MB). Please compress or use a smaller video.');
+      return;
+    }
+    
+    setUploadingReel(reelId);
+    
+    try {
+      // For files <= 4.5MB, use API route
+      if (fileSizeMB <= 4.5) {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('category', 'reels');
+        formData.append('name', `reel-${reelId}`);
+        
+        const response = await fetch('/api/cloudinary/upload', {
+          method: 'POST',
+          body: formData,
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+          throw new Error(errorData.error || 'Upload failed');
+        }
+        
+        const { result } = await response.json();
+        const updated = reels.map(r => 
+          r.id === reelId 
+            ? { 
+                ...r, 
+                video: result.secure_url || result.url,
+                thumbnail: result.thumbnail_url || result.secure_url || result.url
+              }
+            : r
+        );
+        setReels(updated);
+        alert('Reel uploaded successfully!');
+      } else {
+        // For larger files, use Cloudinary Widget
+        handleCloudinaryWidgetUpload(reelId);
+      }
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      alert(`Failed to upload reel: ${error.message || 'Please try Cloudinary Widget for large files.'}`);
+      setUploadingReel(null);
+    }
+  };
+
+  const handleCloudinaryWidgetUpload = (reelId: string) => {
+    if (!window.cloudinary || !widgetScriptLoaded) {
+      alert('Cloudinary widget is loading, please try again in a moment');
+      setUploadingReel(null);
+      return;
+    }
+    
+    if (!widgetRef.current) {
+      widgetRef.current = window.cloudinary.createUploadWidget(
+        {
+          cloudName: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
+          uploadPreset: process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || undefined,
+          folder: process.env.NEXT_PUBLIC_CLOUDINARY_FOLDER || 'portfolio',
+          multiple: false,
+          resourceType: 'video',
+          maxFileSize: 50000000, // 50MB
+          clientAllowedFormats: ['mp4', 'mov', 'avi', 'mkv', 'webm'],
+        },
+        async (error: any, result: any) => {
+          if (error) {
+            console.error('Cloudinary Widget Upload error:', error);
+            alert('Upload error: ' + (error.message || 'Unknown error'));
+            setUploadingReel(null);
+            return;
+          }
+          
+          if (result && result.event === 'success') {
+            const uploadResult = result.info;
+            const updated = reels.map(r => 
+              r.id === reelId 
+                ? { 
+                    ...r, 
+                    video: uploadResult.secure_url || uploadResult.url,
+                    thumbnail: uploadResult.thumbnail_url || uploadResult.secure_url || uploadResult.url
+                  }
+                : r
+            );
+            setReels(updated);
+            setUploadingReel(null);
+            alert('Reel uploaded successfully!');
+          }
+        }
+      );
+    }
+    
+    widgetRef.current.open();
   };
 
   const handleSave = async (reel: typeof reels[0]) => {
@@ -1314,9 +1754,71 @@ function ReelsSection({ isEditing }: { isEditing: boolean }) {
                 )}
               </div>
               <div className="space-y-2">
+                {/* Drag & Drop Area */}
+                <div
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    if (isEditing) {
+                      e.currentTarget.classList.add('border-accent', 'bg-accent/10');
+                    }
+                  }}
+                  onDragLeave={(e) => {
+                    e.preventDefault();
+                    e.currentTarget.classList.remove('border-accent', 'bg-accent/10');
+                  }}
+                  onDrop={async (e) => {
+                    e.preventDefault();
+                    e.currentTarget.classList.remove('border-accent', 'bg-accent/10');
+                    if (!isEditing) return;
+                    const file = e.dataTransfer.files[0];
+                    if (file && file.type.startsWith('video/')) {
+                      await handleReelUpload(file, reel.id);
+                    }
+                  }}
+                  onClick={() => {
+                    if (!isEditing) return;
+                    const input = document.createElement('input');
+                    input.type = 'file';
+                    input.accept = 'video/*';
+                    input.onchange = (e: any) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleReelUpload(file, reel.id);
+                    };
+                    input.click();
+                  }}
+                  className={`border-2 border-dashed border-dark-section rounded-lg p-4 text-center transition-colors ${
+                    isEditing ? 'cursor-pointer hover:border-accent' : 'opacity-50 cursor-not-allowed'
+                  }`}
+                >
+                  {uploadingReel === reel.id ? (
+                    <>
+                      <Loader2 className="w-8 h-8 mx-auto mb-2 text-accent animate-spin" />
+                      <p className="text-text-secondary text-sm">Uploading reel...</p>
+                    </>
+                  ) : (
+                    <>
+                      <Film className="w-8 h-8 mx-auto mb-2 text-text-secondary" />
+                      <p className="text-text-secondary text-sm">Drag & drop video or click to upload</p>
+                      <p className="text-xs text-text-secondary mt-1">Max 50 MB</p>
+                    </>
+                  )}
+                </div>
+                
+                {/* Cloudinary Widget Button for Large Files */}
+                {isEditing && (
+                  <button
+                    onClick={() => handleCloudinaryWidgetUpload(reel.id)}
+                    disabled={!widgetScriptLoaded || uploadingReel === reel.id}
+                    className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Upload Large Video (Up to 50 MB)
+                  </button>
+                )}
+                
+                {/* Fallback URL Input */}
                 <input
                   type="url"
-                  placeholder="Video URL"
+                  placeholder="Or enter Video URL"
                   value={reel.video}
                   onChange={(e) => {
                     const updated = reels.map(r => r.id === reel.id ? { ...r, video: e.target.value } : r);
