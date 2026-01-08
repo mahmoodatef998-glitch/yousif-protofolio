@@ -14,6 +14,7 @@ import {
   Image as ImageIcon,
   Settings,
   Eye,
+  EyeOff,
   LogOut,
   Plus,
   Edit2,
@@ -24,10 +25,7 @@ import {
   Loader2,
   Star,
   Check,
-  XCircle
-  Eye,
-  EyeOff,
-  Trash2,
+  XCircle,
   RefreshCw,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
