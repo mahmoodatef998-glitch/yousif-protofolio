@@ -31,8 +31,7 @@ CREATE TABLE IF NOT EXISTS content_views (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     content_item_id UUID REFERENCES content_items(id) ON DELETE CASCADE,
     user_ip VARCHAR(45),
-    viewed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    viewed_date DATE GENERATED ALWAYS AS (DATE(viewed_at)) STORED -- Column للـ date فقط
+    viewed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Indexes للأداء
@@ -42,8 +41,9 @@ CREATE INDEX IF NOT EXISTS idx_content_reviews_approved ON content_reviews(is_ap
 CREATE INDEX IF NOT EXISTS idx_content_views_item_id ON content_views(content_item_id);
 
 -- Unique index لمنع duplicate views في نفس اليوم
+-- استخدام expression index على DATE(viewed_at) مباشرة
 CREATE UNIQUE INDEX IF NOT EXISTS idx_content_views_unique_per_day 
-ON content_views(content_item_id, user_ip, viewed_date);
+ON content_views(content_item_id, user_ip, (viewed_at::DATE));
 
 -- Enable RLS
 ALTER TABLE content_likes ENABLE ROW LEVEL SECURITY;
