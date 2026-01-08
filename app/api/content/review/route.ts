@@ -26,6 +26,7 @@ export async function POST(request: NextRequest) {
     const ip = forwarded ? forwarded.split(',')[0] : request.headers.get('x-real-ip') || 'unknown';
 
     // Insert review (needs approval)
+    // Note: Using RLS policies, so we need to ensure the policy allows public inserts
     const { data, error } = await supabase
       .from('content_reviews')
       .insert({
@@ -41,6 +42,20 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       console.error('Error inserting review:', error);
+      console.error('Error details:', JSON.stringify(error, null, 2));
+      
+      // Check if it's an RLS policy error
+      if (error.message?.includes('row-level security') || error.code === '42501') {
+        return NextResponse.json(
+          { 
+            error: 'Permission denied. Please check RLS policies.',
+            details: 'The review could not be submitted due to security policy restrictions. Please run the fix_reviews_rls.sql script in Supabase.',
+            code: error.code
+          },
+          { status: 403 }
+        );
+      }
+      
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
