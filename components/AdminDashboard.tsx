@@ -463,13 +463,36 @@ function UploadSection() {
       return;
     }
 
-    if (!widgetRef.current) {
-      const folder = process.env.NEXT_PUBLIC_CLOUDINARY_FOLDER || 'portfolio';
-      
-      widgetRef.current = window.cloudinary.createUploadWidget(
-        {
-          cloudName: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
-          uploadPreset: process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || undefined,
+    // Check for required environment variables
+    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+    const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+    
+    if (!cloudName) {
+      alert('Error: Cloudinary Cloud Name is not configured. Please add NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME to your environment variables.');
+      return;
+    }
+    
+    if (!uploadPreset) {
+      alert('Error: Cloudinary Upload Preset is required for widget uploads.\n\nPlease:\n1. Go to Cloudinary Dashboard\n2. Settings → Upload → Upload presets\n3. Create an unsigned upload preset\n4. Add NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET to your environment variables');
+      return;
+    }
+
+    // Destroy existing widget if it exists to create a fresh one
+    if (widgetRef.current) {
+      try {
+        widgetRef.current.destroy();
+      } catch (e) {
+        // Ignore destroy errors
+      }
+      widgetRef.current = null;
+    }
+
+    const folder = process.env.NEXT_PUBLIC_CLOUDINARY_FOLDER || 'portfolio';
+    
+    widgetRef.current = window.cloudinary.createUploadWidget(
+      {
+        cloudName: cloudName,
+        uploadPreset: uploadPreset,
           folder: `${folder}/${category}`,
           multiple: true,
           resourceType: 'auto',
@@ -1188,6 +1211,22 @@ function VideosSection({ isEditing }: { isEditing: boolean }) {
       return;
     }
     
+    // Check for required environment variables
+    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+    const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+    
+    if (!cloudName) {
+      alert('Error: Cloudinary Cloud Name is not configured. Please add NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME to your environment variables.');
+      setUploadingVideo(null);
+      return;
+    }
+    
+    if (!uploadPreset) {
+      alert('Error: Cloudinary Upload Preset is required for widget uploads.\n\nPlease:\n1. Go to Cloudinary Dashboard\n2. Settings → Upload → Upload presets\n3. Create an unsigned upload preset\n4. Add NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET to your environment variables');
+      setUploadingVideo(null);
+      return;
+    }
+    
     // Destroy existing widget if it exists to create a fresh one
     if (widgetRef.current) {
       try {
@@ -1200,8 +1239,8 @@ function VideosSection({ isEditing }: { isEditing: boolean }) {
     
     widgetRef.current = window.cloudinary.createUploadWidget(
       {
-        cloudName: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
-        uploadPreset: process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || undefined,
+        cloudName: cloudName,
+        uploadPreset: uploadPreset,
         folder: process.env.NEXT_PUBLIC_CLOUDINARY_FOLDER || 'portfolio',
         multiple: false,
         resourceType: 'video',
@@ -1215,20 +1254,22 @@ function VideosSection({ isEditing }: { isEditing: boolean }) {
         cropping: false,
       },
       async (error: any, result: any) => {
-        if (error) {
-          console.error('Cloudinary Widget Upload error:', error);
-          let errorMessage = 'Upload error: ';
-          if (error.message) {
-            errorMessage += error.message;
-          } else if (error.status === 400) {
-            errorMessage += 'File is too large or invalid format. Please check Cloudinary settings.';
-          } else {
-            errorMessage += 'Unknown error. Please try again or check Cloudinary configuration.';
+          if (error) {
+            console.error('Cloudinary Widget Upload error:', error);
+            let errorMessage = 'Upload error: ';
+            if (error.status === 'Upload preset must be specified when using unsigned upload' || error.message?.includes('Upload preset')) {
+              errorMessage = 'Error: Upload Preset is required.\n\nPlease add NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET to your environment variables.\n\nTo create an upload preset:\n1. Go to Cloudinary Dashboard\n2. Settings → Upload → Upload presets\n3. Create an unsigned upload preset\n4. Copy the preset name and add it to Vercel environment variables';
+            } else if (error.message) {
+              errorMessage += error.message;
+            } else if (error.status === 400) {
+              errorMessage += 'File is too large or invalid format. Please check Cloudinary settings.';
+            } else {
+              errorMessage += 'Unknown error. Please try again or check Cloudinary configuration.';
+            }
+            alert(errorMessage);
+            setUploadingVideo(null);
+            return;
           }
-          alert(errorMessage);
-          setUploadingVideo(null);
-          return;
-        }
         
         if (result && result.event === 'success') {
           const uploadResult = result.info;
@@ -1628,6 +1669,22 @@ function ReelsSection({ isEditing }: { isEditing: boolean }) {
       return;
     }
     
+    // Check for required environment variables
+    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+    const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+    
+    if (!cloudName) {
+      alert('Error: Cloudinary Cloud Name is not configured. Please add NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME to your environment variables.');
+      setUploadingReel(null);
+      return;
+    }
+    
+    if (!uploadPreset) {
+      alert('Error: Cloudinary Upload Preset is required for widget uploads.\n\nPlease:\n1. Go to Cloudinary Dashboard\n2. Settings → Upload → Upload presets\n3. Create an unsigned upload preset\n4. Add NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET to your environment variables');
+      setUploadingReel(null);
+      return;
+    }
+    
     // Destroy existing widget if it exists to create a fresh one
     if (widgetRef.current) {
       try {
@@ -1640,8 +1697,8 @@ function ReelsSection({ isEditing }: { isEditing: boolean }) {
     
     widgetRef.current = window.cloudinary.createUploadWidget(
       {
-        cloudName: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
-        uploadPreset: process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || undefined,
+        cloudName: cloudName,
+        uploadPreset: uploadPreset,
         folder: process.env.NEXT_PUBLIC_CLOUDINARY_FOLDER || 'portfolio',
         multiple: false,
         resourceType: 'video',
@@ -1655,20 +1712,22 @@ function ReelsSection({ isEditing }: { isEditing: boolean }) {
         cropping: false,
       },
       async (error: any, result: any) => {
-        if (error) {
-          console.error('Cloudinary Widget Upload error:', error);
-          let errorMessage = 'Upload error: ';
-          if (error.message) {
-            errorMessage += error.message;
-          } else if (error.status === 400) {
-            errorMessage += 'File is too large or invalid format. Please check Cloudinary settings.';
-          } else {
-            errorMessage += 'Unknown error. Please try again or check Cloudinary configuration.';
+          if (error) {
+            console.error('Cloudinary Widget Upload error:', error);
+            let errorMessage = 'Upload error: ';
+            if (error.status === 'Upload preset must be specified when using unsigned upload' || error.message?.includes('Upload preset')) {
+              errorMessage = 'Error: Upload Preset is required.\n\nPlease add NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET to your environment variables.\n\nTo create an upload preset:\n1. Go to Cloudinary Dashboard\n2. Settings → Upload → Upload presets\n3. Create an unsigned upload preset\n4. Copy the preset name and add it to Vercel environment variables';
+            } else if (error.message) {
+              errorMessage += error.message;
+            } else if (error.status === 400) {
+              errorMessage += 'File is too large or invalid format. Please check Cloudinary settings.';
+            } else {
+              errorMessage += 'Unknown error. Please try again or check Cloudinary configuration.';
+            }
+            alert(errorMessage);
+            setUploadingReel(null);
+            return;
           }
-          alert(errorMessage);
-          setUploadingReel(null);
-          return;
-        }
         
         if (result && result.event === 'success') {
           const uploadResult = result.info;
