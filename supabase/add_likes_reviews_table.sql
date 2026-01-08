@@ -31,7 +31,8 @@ CREATE TABLE IF NOT EXISTS content_views (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     content_item_id UUID REFERENCES content_items(id) ON DELETE CASCADE,
     user_ip VARCHAR(45),
-    viewed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    viewed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    viewed_date DATE DEFAULT (CURRENT_DATE) -- Column منفصل للتاريخ
 );
 
 -- Indexes للأداء
@@ -41,9 +42,23 @@ CREATE INDEX IF NOT EXISTS idx_content_reviews_approved ON content_reviews(is_ap
 CREATE INDEX IF NOT EXISTS idx_content_views_item_id ON content_views(content_item_id);
 
 -- Unique index لمنع duplicate views في نفس اليوم
--- استخدام expression index على DATE(viewed_at) مباشرة
+-- استخدام viewed_date column مباشرة
 CREATE UNIQUE INDEX IF NOT EXISTS idx_content_views_unique_per_day 
-ON content_views(content_item_id, user_ip, (viewed_at::DATE));
+ON content_views(content_item_id, user_ip, viewed_date);
+
+-- Trigger لتحديث viewed_date تلقائياً عند insert
+CREATE OR REPLACE FUNCTION update_viewed_date()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.viewed_date := CURRENT_DATE;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER set_viewed_date_before_insert
+BEFORE INSERT ON content_views
+FOR EACH ROW
+EXECUTE FUNCTION update_viewed_date();
 
 -- Enable RLS
 ALTER TABLE content_likes ENABLE ROW LEVEL SECURITY;
