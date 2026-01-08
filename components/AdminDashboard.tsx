@@ -1188,43 +1188,68 @@ function VideosSection({ isEditing }: { isEditing: boolean }) {
       return;
     }
     
-    if (!widgetRef.current) {
-      widgetRef.current = window.cloudinary.createUploadWidget(
-        {
-          cloudName: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
-          uploadPreset: process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || undefined,
-          folder: process.env.NEXT_PUBLIC_CLOUDINARY_FOLDER || 'portfolio',
-          multiple: false,
-          resourceType: 'video',
-          maxFileSize: 50000000, // 50MB
-          clientAllowedFormats: ['mp4', 'mov', 'avi', 'mkv', 'webm'],
-        },
-        async (error: any, result: any) => {
-          if (error) {
-            console.error('Cloudinary Widget Upload error:', error);
-            alert('Upload error: ' + (error.message || 'Unknown error'));
-            setUploadingVideo(null);
-            return;
-          }
-          
-          if (result && result.event === 'success') {
-            const uploadResult = result.info;
-            const updated = videos.map(v => 
-              v.id === videoId 
-                ? { 
-                    ...v, 
-                    url: uploadResult.secure_url || uploadResult.url,
-                    thumbnail: uploadResult.thumbnail_url || uploadResult.secure_url || uploadResult.url
-                  }
-                : v
-            );
-            setVideos(updated);
-            setUploadingVideo(null);
-            alert('Video uploaded successfully!');
-          }
-        }
-      );
+    // Destroy existing widget if it exists to create a fresh one
+    if (widgetRef.current) {
+      try {
+        widgetRef.current.destroy();
+      } catch (e) {
+        // Ignore destroy errors
+      }
+      widgetRef.current = null;
     }
+    
+    widgetRef.current = window.cloudinary.createUploadWidget(
+      {
+        cloudName: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
+        uploadPreset: process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || undefined,
+        folder: process.env.NEXT_PUBLIC_CLOUDINARY_FOLDER || 'portfolio',
+        multiple: false,
+        resourceType: 'video',
+        maxFileSize: 50000000, // 50MB in bytes
+        clientAllowedFormats: ['mp4', 'mov', 'avi', 'mkv', 'webm'],
+        maxImageWidth: 0, // No limit
+        maxImageHeight: 0, // No limit
+        maxVideoFileSize: 50000000, // 50MB explicitly for videos
+        sources: ['local', 'camera', 'url'],
+        showAdvancedOptions: true,
+        cropping: false,
+      },
+      async (error: any, result: any) => {
+        if (error) {
+          console.error('Cloudinary Widget Upload error:', error);
+          let errorMessage = 'Upload error: ';
+          if (error.message) {
+            errorMessage += error.message;
+          } else if (error.status === 400) {
+            errorMessage += 'File is too large or invalid format. Please check Cloudinary settings.';
+          } else {
+            errorMessage += 'Unknown error. Please try again or check Cloudinary configuration.';
+          }
+          alert(errorMessage);
+          setUploadingVideo(null);
+          return;
+        }
+        
+        if (result && result.event === 'success') {
+          const uploadResult = result.info;
+          const updated = videos.map(v => 
+            v.id === videoId 
+              ? { 
+                  ...v, 
+                  url: uploadResult.secure_url || uploadResult.url,
+                  thumbnail: uploadResult.thumbnail_url || uploadResult.secure_url || uploadResult.url
+                }
+              : v
+          );
+          setVideos(updated);
+          setUploadingVideo(null);
+          alert('Video uploaded successfully!');
+        } else if (result && result.event === 'close') {
+          // User closed the widget
+          setUploadingVideo(null);
+        }
+      }
+    );
     
     widgetRef.current.open();
   };
@@ -1603,43 +1628,68 @@ function ReelsSection({ isEditing }: { isEditing: boolean }) {
       return;
     }
     
-    if (!widgetRef.current) {
-      widgetRef.current = window.cloudinary.createUploadWidget(
-        {
-          cloudName: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
-          uploadPreset: process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || undefined,
-          folder: process.env.NEXT_PUBLIC_CLOUDINARY_FOLDER || 'portfolio',
-          multiple: false,
-          resourceType: 'video',
-          maxFileSize: 50000000, // 50MB
-          clientAllowedFormats: ['mp4', 'mov', 'avi', 'mkv', 'webm'],
-        },
-        async (error: any, result: any) => {
-          if (error) {
-            console.error('Cloudinary Widget Upload error:', error);
-            alert('Upload error: ' + (error.message || 'Unknown error'));
-            setUploadingReel(null);
-            return;
-          }
-          
-          if (result && result.event === 'success') {
-            const uploadResult = result.info;
-            const updated = reels.map(r => 
-              r.id === reelId 
-                ? { 
-                    ...r, 
-                    video: uploadResult.secure_url || uploadResult.url,
-                    thumbnail: uploadResult.thumbnail_url || uploadResult.secure_url || uploadResult.url
-                  }
-                : r
-            );
-            setReels(updated);
-            setUploadingReel(null);
-            alert('Reel uploaded successfully!');
-          }
-        }
-      );
+    // Destroy existing widget if it exists to create a fresh one
+    if (widgetRef.current) {
+      try {
+        widgetRef.current.destroy();
+      } catch (e) {
+        // Ignore destroy errors
+      }
+      widgetRef.current = null;
     }
+    
+    widgetRef.current = window.cloudinary.createUploadWidget(
+      {
+        cloudName: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
+        uploadPreset: process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || undefined,
+        folder: process.env.NEXT_PUBLIC_CLOUDINARY_FOLDER || 'portfolio',
+        multiple: false,
+        resourceType: 'video',
+        maxFileSize: 50000000, // 50MB in bytes
+        clientAllowedFormats: ['mp4', 'mov', 'avi', 'mkv', 'webm'],
+        maxImageWidth: 0, // No limit
+        maxImageHeight: 0, // No limit
+        maxVideoFileSize: 50000000, // 50MB explicitly for videos
+        sources: ['local', 'camera', 'url'],
+        showAdvancedOptions: true,
+        cropping: false,
+      },
+      async (error: any, result: any) => {
+        if (error) {
+          console.error('Cloudinary Widget Upload error:', error);
+          let errorMessage = 'Upload error: ';
+          if (error.message) {
+            errorMessage += error.message;
+          } else if (error.status === 400) {
+            errorMessage += 'File is too large or invalid format. Please check Cloudinary settings.';
+          } else {
+            errorMessage += 'Unknown error. Please try again or check Cloudinary configuration.';
+          }
+          alert(errorMessage);
+          setUploadingReel(null);
+          return;
+        }
+        
+        if (result && result.event === 'success') {
+          const uploadResult = result.info;
+          const updated = reels.map(r => 
+            r.id === reelId 
+              ? { 
+                  ...r, 
+                  video: uploadResult.secure_url || uploadResult.url,
+                  thumbnail: uploadResult.thumbnail_url || uploadResult.secure_url || uploadResult.url
+                }
+              : r
+          );
+          setReels(updated);
+          setUploadingReel(null);
+          alert('Reel uploaded successfully!');
+        } else if (result && result.event === 'close') {
+          // User closed the widget
+          setUploadingReel(null);
+        }
+      }
+    );
     
     widgetRef.current.open();
   };
