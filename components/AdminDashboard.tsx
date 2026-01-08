@@ -493,15 +493,15 @@ function UploadSection() {
       {
         cloudName: cloudName,
         uploadPreset: uploadPreset,
-          folder: `${folder}/${category}`,
-          multiple: true,
-          resourceType: 'auto',
-          maxFileSize: 200000000, // 200MB
-          clientAllowedFormats: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'mp4', 'mov', 'avi', 'mkv', 'webm'],
-          cropping: false,
-          showAdvancedOptions: true,
-          tags: [category],
-        },
+        folder: `${folder}/${category}`,
+        multiple: true,
+        resourceType: 'auto',
+        maxFileSize: 200000000, // 200MB
+        clientAllowedFormats: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'mp4', 'mov', 'avi', 'mkv', 'webm'],
+        cropping: false,
+        showAdvancedOptions: true,
+        tags: [category],
+      },
         async (error: any, result: any) => {
           if (error) {
             console.error('Cloudinary upload error:', error);
