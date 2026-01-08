@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useScrollReveal } from '@/lib/animations';
+import { AnimatedCounter } from '@/components/AnimatedCounter';
+import { ArrowDown, Calendar, Eye } from 'lucide-react';
 
 export function About() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -117,6 +119,14 @@ export function About() {
         <div className="absolute inset-0 bg-dark-bg/80" />
       </div>
 
+      {/* Scroll Indicator */}
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 animate-bounce">
+        <div className="flex flex-col items-center gap-2 text-text-secondary/70 hover:text-accent transition-colors cursor-pointer group">
+          <span className="text-sm font-medium">Scroll</span>
+          <ArrowDown className="w-5 h-5 group-hover:translate-y-1 transition-transform" />
+        </div>
+      </div>
+
       {/* Content */}
       <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 py-12 lg:py-20">
         {/* 
@@ -171,24 +181,72 @@ export function About() {
               <p className="text-xl md:text-2xl text-accent mb-8">{aboutData.heroSubtitle}</p>
             )}
             {aboutData.bio && (
-              <div className="space-y-6 text-lg md:text-xl text-text-secondary leading-relaxed">
+              <div className="space-y-6 text-lg md:text-xl text-text-secondary leading-relaxed mb-8">
                 {aboutData.bio.split('\n').map((paragraph, index) => (
                   <p key={index}>{paragraph}</p>
                 ))}
               </div>
             )}
             
+            {/* CTA Buttons */}
+            <div className="flex flex-wrap gap-4 mb-12">
+              <a
+                href="#contact"
+                className="group px-8 py-4 bg-accent text-dark-bg font-semibold rounded-lg hover:bg-accent/90 hover:scale-105 active:scale-95 transition-all duration-300 flex items-center gap-2 btn-magnetic"
+                onClick={(e) => {
+                  e.preventDefault();
+                  const element = document.querySelector('#contact');
+                  if (element) {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }
+                }}
+              >
+                <Calendar className="w-5 h-5" />
+                <span>Book a Session</span>
+              </a>
+              <a
+                href="#product"
+                className="group px-8 py-4 bg-transparent border-2 border-accent text-accent font-semibold rounded-lg hover:bg-accent/10 hover:scale-105 active:scale-95 transition-all duration-300 flex items-center gap-2 btn-magnetic"
+                onClick={(e) => {
+                  e.preventDefault();
+                  const element = document.querySelector('#product');
+                  if (element) {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }
+                }}
+              >
+                <Eye className="w-5 h-5" />
+                <span>View Portfolio</span>
+              </a>
+            </div>
+            
+            {/* Stats with Animation */}
             <div className="mt-12 grid grid-cols-3 gap-8 pt-8 border-t border-dark-section">
               <div className="text-center">
-                <div className="text-4xl md:text-5xl font-bold text-accent mb-2">{aboutData.stats.projects}+</div>
+                <AnimatedCounter
+                  value={aboutData.stats.projects}
+                  duration={2000}
+                  suffix="+"
+                  className="text-4xl md:text-5xl font-bold text-accent mb-2"
+                />
                 <div className="text-sm text-text-secondary">Projects</div>
               </div>
               <div className="text-center">
-                <div className="text-4xl md:text-5xl font-bold text-accent mb-2">{aboutData.stats.clients}+</div>
+                <AnimatedCounter
+                  value={aboutData.stats.clients}
+                  duration={2000}
+                  suffix="+"
+                  className="text-4xl md:text-5xl font-bold text-accent mb-2"
+                />
                 <div className="text-sm text-text-secondary">Clients</div>
               </div>
               <div className="text-center">
-                <div className="text-4xl md:text-5xl font-bold text-accent mb-2">{aboutData.stats.awards}+</div>
+                <AnimatedCounter
+                  value={aboutData.stats.awards}
+                  duration={2000}
+                  suffix="+"
+                  className="text-4xl md:text-5xl font-bold text-accent mb-2"
+                />
                 <div className="text-sm text-text-secondary">Awards</div>
               </div>
             </div>

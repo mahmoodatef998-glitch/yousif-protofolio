@@ -10,7 +10,13 @@ export function Contact() {
     email: '',
     message: '',
   });
+  const [errors, setErrors] = useState({
+    name: '',
+    email: '',
+    message: '',
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [contactInfo, setContactInfo] = useState({
     email: 'yousif@photography.com',
     phone: '+1 (234) 567-890',
@@ -72,22 +78,115 @@ export function Contact() {
   }, [fetchContact]);
 
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    // Simulate form submission
-    setTimeout(() => {
-      setIsSubmitting(false);
-      setFormData({ name: '', email: '', message: '' });
-      alert('Message sent successfully!');
-    }, 1000);
+  const validateField = (name: string, value: string) => {
+    let error = '';
+    
+    switch (name) {
+      case 'name':
+        if (!value.trim()) {
+          error = 'Name is required';
+        } else if (value.trim().length < 2) {
+          error = 'Name must be at least 2 characters';
+        }
+        break;
+      case 'email':
+        if (!value.trim()) {
+          error = 'Email is required';
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+          error = 'Please enter a valid email address';
+        }
+        break;
+      case 'message':
+        if (!value.trim()) {
+          error = 'Message is required';
+        } else if (value.trim().length < 10) {
+          error = 'Message must be at least 10 characters';
+        }
+        break;
+    }
+    
+    return error;
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value,
+      [name]: value,
     });
+
+    // Real-time validation
+    if (errors[name as keyof typeof errors]) {
+      const error = validateField(name, value);
+      setErrors({
+        ...errors,
+        [name]: error,
+      });
+    }
+  };
+
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    const error = validateField(name, value);
+    setErrors({
+      ...errors,
+      [name]: error,
+    });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validate all fields
+    const newErrors = {
+      name: validateField('name', formData.name),
+      email: validateField('email', formData.email),
+      message: validateField('message', formData.message),
+    };
+    
+    setErrors(newErrors);
+    
+    // Check if there are any errors
+    if (Object.values(newErrors).some(error => error !== '')) {
+      return;
+    }
+    
+    setIsSubmitting(true);
+    setSubmitStatus('idle');
+    
+    try {
+      const response = await fetch('/api/contact/submit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+      
+      if (response.ok) {
+        setSubmitStatus('success');
+        setFormData({ name: '', email: '', message: '' });
+        setErrors({ name: '', email: '', message: '' });
+        
+        // Reset success message after 5 seconds
+        setTimeout(() => {
+          setSubmitStatus('idle');
+        }, 5000);
+      } else {
+        throw new Error('Failed to send message');
+      }
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      setSubmitStatus('error');
+      
+      // Reset error message after 5 seconds
+      setTimeout(() => {
+        setSubmitStatus('idle');
+      }, 5000);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -188,10 +287,18 @@ export function Contact() {
                   name="name"
                   value={formData.name}
                   onChange={handleChange}
+                  onBlur={handleBlur}
                   placeholder="Your Name"
                   required
-                  className="w-full pl-12 pr-4 py-4 bg-dark-section border border-dark-section rounded-lg text-text-primary placeholder-text-secondary focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20 transition-all duration-300"
+                  className={`w-full pl-12 pr-4 py-4 bg-dark-section border rounded-lg text-text-primary placeholder-text-secondary focus:outline-none focus:ring-2 transition-all duration-300 ${
+                    errors.name
+                      ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20'
+                      : 'border-dark-section focus:border-accent focus:ring-accent/20'
+                  }`}
                 />
+                {errors.name && (
+                  <p className="mt-1 text-sm text-red-500 animate-fade-in">{errors.name}</p>
+                )}
               </div>
 
               <div className="relative group">
@@ -203,10 +310,18 @@ export function Contact() {
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
+                  onBlur={handleBlur}
                   placeholder="Your Email"
                   required
-                  className="w-full pl-12 pr-4 py-4 bg-dark-section border border-dark-section rounded-lg text-text-primary placeholder-text-secondary focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20 transition-all duration-300"
+                  className={`w-full pl-12 pr-4 py-4 bg-dark-section border rounded-lg text-text-primary placeholder-text-secondary focus:outline-none focus:ring-2 transition-all duration-300 ${
+                    errors.email
+                      ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20'
+                      : 'border-dark-section focus:border-accent focus:ring-accent/20'
+                  }`}
                 />
+                {errors.email && (
+                  <p className="mt-1 text-sm text-red-500 animate-fade-in">{errors.email}</p>
+                )}
               </div>
 
               <div className="relative group">
@@ -217,22 +332,54 @@ export function Contact() {
                   name="message"
                   value={formData.message}
                   onChange={handleChange}
+                  onBlur={handleBlur}
                   placeholder="Your Message"
                   rows={6}
                   required
-                  className="w-full pl-12 pr-4 py-4 bg-dark-section border border-dark-section rounded-lg text-text-primary placeholder-text-secondary focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20 transition-all duration-300 resize-none"
+                  className={`w-full pl-12 pr-4 py-4 bg-dark-section border rounded-lg text-text-primary placeholder-text-secondary focus:outline-none focus:ring-2 transition-all duration-300 resize-none ${
+                    errors.message
+                      ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20'
+                      : 'border-dark-section focus:border-accent focus:ring-accent/20'
+                  }`}
                 />
+                {errors.message && (
+                  <p className="mt-1 text-sm text-red-500 animate-fade-in">{errors.message}</p>
+                )}
               </div>
+
+              {/* Success/Error Messages */}
+              {submitStatus === 'success' && (
+                <div className="p-4 bg-green-500/20 border border-green-500/50 rounded-lg text-green-400 animate-fade-in">
+                  <p className="flex items-center gap-2">
+                    <span className="text-lg">✓</span>
+                    Message sent successfully! We'll get back to you soon.
+                  </p>
+                </div>
+              )}
+              
+              {submitStatus === 'error' && (
+                <div className="p-4 bg-red-500/20 border border-red-500/50 rounded-lg text-red-400 animate-fade-in">
+                  <p className="flex items-center gap-2">
+                    <span className="text-lg">✕</span>
+                    Failed to send message. Please try again or contact us directly.
+                  </p>
+                </div>
+              )}
 
               <button
                 type="submit"
-                disabled={isSubmitting}
-                className="w-full px-8 py-4 bg-accent text-dark-bg font-semibold rounded-lg hover:bg-accent/90 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isSubmitting || submitStatus === 'success'}
+                className="w-full px-8 py-4 bg-accent text-dark-bg font-semibold rounded-lg hover:bg-accent/90 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed btn-magnetic"
               >
                 {isSubmitting ? (
                   <>
                     <div className="w-5 h-5 border-2 border-dark-bg border-t-transparent rounded-full animate-spin" />
                     <span>Sending...</span>
+                  </>
+                ) : submitStatus === 'success' ? (
+                  <>
+                    <span className="text-lg">✓</span>
+                    <span>Message Sent!</span>
                   </>
                 ) : (
                   <>

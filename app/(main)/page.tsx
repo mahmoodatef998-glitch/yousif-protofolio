@@ -7,6 +7,7 @@ import { Wedding } from '@/components/Wedding';
 import { Product } from '@/components/Product';
 import { Restaurant } from '@/components/Restaurant';
 import { Contact } from '@/components/Contact';
+import { Testimonials } from '@/components/Testimonials';
 import { ScrollProgress } from '@/components/ScrollProgress';
 import { BackToTop } from '@/components/BackToTop';
 import { usePageLoad } from '@/lib/animations';
@@ -26,6 +27,9 @@ export default function Home() {
       
       {/* About Section - Hero at top */}
       <About />
+      
+      {/* Testimonials Section */}
+      <Testimonials />
       
       {/* Videos Section - 4 full-screen videos */}
       <Videos />
