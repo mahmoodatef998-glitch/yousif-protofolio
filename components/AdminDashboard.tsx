@@ -21,7 +21,10 @@ import {
   Save,
   X,
   Upload,
-  Loader2
+  Loader2,
+  Star,
+  Check,
+  XCircle
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
@@ -31,7 +34,7 @@ declare global {
   }
 }
 
-type SectionType = 'about' | 'videos' | 'reels' | 'wedding' | 'product' | 'restaurant' | 'contact' | 'upload';
+type SectionType = 'about' | 'videos' | 'reels' | 'wedding' | 'product' | 'restaurant' | 'contact' | 'upload' | 'reviews';
 
 interface Section {
   id: SectionType;
@@ -49,6 +52,7 @@ const sections: Section[] = [
   { id: 'product', name: 'Product', icon: ShoppingBag, description: 'Manage product photography' },
   { id: 'restaurant', name: 'Restaurant', icon: UtensilsCrossed, description: 'Manage restaurant photography' },
   { id: 'contact', name: 'Contact', icon: Mail, description: 'Manage contact information' },
+  { id: 'reviews', name: 'Reviews', icon: Star, description: 'Review and approve user reviews' },
 ];
 
 export default function AdminDashboard() {
@@ -214,6 +218,8 @@ function SectionContent({
       return <GallerySection section="restaurant" isEditing={isEditing} />;
     case 'contact':
       return <ContactSection isEditing={isEditing} />;
+    case 'reviews':
+      return <ReviewsSection />;
     default:
       return <div className="text-text-secondary">Select a section to manage</div>;
   }
@@ -2227,6 +2233,197 @@ function ContactSection({ isEditing }: { isEditing: boolean }) {
           </button>
         </div>
       )}
+    </div>
+  );
+}
+
+// Reviews Section Component
+function ReviewsSection() {
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [processing, setProcessing] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchPendingReviews();
+  }, []);
+
+  const fetchPendingReviews = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/reviews/pending');
+      if (response.ok) {
+        const data = await response.json();
+        setReviews(data.reviews || []);
+      } else {
+        console.error('Failed to fetch pending reviews');
+      }
+    } catch (error) {
+      console.error('Error fetching pending reviews:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleApprove = async (reviewId: string, approve: boolean) => {
+    try {
+      setProcessing(reviewId);
+      const response = await fetch('/api/reviews/approve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reviewId, approve }),
+      });
+
+      if (response.ok) {
+        setReviews(reviews.filter(r => r.id !== reviewId));
+        alert(approve ? 'Review approved successfully!' : 'Review rejected and deleted.');
+      } else {
+        const error = await response.json();
+        alert(`Error: ${error.error || 'Failed to process review'}`);
+      }
+    } catch (error: any) {
+      console.error('Error processing review:', error);
+      alert(`Error: ${error.message || 'Failed to process review'}`);
+    } finally {
+      setProcessing(null);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-8 h-8 animate-spin text-accent" />
+      </div>
+    );
+  }
+
+  if (reviews.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <Star className="w-16 h-16 text-text-secondary/30 mx-auto mb-4" />
+        <h3 className="text-xl font-semibold text-text-primary mb-2">No Pending Reviews</h3>
+        <p className="text-text-secondary">All reviews have been processed.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-dark-section rounded-lg p-4 border border-dark-bg">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-lg font-semibold text-text-primary">Pending Reviews</h3>
+          <span className="px-3 py-1 bg-accent/20 text-accent rounded-full text-sm font-medium">
+            {reviews.length} {reviews.length === 1 ? 'Review' : 'Reviews'}
+          </span>
+        </div>
+        <p className="text-sm text-text-secondary">
+          Review and approve user-submitted reviews before they appear on the website.
+        </p>
+      </div>
+
+      <div className="grid gap-6">
+        {reviews.map((review) => {
+          const contentItem = Array.isArray(review.content_items) 
+            ? review.content_items[0] 
+            : review.content_items;
+          const section = contentItem?.sections 
+            ? (Array.isArray(contentItem.sections) ? contentItem.sections[0] : contentItem.sections)
+            : null;
+
+          return (
+            <div
+              key={review.id}
+              className="bg-dark-section rounded-lg p-6 border border-dark-bg hover:border-accent/30 transition-colors"
+            >
+              <div className="flex items-start justify-between gap-6">
+                <div className="flex-1">
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="flex items-center gap-2">
+                      {[...Array(5)].map((_, i) => (
+                        <Star
+                          key={i}
+                          className={`w-5 h-5 ${
+                            i < review.rating
+                              ? 'fill-accent text-accent'
+                              : 'text-text-secondary/20'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    <span className="text-sm text-text-secondary">
+                      {review.rating}/5
+                    </span>
+                  </div>
+
+                  <div className="mb-4">
+                    <p className="text-text-primary font-semibold mb-1">
+                      {review.user_name || 'Anonymous'}
+                    </p>
+                    <p className="text-sm text-text-secondary">
+                      {new Date(review.created_at).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                      })}
+                    </p>
+                  </div>
+
+                  {review.comment && (
+                    <div className="mb-4">
+                      <p className="text-text-secondary leading-relaxed">
+                        "{review.comment}"
+                      </p>
+                    </div>
+                  )}
+
+                  {contentItem && (
+                    <div className="mt-4 pt-4 border-t border-dark-bg">
+                      <p className="text-sm text-text-secondary mb-1">
+                        <span className="font-medium">Content:</span> {contentItem.title || 'Untitled'}
+                      </p>
+                      {section && (
+                        <p className="text-sm text-text-secondary">
+                          <span className="font-medium">Section:</span> {section.title || section.name}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <button
+                    onClick={() => handleApprove(review.id, true)}
+                    disabled={processing === review.id}
+                    className="px-4 py-2 bg-accent text-dark-bg rounded-lg font-semibold hover:bg-accent/90 transition-colors disabled:opacity-50 flex items-center gap-2 whitespace-nowrap"
+                  >
+                    {processing === review.id ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Check className="w-4 h-4" />
+                    )}
+                    Approve
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (confirm('Are you sure you want to reject and delete this review?')) {
+                        handleApprove(review.id, false);
+                      }
+                    }}
+                    disabled={processing === review.id}
+                    className="px-4 py-2 bg-red-500/20 text-red-400 border border-red-500/30 rounded-lg font-semibold hover:bg-red-500/30 transition-colors disabled:opacity-50 flex items-center gap-2 whitespace-nowrap"
+                  >
+                    {processing === review.id ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <XCircle className="w-4 h-4" />
+                    )}
+                    Reject
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
