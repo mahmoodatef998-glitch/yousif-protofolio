@@ -7,6 +7,8 @@ import { Wedding } from '@/components/Wedding';
 import { Product } from '@/components/Product';
 import { Restaurant } from '@/components/Restaurant';
 import { Contact } from '@/components/Contact';
+import { ScrollProgress } from '@/components/ScrollProgress';
+import { BackToTop } from '@/components/BackToTop';
 import { usePageLoad } from '@/lib/animations';
 
 export default function Home() {
@@ -19,6 +21,9 @@ export default function Home() {
         opacity: mounted ? 1 : 0,
       }}
     >
+      <ScrollProgress />
+      <BackToTop />
+      
       {/* About Section - Hero at top */}
       <About />
       

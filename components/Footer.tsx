@@ -1,14 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { Instagram, Linkedin, Mail, ArrowUp } from 'lucide-react';
+import { Instagram, Linkedin, Mail } from 'lucide-react';
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
-
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
 
   return (
     <footer className="relative bg-dark-section border-t border-dark-bg">
@@ -118,17 +114,10 @@ export function Footer() {
 
         {/* Bottom Bar */}
         <div className="pt-8 border-t border-dark-bg">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex flex-col md:flex-row items-center justify-center gap-4">
             <p className="text-text-secondary text-sm">
               © {currentYear} Yousif. All rights reserved.
             </p>
-            <button
-              onClick={scrollToTop}
-              className="flex items-center space-x-2 text-text-secondary hover:text-accent transition-colors group"
-            >
-              <span className="text-sm">Back to top</span>
-              <ArrowUp className="w-4 h-4 group-hover:-translate-y-1 transition-transform" />
-            </button>
           </div>
         </div>
       </div>

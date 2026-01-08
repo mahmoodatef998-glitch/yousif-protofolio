@@ -115,8 +115,17 @@ export function Reels() {
   if (loading) {
     return (
       <section id="reels" className="py-24 md:py-32 bg-dark-section">
-        <div className="max-w-7xl mx-auto px-6 lg:px-8 text-center">
-          <div className="text-text-secondary">Loading reels...</div>
+        <div className="max-w-7xl mx-auto px-6 lg:px-8">
+          <h2 className="text-5xl md:text-6xl font-bold text-text-primary mb-16 text-center">
+            Reels
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="card-skeleton aspect-[9/16] rounded-2xl overflow-hidden">
+                <div className="w-full h-full bg-dark-bg/50" />
+              </div>
+            ))}
+          </div>
         </div>
       </section>
     );
@@ -161,12 +170,27 @@ export function Reels() {
                 }}
                 onClick={() => setSelectedReel(reel.video)}
               >
-                {/* Image with parallax */}
-                <img
-                  src={reel.thumbnail}
-                  alt={reel.title}
-                  className="card-image-parallax absolute inset-0 w-full h-full object-cover"
-                />
+                {/* Image with parallax and blur placeholder */}
+                <div className="absolute inset-0">
+                  {/* Blur placeholder */}
+                  <img
+                    src={reel.thumbnail}
+                    alt=""
+                    className="absolute inset-0 w-full h-full object-cover blur-xl scale-110 opacity-50"
+                    aria-hidden="true"
+                  />
+                  {/* Main image */}
+                  <img
+                    src={reel.thumbnail}
+                    alt={reel.title}
+                    className="card-image-parallax relative w-full h-full object-cover transition-opacity duration-500"
+                    style={{ opacity: 0 }}
+                    loading="lazy"
+                    onLoad={(e) => {
+                      (e.target as HTMLImageElement).style.opacity = '1';
+                    }}
+                  />
+                </div>
                 
                 {/* Enhanced gradient overlay */}
                 <div className="card-overlay" />

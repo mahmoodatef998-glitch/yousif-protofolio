@@ -124,8 +124,17 @@ export function Restaurant() {
   if (loading) {
     return (
       <section id="restaurant" className="py-24 md:py-32 bg-dark-section">
-        <div className="max-w-7xl mx-auto px-6 lg:px-8 text-center">
-          <div className="text-text-secondary">Loading restaurant gallery...</div>
+        <div className="max-w-7xl mx-auto px-6 lg:px-8">
+          <h2 className="text-5xl md:text-6xl font-bold text-text-primary mb-16 text-center">
+            Restaurant
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="card-skeleton aspect-[4/3] rounded-2xl overflow-hidden">
+                <div className="w-full h-full bg-dark-bg/50" />
+              </div>
+            ))}
+          </div>
         </div>
       </section>
     );
@@ -170,26 +179,40 @@ export function Restaurant() {
                 }}
                 onClick={() => setSelectedImage(item.image)}
               >
-                {/* Image with parallax */}
-                <img
-                  src={item.image}
-                  alt={item.title}
-                  className="card-image-parallax absolute inset-0 w-full h-full object-cover"
-                  onError={(e) => {
-                    console.error('❌ Image failed to load:', {
-                      src: item.image,
-                      title: item.title,
-                      id: item.id,
-                    });
-                    (e.target as HTMLImageElement).src = 'https://via.placeholder.com/800x600?text=Image+Not+Found';
-                  }}
-                  onLoad={() => {
-                    console.log('✅ Image loaded successfully:', {
-                      src: item.image,
-                      title: item.title,
-                    });
-                  }}
-                />
+                {/* Image with parallax and blur placeholder */}
+                <div className="absolute inset-0">
+                  {/* Blur placeholder */}
+                  <img
+                    src={item.image}
+                    alt=""
+                    className="absolute inset-0 w-full h-full object-cover blur-xl scale-110 opacity-50"
+                    aria-hidden="true"
+                  />
+                  {/* Main image */}
+                  <img
+                    src={item.image}
+                    alt={item.title}
+                    className="card-image-parallax relative w-full h-full object-cover transition-opacity duration-500"
+                    style={{ opacity: 0 }}
+                    loading="lazy"
+                    onError={(e) => {
+                      console.error('❌ Image failed to load:', {
+                        src: item.image,
+                        title: item.title,
+                        id: item.id,
+                      });
+                      (e.target as HTMLImageElement).src = 'https://via.placeholder.com/800x600?text=Image+Not+Found';
+                      (e.target as HTMLImageElement).style.opacity = '1';
+                    }}
+                    onLoad={(e) => {
+                      (e.target as HTMLImageElement).style.opacity = '1';
+                      console.log('✅ Image loaded successfully:', {
+                        src: item.image,
+                        title: item.title,
+                      });
+                    }}
+                  />
+                </div>
                 
                 {/* Enhanced gradient overlay */}
                 <div className="card-overlay" />

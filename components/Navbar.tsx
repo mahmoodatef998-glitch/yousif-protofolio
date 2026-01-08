@@ -17,13 +17,41 @@ const navItems = [
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState('');
 
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 50);
     };
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setActiveSection(entry.target.id);
+          }
+        });
+      },
+      {
+        threshold: 0.5,
+        rootMargin: '-100px 0px -50% 0px',
+      }
+    );
+
+    const sections = document.querySelectorAll('section[id]');
+    sections.forEach((section) => {
+      observer.observe(section);
+    });
+
+    return () => {
+      sections.forEach((section) => {
+        observer.unobserve(section);
+      });
+    };
   }, []);
 
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
@@ -52,16 +80,27 @@ export function Navbar() {
           </a>
 
           <div className="hidden md:flex items-center space-x-8">
-            {navItems.map((item) => (
-              <a
-                key={item.name}
-                href={item.href}
-                onClick={(e) => handleNavClick(e, item.href)}
-                className="text-sm text-text-secondary hover:text-accent transition-colors"
-              >
-                {item.name}
-              </a>
-            ))}
+            {navItems.map((item) => {
+              const sectionId = item.href.replace('#', '');
+              const isActive = activeSection === sectionId;
+              return (
+                <a
+                  key={item.name}
+                  href={item.href}
+                  onClick={(e) => handleNavClick(e, item.href)}
+                  className={`text-sm transition-colors relative ${
+                    isActive
+                      ? 'text-accent'
+                      : 'text-text-secondary hover:text-accent'
+                  }`}
+                >
+                  {item.name}
+                  {isActive && (
+                    <span className="absolute -bottom-1 left-0 right-0 h-0.5 bg-accent animate-fade-in" />
+                  )}
+                </a>
+              );
+            })}
             <Link
               href="/admin/login"
               className="text-sm text-text-secondary hover:text-accent transition-colors flex items-center gap-2"
@@ -83,16 +122,24 @@ export function Navbar() {
       {mobileOpen && (
         <div className="md:hidden bg-dark-bg border-t border-dark-section">
           <div className="px-6 py-4 space-y-4">
-            {navItems.map((item) => (
-              <a
-                key={item.name}
-                href={item.href}
-                onClick={(e) => handleNavClick(e, item.href)}
-                className="block text-text-secondary hover:text-accent transition-colors"
-              >
-                {item.name}
-              </a>
-            ))}
+            {navItems.map((item) => {
+              const sectionId = item.href.replace('#', '');
+              const isActive = activeSection === sectionId;
+              return (
+                <a
+                  key={item.name}
+                  href={item.href}
+                  onClick={(e) => handleNavClick(e, item.href)}
+                  className={`block transition-colors ${
+                    isActive
+                      ? 'text-accent'
+                      : 'text-text-secondary hover:text-accent'
+                  }`}
+                >
+                  {item.name}
+                </a>
+              );
+            })}
             <Link
               href="/admin/login"
               onClick={() => setMobileOpen(false)}
