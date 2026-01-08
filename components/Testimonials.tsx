@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
+import Image from 'next/image';
 import { Quote, Star } from 'lucide-react';
 import { useStaggeredReveal } from '@/lib/animations';
 
@@ -150,11 +151,13 @@ export function Testimonials() {
 
               {/* Author Info */}
               <div className="flex items-center gap-4">
-                <div className="relative">
-                  <img
+                <div className="relative w-12 h-12">
+                  <Image
                     src={testimonial.image}
                     alt={testimonial.name}
-                    className="w-12 h-12 rounded-full object-cover ring-2 ring-accent/30 group-hover:ring-accent transition-all"
+                    width={48}
+                    height={48}
+                    className="rounded-full object-cover ring-2 ring-accent/30 group-hover:ring-accent transition-all"
                   />
                 </div>
                 <div>
@@ -174,11 +177,13 @@ export function Testimonials() {
         <div className="relative max-w-4xl mx-auto">
           <div className="bg-dark-bg/80 backdrop-blur-sm rounded-3xl p-8 md:p-12 border border-dark-section/50">
             <div className="flex items-start gap-6">
-              <div className="flex-shrink-0">
-                <img
+              <div className="flex-shrink-0 relative w-20 h-20">
+                <Image
                   src={testimonials[currentIndex].image}
                   alt={testimonials[currentIndex].name}
-                  className="w-20 h-20 rounded-full object-cover ring-4 ring-accent/30"
+                  width={80}
+                  height={80}
+                  className="rounded-full object-cover ring-4 ring-accent/30"
                 />
               </div>
               <div className="flex-1">

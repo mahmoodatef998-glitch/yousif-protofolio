@@ -20,10 +20,7 @@ export function Wedding() {
 
   const fetchImages = useCallback(async () => {
     try {
-      // Only show loading on initial fetch
-      if (images.length === 0) {
-        setLoading(true);
-      }
+      setLoading(true);
       
       const response = await fetch('/api/content?section=wedding', {
         cache: 'no-store',
@@ -31,10 +28,8 @@ export function Wedding() {
       
       if (!response.ok) {
         console.error('Failed to fetch wedding images:', response.status, response.statusText);
-        if (images.length === 0) {
-          setLoading(false);
-          setImages([]);
-        }
+        setLoading(false);
+        setImages([]);
         return;
       }
       
@@ -50,25 +45,17 @@ export function Wedding() {
             image: item.media_url || '',
           }));
         
-        // Only update if data actually changed (compare IDs)
-        const currentIds = images.map(img => img.id).sort().join(',');
-        const newIds = formattedImages.map(img => img.id).sort().join(',');
-        
-        if (currentIds !== newIds) {
-          setImages(formattedImages);
-        }
-      } else if (images.length === 0) {
+        setImages(formattedImages);
+      } else {
         setImages([]);
       }
     } catch (error) {
       console.error('Error fetching wedding images:', error);
-      if (images.length === 0) {
-        setImages([]);
-      }
+      setImages([]);
     } finally {
       setLoading(false);
     }
-  }, [images.length]);
+  }, []);
 
   useEffect(() => {
     let mounted = true;

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useStaggeredReveal } from '@/lib/animations';
+import { ContentInteraction } from '@/components/ContentInteraction';
 
 interface Reel {
   id: string;
