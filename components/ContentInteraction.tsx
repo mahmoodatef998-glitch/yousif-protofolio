@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Heart, MessageSquare, Eye, Star } from 'lucide-react';
 
 interface ContentInteractionProps {
@@ -161,8 +162,8 @@ export function ContentInteraction({
         </div>
       </div>
 
-      {/* Review Modal */}
-      {showReviewModal && (
+      {/* Review Modal - Using Portal to render outside card */}
+      {showReviewModal && typeof window !== 'undefined' && createPortal(
         <ReviewModal
           contentId={contentId}
           onClose={() => setShowReviewModal(false)}
@@ -170,7 +171,8 @@ export function ContentInteraction({
             setRating(newRating);
             setShowReviewModal(false);
           }}
-        />
+        />,
+        document.body
       )}
     </>
   );
@@ -230,12 +232,26 @@ function ReviewModal({
 
   return (
     <div
-      className="fixed inset-0 z-[100] bg-dark-bg/95 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn"
+      className="fixed inset-0 z-[9999] bg-dark-bg/95 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn overflow-y-auto"
       onClick={onClose}
+      style={{ 
+        position: 'fixed', 
+        top: 0, 
+        left: 0, 
+        right: 0, 
+        bottom: 0,
+        zIndex: 9999
+      }}
     >
       <div
-        className="bg-dark-section rounded-2xl p-6 md:p-8 max-w-md w-full border border-dark-bg shadow-2xl animate-fadeInScale"
+        className="bg-dark-section rounded-2xl p-6 md:p-8 max-w-lg w-full mx-auto my-8 border border-dark-bg shadow-2xl animate-fadeInScale"
         onClick={(e) => e.stopPropagation()}
+        style={{ 
+          maxHeight: '90vh', 
+          overflowY: 'auto',
+          position: 'relative',
+          zIndex: 10000
+        }}
       >
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
