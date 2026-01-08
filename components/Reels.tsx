@@ -149,27 +149,41 @@ export function Reels() {
             {reels.map((reel, index) => (
               <div
                 key={reel.id}
-                className={`group relative aspect-[9/16] overflow-hidden cursor-pointer hover-lift transition-opacity-smooth transition-transform-smooth ${
-                  index < visibleCount ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+                className={`group card-premium card-glow card-ripple relative aspect-[9/16] overflow-hidden cursor-pointer rounded-2xl ${
+                  index < visibleCount 
+                    ? 'opacity-100 translate-y-0' 
+                    : 'opacity-0 translate-y-[60px]'
                 }`}
                 style={{
-                  transitionDelay: `${index * 0.08}s`,
+                  transition: 'all 0.8s cubic-bezier(0.16, 1, 0.3, 1)',
+                  transitionDelay: `${index * 0.1}s`,
+                  filter: index < visibleCount ? 'blur(0)' : 'blur(4px)',
                 }}
                 onClick={() => setSelectedReel(reel.video)}
               >
+                {/* Image with parallax */}
                 <img
                   src={reel.thumbnail}
                   alt={reel.title}
-                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                  className="card-image-parallax absolute inset-0 w-full h-full object-cover"
                 />
-                <div className="absolute inset-0 bg-dark-bg/0 group-hover:bg-dark-bg/70 transition-all duration-300 flex items-center justify-center">
-                  <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-center">
-                    <p className="text-text-primary text-lg font-semibold mb-2">{reel.title}</p>
-                    <div className="w-12 h-0.5 bg-accent mx-auto" />
+                
+                {/* Enhanced gradient overlay */}
+                <div className="card-overlay" />
+                
+                {/* Content overlay */}
+                <div className="absolute inset-0 flex items-center justify-center p-6 z-10">
+                  <div className="text-center transform translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-700 ease-out">
+                    <h3 className="card-title text-text-primary text-lg font-bold mb-3 text-glow">
+                      {reel.title}
+                    </h3>
+                    <div className="card-subtitle w-12 h-0.5 bg-accent mx-auto mb-3" />
                   </div>
                 </div>
-                <div className="absolute top-4 right-4 w-12 h-12 bg-dark-bg/50 rounded-full flex items-center justify-center">
-                  <svg className="w-6 h-6 text-text-primary" fill="currentColor" viewBox="0 0 24 24">
+                
+                {/* Play button - enhanced */}
+                <div className="absolute top-4 right-4 w-12 h-12 bg-dark-bg/50 backdrop-blur-sm border-2 border-accent/30 rounded-full opacity-100 group-hover:opacity-100 group-hover:scale-110 transition-all duration-500 flex items-center justify-center z-10">
+                  <svg className="w-6 h-6 text-accent group-hover:text-accent" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M8 5v14l11-7z" />
                   </svg>
                 </div>

@@ -179,25 +179,29 @@ export function Product() {
             {images.map((item, index) => (
               <div
                 key={item.id}
-                className={`group relative aspect-[4/3] overflow-hidden cursor-pointer hover-lift transition-opacity-smooth transition-transform-smooth ${
-                  index < visibleCount ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+                className={`group card-premium card-glow card-ripple relative aspect-[4/3] overflow-hidden cursor-pointer rounded-2xl ${
+                  index < visibleCount 
+                    ? 'opacity-100 translate-y-0' 
+                    : 'opacity-0 translate-y-[60px]'
                 }`}
                 style={{
-                  transitionDelay: `${index * 0.1}s`,
+                  transition: 'all 0.8s cubic-bezier(0.16, 1, 0.3, 1)',
+                  transitionDelay: `${index * 0.12}s`,
+                  filter: index < visibleCount ? 'blur(0)' : 'blur(4px)',
                 }}
                 onClick={() => setSelectedImage(item.image)}
               >
+                {/* Image with parallax */}
                 <img
                   src={item.image}
                   alt={item.title}
-                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                  className="card-image-parallax absolute inset-0 w-full h-full object-cover"
                   onError={(e) => {
                     console.error('❌ Image failed to load:', {
                       src: item.image,
                       title: item.title,
                       id: item.id,
                     });
-                    // Optionally set a placeholder
                     (e.target as HTMLImageElement).src = 'https://via.placeholder.com/800x600?text=Image+Not+Found';
                   }}
                   onLoad={() => {
@@ -207,11 +211,29 @@ export function Product() {
                     });
                   }}
                 />
-                <div className="absolute inset-0 bg-dark-bg/0 group-hover:bg-dark-bg/80 transition-all duration-300 flex items-center justify-center">
-                  <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-center">
-                    <p className="text-text-primary text-xl font-semibold mb-2">{item.title}</p>
-                    <p className="text-text-secondary text-sm">Product</p>
+                
+                {/* Enhanced gradient overlay */}
+                <div className="card-overlay" />
+                
+                {/* Content overlay */}
+                <div className="absolute inset-0 flex items-center justify-center p-6 z-10">
+                  <div className="text-center transform translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-700 ease-out">
+                    <h3 className="card-title text-text-primary text-2xl font-bold mb-3 text-glow">
+                      {item.title}
+                    </h3>
+                    <div className="card-subtitle w-16 h-0.5 bg-accent mx-auto mb-3" />
+                    <p className="card-subtitle text-text-secondary text-sm font-medium uppercase tracking-wider">
+                      Product Photography
+                    </p>
                   </div>
+                </div>
+                
+                {/* Corner accent */}
+                <div className="absolute top-4 right-4 w-12 h-12 border-2 border-accent/30 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-center justify-center z-10">
+                  <svg className="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
                 </div>
               </div>
             ))}
