@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useScrollReveal } from '@/lib/animations';
-import { ContentInteraction } from '@/components/ContentInteraction';
 
 interface Video {
   id: string;
@@ -154,23 +153,6 @@ export function Videos() {
                   <source src={video.src} type="video/mp4" />
                   Your browser does not support the video tag.
                 </video>
-                <div className="absolute inset-0 bg-dark-bg/50" />
-                <div className="relative z-10 text-center px-6">
-                  <h3 className="text-5xl md:text-7xl lg:text-8xl font-bold text-text-primary mb-4">
-                    {video.title}
-                  </h3>
-                  <p className="text-xl md:text-2xl text-text-secondary max-w-2xl mx-auto">
-                    {video.description}
-                  </p>
-                </div>
-
-                {/* Content Interaction (Like, Review, Views) */}
-                <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20">
-                  <ContentInteraction
-                    contentId={video.id}
-                    showReviewButton={true}
-                  />
-                </div>
               </div>
             );
           };
