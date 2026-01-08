@@ -12,6 +12,7 @@ export function About() {
     heroSubtitle: '',
     bio: '',
     profileImage: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&q=80',
+    heroVideoUrl: '', // Optional video background URL
     stats: { clients: 500, projects: 10, awards: 100 },
   });
   const [loading, setLoading] = useState(true);
@@ -42,6 +43,7 @@ export function About() {
           heroSubtitle: data.hero_subtitle || '',
           bio: data.bio_text || '',
           profileImage: data.profile_image_url || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&q=80',
+          heroVideoUrl: data.hero_video_url || '', // Optional video background
           stats: data.stats && typeof data.stats === 'object' ? data.stats : { clients: 500, projects: 10, awards: 100 },
         });
       }
@@ -109,13 +111,26 @@ export function About() {
       id="about"
       className="relative min-h-screen flex items-center justify-center overflow-hidden bg-dark-bg"
     >
-      {/* Background Image */}
+      {/* Background Image/Video */}
       <div className="absolute inset-0">
-        <img
-          src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=1920&q=80"
-          alt="About Background"
-          className="absolute inset-0 w-full h-full object-cover"
-        />
+        {/* Video Background (optional - can be enabled from admin) */}
+        {aboutData.heroVideoUrl ? (
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="absolute inset-0 w-full h-full object-cover"
+          >
+            <source src={aboutData.heroVideoUrl} type="video/mp4" />
+          </video>
+        ) : (
+          <img
+            src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=1920&q=80"
+            alt="About Background"
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+        )}
         <div className="absolute inset-0 bg-dark-bg/80" />
       </div>
 

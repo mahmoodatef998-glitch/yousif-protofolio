@@ -4,6 +4,7 @@ import './globals.css';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
+import Script from 'next/script';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
@@ -39,8 +40,46 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const structuredData = {
+    '@context': 'https://schema.org',
+    '@type': 'Person',
+    name: 'YOUSEF RABEA',
+    jobTitle: 'Professional Photographer & Videographer',
+    description: 'Professional photographer and videographer capturing authentic moments and creating timeless memories.',
+    url: process.env.NEXT_PUBLIC_SITE_URL || 'https://yourdomain.com',
+    image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&q=80',
+    sameAs: [
+      'https://instagram.com',
+      'https://linkedin.com',
+    ],
+    knowsAbout: [
+      'Wedding Photography',
+      'Product Photography',
+      'Restaurant Photography',
+      'Event Photography',
+      'Videography',
+    ],
+    offers: {
+      '@type': 'Offer',
+      itemOffered: {
+        '@type': 'Service',
+        serviceType: 'Photography Services',
+        areaServed: 'Worldwide',
+        availableChannel: {
+          '@type': 'ServiceChannel',
+          serviceUrl: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://yourdomain.com'}/contact`,
+        },
+      },
+    },
+  };
+
   return (
     <html lang="en" suppressHydrationWarning>
+      <Script
+        id="structured-data"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
       <body className={`${inter.variable} antialiased`} suppressHydrationWarning>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
           {children}
