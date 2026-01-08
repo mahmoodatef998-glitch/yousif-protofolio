@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { Quote, Star } from 'lucide-react';
 import { useStaggeredReveal } from '@/lib/animations';
 
@@ -54,7 +54,7 @@ const defaultTestimonials: Testimonial[] = [
 ];
 
 export function Testimonials() {
-  const sectionRef = useRef<HTMLElement>(null);
+  const sectionRef = useRef<HTMLElement | null>(null);
   const [testimonials, setTestimonials] = useState<Testimonial[]>(defaultTestimonials);
   const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -73,14 +73,14 @@ export function Testimonials() {
   );
 
   // Combine refs
-  const combinedRef = (node: HTMLElement | null) => {
+  const combinedRef = useCallback((node: HTMLElement | null) => {
     if (animationRef && 'current' in animationRef) {
       (animationRef as React.MutableRefObject<HTMLElement | null>).current = node;
     }
     if (sectionRef) {
       sectionRef.current = node;
     }
-  };
+  }, [animationRef]);
 
   return (
     <section
