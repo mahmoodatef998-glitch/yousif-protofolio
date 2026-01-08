@@ -230,20 +230,34 @@ function ReviewModal({
 
   return (
     <div
-      className="fixed inset-0 z-[100] bg-dark-bg/95 backdrop-blur-sm flex items-center justify-center p-4"
+      className="fixed inset-0 z-[100] bg-dark-bg/95 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn"
       onClick={onClose}
     >
       <div
-        className="bg-dark-section rounded-2xl p-8 max-w-md w-full border border-dark-bg"
+        className="bg-dark-section rounded-2xl p-6 md:p-8 max-w-md w-full border border-dark-bg shadow-2xl animate-fadeInScale"
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 className="text-2xl font-bold text-text-primary mb-6">Rate this content</h3>
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-2xl font-bold text-text-primary">Rate & Review</h3>
+          <button
+            onClick={onClose}
+            className="text-text-secondary hover:text-text-primary transition-colors"
+            aria-label="Close"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
         
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-5">
           {/* Star Rating */}
           <div>
-            <label className="block text-text-secondary mb-3">Rating</label>
-            <div className="flex gap-2">
+            <label className="block text-text-primary font-medium mb-3">
+              Your Rating <span className="text-accent">*</span>
+            </label>
+            <div className="flex gap-2 justify-center">
               {[1, 2, 3, 4, 5].map((star) => (
                 <button
                   key={star}
@@ -251,60 +265,78 @@ function ReviewModal({
                   onClick={() => setRating(star)}
                   onMouseEnter={() => setHoverRating(star)}
                   onMouseLeave={() => setHoverRating(0)}
-                  className="transition-transform duration-200 hover:scale-110"
+                  className="transition-all duration-200 hover:scale-125 active:scale-95"
+                  aria-label={`Rate ${star} star${star > 1 ? 's' : ''}`}
                 >
                   <Star
-                    className={`w-8 h-8 ${
+                    className={`w-10 h-10 transition-all ${
                       star <= (hoverRating || rating)
-                        ? 'fill-accent text-accent'
-                        : 'text-text-secondary'
+                        ? 'fill-accent text-accent scale-110'
+                        : 'text-text-secondary/40'
                     }`}
                   />
                 </button>
               ))}
             </div>
+            {rating > 0 && (
+              <p className="text-center text-sm text-text-secondary mt-2">
+                {rating === 5 ? 'Excellent!' : rating === 4 ? 'Great!' : rating === 3 ? 'Good!' : rating === 2 ? 'Fair' : 'Poor'}
+              </p>
+            )}
           </div>
 
-          {/* Name (Optional) */}
+          {/* Name */}
           <div>
-            <label className="block text-text-secondary mb-2">Name (Optional)</label>
+            <label className="block text-text-primary font-medium mb-2">
+              Your Name <span className="text-text-secondary text-sm font-normal">(Optional)</span>
+            </label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full px-4 py-3 bg-dark-bg border border-dark-section rounded-lg text-text-primary focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
-              placeholder="Your name"
+              className="w-full px-4 py-3 bg-dark-bg border border-dark-section rounded-lg text-text-primary placeholder:text-text-secondary/50 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20 transition-all"
+              placeholder="Enter your name"
             />
           </div>
 
-          {/* Comment (Optional) */}
+          {/* Comment */}
           <div>
-            <label className="block text-text-secondary mb-2">Comment (Optional)</label>
+            <label className="block text-text-primary font-medium mb-2">
+              Your Comment <span className="text-text-secondary text-sm font-normal">(Optional)</span>
+            </label>
             <textarea
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               rows={4}
-              className="w-full px-4 py-3 bg-dark-bg border border-dark-section rounded-lg text-text-primary focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20 resize-none"
-              placeholder="Share your thoughts..."
+              className="w-full px-4 py-3 bg-dark-bg border border-dark-section rounded-lg text-text-primary placeholder:text-text-secondary/50 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20 resize-none transition-all"
+              placeholder="Share your thoughts about this content..."
             />
           </div>
 
-          {/* Buttons */}
-          <div className="flex gap-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-6 py-3 bg-dark-bg border border-dark-section rounded-lg text-text-secondary hover:text-text-primary transition-colors"
-            >
-              Cancel
-            </button>
+          {/* Submit Button */}
+          <div className="pt-2">
             <button
               type="submit"
               disabled={isSubmitting || rating === 0}
-              className="flex-1 px-6 py-3 bg-accent text-dark-bg font-semibold rounded-lg hover:bg-accent/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full px-6 py-3 bg-accent text-dark-bg font-semibold rounded-lg hover:bg-accent/90 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-accent flex items-center justify-center gap-2"
             >
-              {isSubmitting ? 'Submitting...' : 'Submit Review'}
+              {isSubmitting ? (
+                <>
+                  <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span>Submitting...</span>
+                </>
+              ) : (
+                <span>Submit Review</span>
+              )}
             </button>
+            {rating === 0 && (
+              <p className="text-center text-xs text-text-secondary mt-2">
+                Please select a rating to submit
+              </p>
+            )}
           </div>
         </form>
       </div>

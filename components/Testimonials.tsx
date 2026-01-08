@@ -58,9 +58,39 @@ export function Testimonials() {
   const sectionRef = useRef<HTMLElement | null>(null);
   const [testimonials, setTestimonials] = useState<Testimonial[]>(defaultTestimonials);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch featured reviews from database
+  useEffect(() => {
+    const fetchFeaturedReviews = async () => {
+      try {
+        const response = await fetch('/api/reviews/featured?minRating=4&limit=10');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.testimonials && data.testimonials.length > 0) {
+            // Combine database reviews with default testimonials
+            // Prioritize database reviews, fill with defaults if needed
+            const combined = [
+              ...data.testimonials,
+              ...defaultTestimonials.filter((t, i) => !data.testimonials.some((r: any) => r.id === t.id))
+            ].slice(0, 10);
+            setTestimonials(combined);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching featured reviews:', error);
+        // Keep default testimonials on error
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFeaturedReviews();
+  }, []);
 
   // Auto-rotate testimonials
   useEffect(() => {
+    if (testimonials.length === 0) return;
     const interval = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % testimonials.length);
     }, 5000);
@@ -107,8 +137,18 @@ export function Testimonials() {
         </div>
 
         {/* Testimonials Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-          {testimonials.map((testimonial, index) => (
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+            {[...Array(4)].map((_, i) => (
+              <div
+                key={i}
+                className="card-skeleton bg-dark-bg/50 backdrop-blur-sm rounded-2xl p-6 border border-dark-section/50 h-64"
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+            {testimonials.map((testimonial, index) => (
             <div
               key={testimonial.id}
               className={`group card-premium card-glow relative bg-dark-bg/50 backdrop-blur-sm rounded-2xl p-6 border border-dark-section/50 transition-all duration-500 ${
@@ -171,10 +211,12 @@ export function Testimonials() {
               </div>
             </div>
           ))}
-        </div>
+          </div>
+        )}
 
         {/* Featured Testimonial (Carousel) */}
-        <div className="relative max-w-4xl mx-auto">
+        {!loading && testimonials.length > 0 && (
+          <div className="relative max-w-4xl mx-auto">
           <div className="bg-dark-bg/80 backdrop-blur-sm rounded-3xl p-8 md:p-12 border border-dark-section/50">
             <div className="flex items-start gap-6">
               <div className="flex-shrink-0 relative w-20 h-20">
@@ -229,7 +271,8 @@ export function Testimonials() {
               />
             ))}
           </div>
-        </div>
+          </div>
+        )}
       </div>
     </section>
   );
