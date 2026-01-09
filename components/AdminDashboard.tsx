@@ -492,9 +492,12 @@ function UploadSection() {
     }
 
     // Generate group_id once for all files if group mode is enabled
+    // Use UUID-like format to ensure uniqueness even with same group name
     const currentGroupId = groupMode === 'group' 
-      ? (groupName || `group-${Date.now()}`)
+      ? (groupName ? `${groupName}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}` : `group-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`)
       : null;
+    
+    console.log('📝 Generated group_id for Cloudinary Widget upload:', currentGroupId);
 
     // Destroy existing widget if it exists to create a fresh one
     if (widgetRef.current) {
@@ -535,6 +538,12 @@ function UploadSection() {
               // Save to Supabase automatically
               const mediaType = result.info.resource_type === 'video' ? 'video' : 'image';
               const fileName = result.info.original_filename || result.info.public_id.split('/').pop();
+              
+              console.log(`💾 Saving to database with group_id: ${currentGroupId}`, {
+                fileName,
+                mediaType,
+                section: category
+              });
               
               console.log(`💾 Saving to database with group_id: ${currentGroupId}`, {
                 fileName,
