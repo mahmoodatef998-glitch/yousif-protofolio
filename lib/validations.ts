@@ -10,14 +10,12 @@ export const contentItemSchema = z.object({
   section_id: z.string().uuid('Invalid section ID'),
   title: z.string().min(1, 'Title is required').max(255, 'Title too long'),
   description: z.string().max(1000, 'Description too long').optional().nullable(),
-  media_type: z.enum(['image', 'video'], {
-    errorMap: () => ({ message: 'Media type must be "image" or "video"' }),
-  }),
+  media_type: z.enum(['image', 'video']),
   media_url: z.string().url('Invalid media URL'),
   thumbnail_url: z.string().url('Invalid thumbnail URL').optional().nullable(),
   cloudinary_public_id: z.string().optional().nullable(),
   order_index: z.number().int().min(0).optional().default(0),
-  metadata: z.record(z.any()).optional().nullable(),
+  metadata: z.record(z.string(), z.any()).optional().nullable(),
   group_id: z.string().max(100).optional().nullable(),
   is_active: z.boolean().optional().default(true),
 });
@@ -52,17 +50,13 @@ export const contentReviewSchema = z.object({
 // Content Interaction Schema
 export const contentInteractionSchema = z.object({
   content_item_id: z.string().uuid('Invalid content item ID'),
-  action: z.enum(['like', 'unlike', 'view'], {
-    errorMap: () => ({ message: 'Action must be "like", "unlike", or "view"' }),
-  }),
+  action: z.enum(['like', 'unlike', 'view']),
 });
 
 // Review Approval Schema
 export const reviewApprovalSchema = z.object({
   review_id: z.string().uuid('Invalid review ID'),
-  action: z.enum(['approve', 'reject', 'unapprove'], {
-    errorMap: () => ({ message: 'Action must be "approve", "reject", or "unapprove"' }),
-  }),
+  action: z.enum(['approve', 'reject', 'unapprove']),
 });
 
 // Section Update Schema
@@ -76,7 +70,7 @@ export const cloudinaryUploadSchema = z.object({
   file: z.instanceof(File).or(z.string()),
   folder: z.string().optional(),
   public_id: z.string().optional(),
-  resource_type: z.enum(['image', 'video', 'auto']).optional().default('auto'),
+  resource_type: z.enum(['image', 'video', 'auto']).optional(),
 });
 
 // Helper function to validate and parse request body
@@ -86,7 +80,7 @@ export function validateRequest<T>(schema: z.ZodSchema<T>, data: unknown): { suc
     return { success: true, data: parsed };
   } catch (error) {
     if (error instanceof z.ZodError) {
-      const firstError = error.errors[0];
+      const firstError = error.issues[0];
       return {
         success: false,
         error: firstError?.message || 'Validation failed',
