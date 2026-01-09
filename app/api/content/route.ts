@@ -1,12 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { logger } from '@/lib/logger';
+import { apiRateLimiter } from '@/lib/rate-limit';
+import { contentItemSchema, validateRequest } from '@/lib/validations';
 
 // GET - Fetch all content
 export async function GET(request: NextRequest) {
   try {
+    // Rate limiting
+    const rateLimitResult = await apiRateLimiter(request);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: rateLimitResult.message },
+        { 
+          status: 429,
+          headers: {
+            'Retry-After': String(Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000)),
+            'X-RateLimit-Limit': '60',
+            'X-RateLimit-Remaining': String(rateLimitResult.remaining),
+            'X-RateLimit-Reset': new Date(rateLimitResult.resetTime).toISOString(),
+          },
+        }
+      );
+    }
+
     // Check environment variables
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-      console.error('Missing Supabase environment variables');
+      logger.error('Missing Supabase environment variables');
       return NextResponse.json(
         { 
           error: 'Supabase configuration missing',
@@ -36,7 +56,7 @@ export async function GET(request: NextRequest) {
       const { data: sectionData, error: sectionError } = await sectionQuery;
       
       if (sectionError) {
-        console.error(`Section '${section}' not found:`, sectionError);
+        logger.error(`Section '${section}' not found:`, sectionError);
         return NextResponse.json({ 
           data: [],
           message: `Section '${section}' not found. Make sure you ran the schema.sql and seed.sql files in Supabase.`,
@@ -47,7 +67,7 @@ export async function GET(request: NextRequest) {
       if (sectionData) {
         query = query.eq('section_id', sectionData.id);
       } else {
-        console.log(`Section '${section}' not found in database`);
+        logger.warn(`Section '${section}' not found in database`);
         return NextResponse.json({ 
           data: [],
           message: `Section '${section}' not found in database. Make sure you ran the schema.sql and seed.sql files in Supabase.`
@@ -58,7 +78,7 @@ export async function GET(request: NextRequest) {
     const { data, error } = await query;
 
     if (error) {
-      console.error('Error fetching content:', error);
+      logger.error('Error fetching content:', error);
       return NextResponse.json(
         { 
           error: error.message,
@@ -69,11 +89,11 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    console.log(`Fetched ${data?.length || 0} items for section '${section || 'all'}'`);
+    logger.log(`Fetched ${data?.length || 0} items for section '${section || 'all'}'`);
     
     // Log details for debugging
     if (data && data.length > 0) {
-      console.log('Sample item:', {
+      logger.debug('Sample item:', {
         id: data[0].id,
         title: data[0].title,
         media_url: data[0].media_url,
@@ -86,7 +106,7 @@ export async function GET(request: NextRequest) {
       const itemsWithGroup = data.filter((item: any) => item.group_id);
       const itemsWithoutGroup = data.filter((item: any) => !item.group_id);
       
-      console.log(`📊 Items with group_id: ${itemsWithGroup.length}, without: ${itemsWithoutGroup.length}`);
+      logger.debug(`Items with group_id: ${itemsWithGroup.length}, without: ${itemsWithoutGroup.length}`);
       
       if (itemsWithGroup.length > 0) {
         // Group by group_id to see what groups exist
@@ -99,7 +119,7 @@ export async function GET(request: NextRequest) {
           groupMap.get(gid)!.push(item);
         });
         
-        console.log('📦 Groups found in API:', Array.from(groupMap.entries()).map(([groupId, items]) => ({
+        logger.debug('Groups found in API:', Array.from(groupMap.entries()).map(([groupId, items]) => ({
           group_id: groupId,
           count: items.length,
           items: items.map((i: any) => ({ id: i.id, title: i.title, created_at: i.created_at }))
@@ -110,17 +130,17 @@ export async function GET(request: NextRequest) {
       const itemsWithUrl = data.filter((item: any) => item.media_url && item.media_url.trim() !== '');
       const itemsWithoutUrl = data.filter((item: any) => !item.media_url || item.media_url.trim() === '');
       
-      console.log(`Items with media_url: ${itemsWithUrl.length}, without: ${itemsWithoutUrl.length}`);
+      logger.debug(`Items with media_url: ${itemsWithUrl.length}, without: ${itemsWithoutUrl.length}`);
       
       if (itemsWithoutUrl.length > 0) {
-        console.warn('Items without media_url:', itemsWithoutUrl.map((item: any) => ({
+        logger.warn('Items without media_url:', itemsWithoutUrl.map((item: any) => ({
           id: item.id,
           title: item.title,
           media_type: item.media_type,
         })));
       }
     } else {
-      console.warn(`No data returned for section '${section || 'all'}'`);
+      logger.warn(`No data returned for section '${section || 'all'}'`);
     }
     
     return NextResponse.json({ 
@@ -129,7 +149,7 @@ export async function GET(request: NextRequest) {
       section: section || 'all',
     });
   } catch (error: any) {
-    console.error('API route error:', error);
+    logger.error('API route error:', error);
     return NextResponse.json(
       { 
         error: error.message || 'Internal server error',
@@ -143,9 +163,26 @@ export async function GET(request: NextRequest) {
 // POST - Create new content
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting
+    const rateLimitResult = await apiRateLimiter(request);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: rateLimitResult.message },
+        { 
+          status: 429,
+          headers: {
+            'Retry-After': String(Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000)),
+            'X-RateLimit-Limit': '60',
+            'X-RateLimit-Remaining': String(rateLimitResult.remaining),
+            'X-RateLimit-Reset': new Date(rateLimitResult.resetTime).toISOString(),
+          },
+        }
+      );
+    }
+
     // Check environment variables
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-      console.error('Missing Supabase environment variables');
+      logger.error('Missing Supabase environment variables');
       return NextResponse.json(
         { 
           error: 'Supabase configuration missing',
@@ -167,7 +204,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Media URL is required' }, { status: 400 });
     }
 
-    console.log(`Creating content for section: ${body.section}`);
+    logger.log(`Creating content for section: ${body.section}`);
 
     // Get section ID
     const { data: sectionData, error: sectionError } = await supabase
@@ -177,7 +214,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (sectionError || !sectionData) {
-      console.error(`Section '${body.section}' not found:`, sectionError);
+      logger.error(`Section '${body.section}' not found:`, sectionError);
       return NextResponse.json(
         { 
           error: 'Section not found',
@@ -197,7 +234,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (maxOrderError && maxOrderError.code !== 'PGRST116') {
-      console.error('Error getting max order_index:', maxOrderError);
+      logger.error('Error getting max order_index:', maxOrderError);
     }
 
     // Build content object, only include group_id if it exists in the request
@@ -219,7 +256,7 @@ export async function POST(request: NextRequest) {
       newContent.group_id = body.group_id;
     }
 
-    console.log('Inserting content:', {
+    logger.debug('Inserting content:', {
       section: body.section,
       section_id: sectionData.id,
       title: newContent.title,
@@ -234,7 +271,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      console.error('Error inserting content:', error);
+      logger.error('Error inserting content:', error);
       return NextResponse.json(
         { 
           error: error.message,
@@ -245,10 +282,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('Content created successfully:', data);
+    logger.log('Content created successfully:', data.id);
     return NextResponse.json({ data });
   } catch (error: any) {
-    console.error('API route error:', error);
+    logger.error('API route error:', error);
     return NextResponse.json(
       { 
         error: error.message || 'Internal server error',
@@ -282,7 +319,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'ID is required' }, { status: 400 });
     }
 
-    console.log(`Deleting content with ID: ${id}`);
+    logger.log(`Deleting content with ID: ${id}`);
 
     const { error } = await supabase
       .from('content_items')
@@ -290,7 +327,7 @@ export async function DELETE(request: NextRequest) {
       .eq('id', id);
 
     if (error) {
-      console.error('Error deleting content:', error);
+      logger.error('Error deleting content:', error);
       return NextResponse.json(
         { 
           error: error.message,
@@ -301,10 +338,10 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    console.log('Content deleted successfully');
+    logger.log('Content deleted successfully');
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error('API route error:', error);
+    logger.error('API route error:', error);
     return NextResponse.json(
       { 
         error: error.message || 'Internal server error',
@@ -338,7 +375,7 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'ID is required' }, { status: 400 });
     }
 
-    console.log(`Updating content with ID: ${id}`, updates);
+    logger.debug(`Updating content with ID: ${id}`, updates);
 
     const { data, error } = await supabase
       .from('content_items')
@@ -348,7 +385,7 @@ export async function PATCH(request: NextRequest) {
       .single();
 
     if (error) {
-      console.error('Error updating content:', error);
+      logger.error('Error updating content:', error);
       return NextResponse.json(
         { 
           error: error.message,
@@ -359,10 +396,10 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    console.log('Content updated successfully:', data);
+    logger.log('Content updated successfully:', data.id);
     return NextResponse.json({ data });
   } catch (error: any) {
-    console.error('API route error:', error);
+    logger.error('API route error:', error);
     return NextResponse.json(
       { 
         error: error.message || 'Internal server error',
