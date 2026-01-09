@@ -43,20 +43,29 @@ export async function POST(request: NextRequest) {
     if (error) {
       console.error('Error inserting review:', error);
       console.error('Error details:', JSON.stringify(error, null, 2));
+      console.error('Error code:', error.code);
+      console.error('Error message:', error.message);
       
       // Check if it's an RLS policy error
-      if (error.message?.includes('row-level security') || error.code === '42501') {
+      if (error.message?.includes('row-level security') || 
+          error.message?.includes('violates row-level security') ||
+          error.code === '42501' || 
+          error.code === 'PGRST301') {
         return NextResponse.json(
           { 
-            error: 'Permission denied. Please check RLS policies.',
-            details: 'The review could not be submitted due to security policy restrictions. Please run the fix_reviews_rls.sql script in Supabase.',
-            code: error.code
+            error: 'Permission denied. RLS policy is blocking the insert.',
+            details: 'The review could not be submitted due to security policy restrictions. Please run the fix_reviews_insert_final.sql script in Supabase SQL Editor.',
+            code: error.code,
+            hint: 'Make sure the policy "Allow public insert to content_reviews" exists and has TO public'
           },
           { status: 403 }
         );
       }
       
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ 
+        error: error.message || 'Failed to submit review',
+        code: error.code 
+      }, { status: 500 });
     }
 
     return NextResponse.json({
