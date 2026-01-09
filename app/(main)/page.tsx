@@ -42,9 +42,6 @@ export default function Home() {
       {/* About Section - Hero at top */}
       <About />
       
-      {/* Testimonials Section */}
-      <Testimonials />
-      
       {/* Portfolio Filter */}
       <section id="portfolio-filter" className="py-12 bg-dark-section">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
@@ -77,6 +74,9 @@ export default function Home() {
       
       {/* Restaurant Section */}
       {(activeFilter === 'all' || activeFilter === 'restaurant') && <Restaurant />}
+      
+      {/* Testimonials Section - What Clients Say */}
+      <Testimonials />
       
       {/* Contact Section */}
       <Contact />
