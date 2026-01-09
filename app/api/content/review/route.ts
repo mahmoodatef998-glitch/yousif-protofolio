@@ -1,25 +1,50 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { logger } from '@/lib/logger';
+import { reviewRateLimiter } from '@/lib/rate-limit';
+import { contentReviewSchema, validateRequest } from '@/lib/validations';
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting
+    const rateLimitResult = await reviewRateLimiter(request);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: rateLimitResult.message },
+        { 
+          status: 429,
+          headers: {
+            'Retry-After': String(Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000)),
+            'X-RateLimit-Limit': '5',
+            'X-RateLimit-Remaining': String(rateLimitResult.remaining),
+            'X-RateLimit-Reset': new Date(rateLimitResult.resetTime).toISOString(),
+          },
+        }
+      );
+    }
+
     const supabase = await createClient();
     const body = await request.json();
-    const { contentId, rating, comment, name } = body;
 
-    if (!contentId || !rating) {
+    // Validate request body using Zod schema
+    const validation = validateRequest(contentReviewSchema, {
+      content_item_id: body.contentId,
+      rating: body.rating,
+      comment: body.comment,
+      user_name: body.name,
+    });
+    
+    if (!validation.success) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { 
+          error: 'Validation failed',
+          details: validation.error
+        },
         { status: 400 }
       );
     }
 
-    if (rating < 1 || rating > 5) {
-      return NextResponse.json(
-        { error: 'Rating must be between 1 and 5' },
-        { status: 400 }
-      );
-    }
+    const { content_item_id, rating, comment, user_name } = validation.data;
 
     // Get user IP
     const forwarded = request.headers.get('x-forwarded-for');
@@ -30,10 +55,10 @@ export async function POST(request: NextRequest) {
     const { data, error } = await supabase
       .from('content_reviews')
       .insert({
-        content_item_id: contentId,
+        content_item_id,
         rating,
         comment: comment || null,
-        user_name: name || null,
+        user_name: user_name || null,
         user_ip: ip,
         is_approved: false, // Requires admin approval
       })
@@ -41,10 +66,10 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      console.error('Error inserting review:', error);
-      console.error('Error details:', JSON.stringify(error, null, 2));
-      console.error('Error code:', error.code);
-      console.error('Error message:', error.message);
+      logger.error('Error inserting review:', error);
+      logger.error('Error details:', JSON.stringify(error, null, 2));
+      logger.error('Error code:', error.code);
+      logger.error('Error message:', error.message);
       
       // Check if it's an RLS policy error
       if (error.message?.includes('row-level security') || 
@@ -74,7 +99,7 @@ export async function POST(request: NextRequest) {
       data,
     });
   } catch (error: any) {
-    console.error('Error processing review:', error);
+    logger.error('Error processing review:', error);
     return NextResponse.json(
       { error: error.message || 'Internal server error' },
       { status: 500 }
@@ -105,7 +130,7 @@ export async function GET(request: NextRequest) {
       .limit(10);
 
     if (error) {
-      console.error('Error fetching reviews:', error);
+      logger.error('Error fetching reviews:', error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 

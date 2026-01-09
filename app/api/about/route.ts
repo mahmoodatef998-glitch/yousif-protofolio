@@ -1,12 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { logger } from '@/lib/logger';
+import { apiRateLimiter } from '@/lib/rate-limit';
+import { aboutContentSchema, validateRequest } from '@/lib/validations';
 
 // GET - Fetch about content
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    // Rate limiting
+    const rateLimitResult = await apiRateLimiter(request);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: rateLimitResult.message },
+        { 
+          status: 429,
+          headers: {
+            'Retry-After': String(Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000)),
+            'X-RateLimit-Limit': '60',
+            'X-RateLimit-Remaining': String(rateLimitResult.remaining),
+            'X-RateLimit-Reset': new Date(rateLimitResult.resetTime).toISOString(),
+          },
+        }
+      );
+    }
+
     // Check environment variables
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-      console.error('Missing Supabase environment variables');
+      logger.error('Missing Supabase environment variables');
       return NextResponse.json(
         { 
           error: 'Supabase configuration missing',
@@ -31,7 +51,7 @@ export async function GET() {
         return NextResponse.json({ data: null });
       }
       
-      console.error('Error fetching about content:', error);
+      logger.error('Error fetching about content:', error);
       return NextResponse.json(
         { 
           error: error.message,
@@ -44,7 +64,7 @@ export async function GET() {
 
     return NextResponse.json({ data: data || null });
   } catch (error: any) {
-    console.error('API route error:', error);
+    logger.error('API route error:', error);
     return NextResponse.json(
       { 
         error: error.message || 'Internal server error',
@@ -58,9 +78,26 @@ export async function GET() {
 // POST/PATCH - Save about content
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting
+    const rateLimitResult = await apiRateLimiter(request);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: rateLimitResult.message },
+        { 
+          status: 429,
+          headers: {
+            'Retry-After': String(Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000)),
+            'X-RateLimit-Limit': '60',
+            'X-RateLimit-Remaining': String(rateLimitResult.remaining),
+            'X-RateLimit-Reset': new Date(rateLimitResult.resetTime).toISOString(),
+          },
+        }
+      );
+    }
+
     // Check environment variables
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-      console.error('Missing Supabase environment variables');
+      logger.error('Missing Supabase environment variables');
       return NextResponse.json(
         { 
           error: 'Supabase configuration missing',
@@ -77,7 +114,7 @@ export async function POST(request: NextRequest) {
     try {
       body = await request.json();
     } catch (parseError: any) {
-      console.error('Error parsing request body:', parseError);
+      logger.error('Error parsing request body:', parseError);
       return NextResponse.json(
         { 
           error: 'Invalid JSON in request body',
@@ -87,16 +124,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate required fields (at least one field should be present)
-    if (!body || (typeof body !== 'object')) {
+    // Validate request body using Zod schema
+    const validation = validateRequest(aboutContentSchema, body);
+    if (!validation.success) {
       return NextResponse.json(
         { 
-          error: 'Invalid request body',
-          details: 'Request body must be a valid JSON object'
+          error: 'Validation failed',
+          details: validation.error
         },
         { status: 400 }
       );
     }
+
+    const validatedBody = validation.data;
 
     // Check if exists
     const { data: existing, error: checkError } = await supabase
@@ -106,7 +146,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (checkError && checkError.code !== 'PGRST116') {
-      console.error('Error checking existing about content:', checkError);
+      logger.error('Error checking existing about content:', checkError);
       return NextResponse.json(
         { 
           error: checkError.message,
@@ -128,7 +168,7 @@ export async function POST(request: NextRequest) {
         try {
           statsValue = JSON.parse(body.stats);
         } catch (e) {
-          console.warn('Failed to parse stats string:', e);
+          logger.warn('Failed to parse stats string:', e);
           statsValue = null;
         }
       }
@@ -143,7 +183,7 @@ export async function POST(request: NextRequest) {
     if (body.profile_image_url !== undefined) dataToSave.profile_image_url = body.profile_image_url;
     if (statsValue !== undefined) dataToSave.stats = statsValue;
 
-    console.log('Saving about content:', {
+    logger.debug('Saving about content:', {
       existing: !!existing,
       hasStats: !!dataToSave.stats,
       fields: Object.keys(dataToSave),
@@ -159,7 +199,7 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (error) {
-        console.error('Error updating about content:', error);
+        logger.error('Error updating about content:', error);
         
         // Check if it's a schema error (missing column)
         if (error.code === 'PGRST204' || error.message?.includes('column') || error.message?.includes('schema cache')) {
@@ -187,7 +227,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      console.log('About content updated successfully:', data?.id);
+      logger.log('About content updated successfully:', data?.id);
       return NextResponse.json({ data });
     } else {
       // Insert
@@ -198,7 +238,7 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (error) {
-        console.error('Error inserting about content:', error);
+        logger.error('Error inserting about content:', error);
         
         // Check if it's a schema error (missing column)
         if (error.code === 'PGRST204' || error.message?.includes('column') || error.message?.includes('schema cache')) {
@@ -226,11 +266,11 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      console.log('About content inserted successfully:', data?.id);
+      logger.log('About content inserted successfully:', data?.id);
       return NextResponse.json({ data });
     }
   } catch (error: any) {
-    console.error('API route error:', error);
+    logger.error('API route error:', error);
     return NextResponse.json(
       { 
         error: error.message || 'Internal server error',

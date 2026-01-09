@@ -1,46 +1,50 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
+import { reviewRateLimiter } from '@/lib/rate-limit';
+import { contactFormSchema, validateRequest } from '@/lib/validations';
 
 // POST - Submit contact form
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting (using reviewRateLimiter as it's similar - user submissions)
+    const rateLimitResult = await reviewRateLimiter(request);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: rateLimitResult.message },
+        { 
+          status: 429,
+          headers: {
+            'Retry-After': String(Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000)),
+            'X-RateLimit-Limit': '5',
+            'X-RateLimit-Remaining': String(rateLimitResult.remaining),
+            'X-RateLimit-Reset': new Date(rateLimitResult.resetTime).toISOString(),
+          },
+        }
+      );
+    }
+
     const body = await request.json();
-    const { name, email, message } = body;
 
-    // Validation
-    if (!name || !email || !message) {
+    // Validate request body using Zod schema
+    const validation = validateRequest(contactFormSchema, body);
+    if (!validation.success) {
       return NextResponse.json(
-        { error: 'All fields are required' },
+        { 
+          error: 'Validation failed',
+          details: validation.error
+        },
         { status: 400 }
       );
     }
 
-    if (name.trim().length < 2) {
-      return NextResponse.json(
-        { error: 'Name must be at least 2 characters' },
-        { status: 400 }
-      );
-    }
-
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return NextResponse.json(
-        { error: 'Invalid email address' },
-        { status: 400 }
-      );
-    }
-
-    if (message.trim().length < 10) {
-      return NextResponse.json(
-        { error: 'Message must be at least 10 characters' },
-        { status: 400 }
-      );
-    }
+    const { name, email, message } = validation.data;
 
     // TODO: Integrate with email service (SendGrid, Resend, etc.)
     // For now, just log the submission
-    console.log('Contact form submission:', {
+    logger.log('Contact form submission:', {
       name,
       email,
-      message,
+      messageLength: message.length,
       timestamp: new Date().toISOString(),
     });
 
@@ -55,7 +59,7 @@ export async function POST(request: NextRequest) {
       message: 'Message sent successfully',
     });
   } catch (error: any) {
-    console.error('Error processing contact form:', error);
+    logger.error('Error processing contact form:', error);
     return NextResponse.json(
       { error: 'Failed to send message. Please try again later.' },
       { status: 500 }
