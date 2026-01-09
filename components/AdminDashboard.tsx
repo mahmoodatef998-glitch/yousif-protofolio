@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { logger } from '@/lib/logger';
 import { 
   LayoutDashboard, 
   User, 
@@ -273,7 +274,7 @@ function UploadSection() {
     };
 
     script.onerror = () => {
-      console.error('Failed to load Cloudinary widget script');
+      logger.error('Failed to load Cloudinary widget script');
     };
 
     return () => {
@@ -337,7 +338,7 @@ function UploadSection() {
       : null;
 
     try {
-      console.log(`Starting upload of ${selectedFiles.length} file(s) to category: ${category}${currentGroupId ? ` with group_id: ${currentGroupId}` : ''}`);
+      logger.log(`Starting upload of ${selectedFiles.length} file(s) to category: ${category}${currentGroupId ? ` with group_id: ${currentGroupId}` : ''}`);
       
       for (let i = 0; i < selectedFiles.length; i++) {
         const file = selectedFiles[i];
@@ -348,12 +349,12 @@ function UploadSection() {
         const fileSizeMB = file.size / 1024 / 1024;
         const maxSizeMB = 4.5; // Vercel's limit
         
-        console.log(`Uploading file ${i + 1}/${selectedFiles.length}: ${file.name} (${fileSizeMB.toFixed(2)} MB)`);
+        logger.debug(`Uploading file ${i + 1}/${selectedFiles.length}: ${file.name} (${fileSizeMB.toFixed(2)} MB)`);
 
         // Check file size before upload
         if (fileSizeMB > maxSizeMB) {
           const errorMsg = `File "${file.name}" is too large (${fileSizeMB.toFixed(2)} MB). Maximum allowed size is ${maxSizeMB} MB. Please compress the file or use Cloudinary Upload Widget for larger files.`;
-          console.error(errorMsg);
+          logger.error(errorMsg);
           alert(errorMsg);
           continue; // Skip this file and continue with others
         }
@@ -375,7 +376,7 @@ function UploadSection() {
 
           if (!uploadResponse.ok) {
             const errorData = await uploadResponse.json().catch(() => ({ error: 'Unknown error' }));
-            console.error('Upload failed:', errorData);
+            logger.error('Upload failed:', errorData);
             
             // Handle 413 (Content Too Large) specifically
             if (uploadResponse.status === 413) {
@@ -390,7 +391,7 @@ function UploadSection() {
           setUploadProgress({ ...progress });
 
           const uploadData = await uploadResponse.json();
-          console.log('Upload successful:', uploadData);
+          logger.debug('Upload successful:', uploadData);
           const uploadResult = uploadData.result;
           
           if (!uploadResult) {
@@ -398,7 +399,7 @@ function UploadSection() {
           }
           
           // Save to Supabase
-          console.log(`💾 Saving ${file.name} to database with group_id: ${currentGroupId}`, {
+          logger.debug(`Saving ${file.name} to database with group_id: ${currentGroupId}`, {
             fileName,
             section: category,
             group_id: currentGroupId
@@ -426,14 +427,14 @@ function UploadSection() {
 
           if (!saveResponse.ok) {
             const errorData = await saveResponse.json().catch(() => ({ error: 'Unknown error' }));
-            console.error('Failed to save to database:', errorData);
+            logger.error('Failed to save to database:', errorData);
             throw new Error(`Failed to save ${file.name} to database: ${errorData.error || 'Unknown error'}`);
           }
           
           const savedData = await saveResponse.json();
-          console.log(`Successfully saved ${file.name} to database:`, savedData);
+          logger.log(`Successfully saved ${file.name} to database:`, savedData?.id);
         } catch (error: any) {
-          console.error(`Error uploading ${file.name}:`, error);
+          logger.error(`Error uploading ${file.name}:`, error);
           throw error; // Re-throw to be caught by outer catch
         }
       }
@@ -450,14 +451,14 @@ function UploadSection() {
       if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
         const channel = new BroadcastChannel('content-updated');
         channel.postMessage({ type: 'content-updated', section: category });
-        console.log(`Broadcasted content-updated for section: ${category}`);
+        logger.debug(`Broadcasted content-updated for section: ${category}`);
         channel.close();
       }
       
       // Also trigger a page refresh for the gallery section if it's currently open
       // This will be handled by the BroadcastChannel listener in GallerySection
     } catch (error: any) {
-      console.error('Upload error:', error);
+      logger.error('Upload error:', error);
       alert(`Upload failed: ${error.message || 'Unknown error'}\n\nPlease check the browser console and network tab for more details.`);
     } finally {
       setUploading(false);
@@ -497,7 +498,7 @@ function UploadSection() {
       ? (groupName ? `${groupName}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}` : `group-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`)
       : null;
     
-    console.log('📝 Generated group_id for Cloudinary Widget upload:', currentGroupId);
+    logger.debug('Generated group_id for Cloudinary Widget upload:', currentGroupId);
 
     // Destroy existing widget if it exists to create a fresh one
     if (widgetRef.current) {
@@ -526,26 +527,26 @@ function UploadSection() {
       },
       async (error: any, result: any) => {
           if (error) {
-            console.error('Cloudinary upload error:', error);
+            logger.error('Cloudinary upload error:', error);
             alert('Upload error: ' + (error.message || 'Unknown error'));
             return;
           }
 
           if (result && result.event === 'success') {
-            console.log('Cloudinary upload successful:', result.info);
+            logger.debug('Cloudinary upload successful:', result.info);
             
             try {
               // Save to Supabase automatically
               const mediaType = result.info.resource_type === 'video' ? 'video' : 'image';
               const fileName = result.info.original_filename || result.info.public_id.split('/').pop();
               
-              console.log(`💾 Saving to database with group_id: ${currentGroupId}`, {
+              logger.debug(`Saving to database with group_id: ${currentGroupId}`, {
                 fileName,
                 mediaType,
                 section: category
               });
               
-              console.log(`💾 Saving to database with group_id: ${currentGroupId}`, {
+              logger.debug(`Saving to database with group_id: ${currentGroupId}`, {
                 fileName,
                 mediaType,
                 section: category
@@ -574,12 +575,12 @@ function UploadSection() {
 
               if (!saveResponse.ok) {
                 const errorData = await saveResponse.json().catch(() => ({ error: 'Unknown error' }));
-                console.error('Failed to save to database:', errorData);
+                logger.error('Failed to save to database:', errorData);
                 alert(`Upload successful but failed to save to database: ${errorData.error || 'Unknown error'}`);
                 return;
               }
 
-              console.log('Saved to database successfully');
+              logger.log('Saved to database successfully');
               
               // Notify other components
               if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
@@ -590,7 +591,7 @@ function UploadSection() {
 
               alert(`✅ Upload successful! "${fileName}" has been saved to ${category} section.`);
             } catch (saveError: any) {
-              console.error('Error saving to database:', saveError);
+              logger.error('Error saving to database:', saveError);
               alert(`Upload successful but failed to save to database: ${saveError.message || 'Unknown error'}`);
             }
           }
@@ -854,7 +855,7 @@ function AboutSection({ isEditing }: { isEditing: boolean }) {
         }
       }
     } catch (error) {
-      console.error('Error fetching about:', error);
+      logger.error('Error fetching about:', error);
     } finally {
       setLoading(false);
     }
@@ -889,7 +890,7 @@ function AboutSection({ isEditing }: { isEditing: boolean }) {
       setProfileImage(result.secure_url || result.url);
       alert('Image uploaded successfully!');
     } catch (error: any) {
-      console.error('Upload error:', error);
+      logger.error('Upload error:', error);
       alert(`Failed to upload image: ${error.message || 'Please try again.'}`);
     } finally {
       setUploadingImage(false);
@@ -925,7 +926,7 @@ function AboutSection({ isEditing }: { isEditing: boolean }) {
         }
       } else {
         const errorMessage = result.error || result.details || 'Failed to save about section';
-        console.error('Save error:', result);
+        logger.error('Save error:', result);
         
         // Check if it's a schema error
         if (result.fixRequired && result.sqlScript) {
@@ -937,7 +938,7 @@ function AboutSection({ isEditing }: { isEditing: boolean }) {
         }
       }
     } catch (error: any) {
-      console.error('Error saving about:', error);
+      logger.error('Error saving about:', error);
       alert(`Failed to save about section: ${error.message || 'Unknown error'}`);
     } finally {
       setSaving(false);
@@ -1184,7 +1185,7 @@ function VideosSection({ isEditing }: { isEditing: boolean }) {
     document.body.appendChild(script);
 
     script.onload = () => setWidgetScriptLoaded(true);
-    script.onerror = () => console.error('Failed to load Cloudinary widget script');
+    script.onerror = () => logger.error('Failed to load Cloudinary widget script');
 
     return () => {
       if (script.parentNode) script.parentNode.removeChild(script);
@@ -1211,7 +1212,7 @@ function VideosSection({ isEditing }: { isEditing: boolean }) {
         setVideos(formattedVideos);
       }
     } catch (error) {
-      console.error('Error fetching videos:', error);
+      logger.error('Error fetching videos:', error);
     } finally {
       setLoading(false);
     }
@@ -1235,7 +1236,7 @@ function VideosSection({ isEditing }: { isEditing: boolean }) {
         await fetchVideos();
       }
     } catch (error) {
-      console.error('Error adding video:', error);
+      logger.error('Error adding video:', error);
       alert('Failed to add video');
     }
   };
@@ -1285,7 +1286,7 @@ function VideosSection({ isEditing }: { isEditing: boolean }) {
         handleCloudinaryWidgetUpload(videoId);
       }
     } catch (error: any) {
-      console.error('Upload error:', error);
+      logger.error('Upload error:', error);
       alert(`Failed to upload video: ${error.message || 'Please try Cloudinary Widget for large files.'}`);
       setUploadingVideo(null);
     }
@@ -1342,7 +1343,7 @@ function VideosSection({ isEditing }: { isEditing: boolean }) {
       },
       async (error: any, result: any) => {
           if (error) {
-            console.error('Cloudinary Widget Upload error:', error);
+            logger.error('Cloudinary Widget Upload error:', error);
             let errorMessage = 'Upload error: ';
             if (error.status === 'Upload preset must be specified when using unsigned upload' || error.message?.includes('Upload preset')) {
               errorMessage = 'Error: Upload Preset is required.\n\nPlease add NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET to your environment variables.\n\nTo create an upload preset:\n1. Go to Cloudinary Dashboard\n2. Settings → Upload → Upload presets\n3. Create an unsigned upload preset\n4. Copy the preset name and add it to Vercel environment variables';
@@ -1403,7 +1404,7 @@ function VideosSection({ isEditing }: { isEditing: boolean }) {
         alert('Failed to save video');
       }
     } catch (error) {
-      console.error('Error saving video:', error);
+      logger.error('Error saving video:', error);
       alert('Failed to save video');
     } finally {
       setSaving(null);
@@ -1426,7 +1427,7 @@ function VideosSection({ isEditing }: { isEditing: boolean }) {
         alert('Failed to delete video');
       }
     } catch (error) {
-      console.error('Error deleting video:', error);
+      logger.error('Error deleting video:', error);
       alert('Failed to delete video');
     } finally {
       setDeleting(null);
@@ -1643,7 +1644,7 @@ function ReelsSection({ isEditing }: { isEditing: boolean }) {
     document.body.appendChild(script);
 
     script.onload = () => setWidgetScriptLoaded(true);
-    script.onerror = () => console.error('Failed to load Cloudinary widget script');
+    script.onerror = () => logger.error('Failed to load Cloudinary widget script');
 
     return () => {
       if (script.parentNode) script.parentNode.removeChild(script);
@@ -1669,7 +1670,7 @@ function ReelsSection({ isEditing }: { isEditing: boolean }) {
         setReels(formattedReels);
       }
     } catch (error) {
-      console.error('Error fetching reels:', error);
+      logger.error('Error fetching reels:', error);
     } finally {
       setLoading(false);
     }
@@ -1693,7 +1694,7 @@ function ReelsSection({ isEditing }: { isEditing: boolean }) {
         await fetchReels();
       }
     } catch (error) {
-      console.error('Error adding reel:', error);
+      logger.error('Error adding reel:', error);
       alert('Failed to add reel');
     }
   };
@@ -1743,7 +1744,7 @@ function ReelsSection({ isEditing }: { isEditing: boolean }) {
         handleCloudinaryWidgetUpload(reelId);
       }
     } catch (error: any) {
-      console.error('Upload error:', error);
+      logger.error('Upload error:', error);
       alert(`Failed to upload reel: ${error.message || 'Please try Cloudinary Widget for large files.'}`);
       setUploadingReel(null);
     }
@@ -1800,7 +1801,7 @@ function ReelsSection({ isEditing }: { isEditing: boolean }) {
       },
       async (error: any, result: any) => {
           if (error) {
-            console.error('Cloudinary Widget Upload error:', error);
+            logger.error('Cloudinary Widget Upload error:', error);
             let errorMessage = 'Upload error: ';
             if (error.status === 'Upload preset must be specified when using unsigned upload' || error.message?.includes('Upload preset')) {
               errorMessage = 'Error: Upload Preset is required.\n\nPlease add NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET to your environment variables.\n\nTo create an upload preset:\n1. Go to Cloudinary Dashboard\n2. Settings → Upload → Upload presets\n3. Create an unsigned upload preset\n4. Copy the preset name and add it to Vercel environment variables';
@@ -1860,7 +1861,7 @@ function ReelsSection({ isEditing }: { isEditing: boolean }) {
         alert('Failed to save reel');
       }
     } catch (error) {
-      console.error('Error saving reel:', error);
+      logger.error('Error saving reel:', error);
       alert('Failed to save reel');
     } finally {
       setSaving(null);
@@ -1883,7 +1884,7 @@ function ReelsSection({ isEditing }: { isEditing: boolean }) {
         alert('Failed to delete reel');
       }
     } catch (error) {
-      console.error('Error deleting reel:', error);
+      logger.error('Error deleting reel:', error);
       alert('Failed to delete reel');
     } finally {
       setDeleting(null);
@@ -2075,7 +2076,7 @@ function GallerySection({ section, isEditing }: { section: string; isEditing: bo
       channel.onmessage = (event) => {
         if (event.data.type === 'content-updated' && 
             (event.data.section === section || !event.data.section)) {
-          console.log(`Content updated for section: ${section}, refreshing...`);
+          logger.debug(`Content updated for section: ${section}, refreshing...`);
           fetchImages();
         }
       };
@@ -2091,13 +2092,13 @@ function GallerySection({ section, isEditing }: { section: string; isEditing: bo
   const fetchImages = async () => {
     try {
       setLoading(true);
-      console.log(`Fetching images for section: ${section}`);
+      logger.debug(`Fetching images for section: ${section}`);
       const response = await fetch(`/api/content?section=${section}`, {
         cache: 'no-store', // Ensure fresh data
       });
       
       if (!response.ok) {
-        console.error(`Failed to fetch ${section} images:`, response.status, response.statusText);
+        logger.error(`Failed to fetch ${section} images:`, response.status, response.statusText);
         setImages([]);
         return;
       }
@@ -2105,28 +2106,28 @@ function GallerySection({ section, isEditing }: { section: string; isEditing: bo
       const result = await response.json();
       const data = result.data || result;
       
-      console.log(`Fetched ${section} images:`, data);
+      logger.debug(`Fetched ${section} images:`, data?.length || 0);
       
       if (data && Array.isArray(data) && data.length > 0) {
         const formattedImages = data
           .filter((item: any) => item.media_url && item.media_url.trim() !== '')
           .map((item: any) => {
             const url = item.media_url || '';
-            console.log(`Image ${item.id} (${item.title}): URL length = ${url.length}, URL = ${url.substring(0, 100)}...`);
+            logger.debug(`Image ${item.id} (${item.title}): URL length = ${url.length}`);
             return {
               id: item.id,
               title: item.title || 'Untitled Image',
               url: url,
             };
           });
-        console.log(`Formatted ${section} images:`, formattedImages);
+        logger.debug(`Formatted ${section} images:`, formattedImages.length);
         setImages(formattedImages);
       } else {
-        console.log(`No ${section} images found in database`);
+        logger.warn(`No ${section} images found in database`);
         setImages([]);
       }
     } catch (error) {
-      console.error(`Error fetching ${section} images:`, error);
+      logger.error(`Error fetching ${section} images:`, error);
       setImages([]);
     } finally {
       setLoading(false);
@@ -2150,7 +2151,7 @@ function GallerySection({ section, isEditing }: { section: string; isEditing: bo
         await fetchImages();
       }
     } catch (error) {
-      console.error('Error adding image:', error);
+      logger.error('Error adding image:', error);
       alert('Failed to add image');
     }
   };
@@ -2174,7 +2175,7 @@ function GallerySection({ section, isEditing }: { section: string; isEditing: bo
         alert('Failed to save image');
       }
     } catch (error) {
-      console.error('Error saving image:', error);
+      logger.error('Error saving image:', error);
       alert('Failed to save image');
     } finally {
       setSaving(null);
@@ -2197,7 +2198,7 @@ function GallerySection({ section, isEditing }: { section: string; isEditing: bo
         alert('Failed to delete image');
       }
     } catch (error) {
-      console.error('Error deleting image:', error);
+      logger.error('Error deleting image:', error);
       alert('Failed to delete image');
     } finally {
       setDeleting(null);
@@ -2324,7 +2325,7 @@ function ContactSection({ isEditing }: { isEditing: boolean }) {
         setLinkedin(data.linkedin_url || '');
       }
     } catch (error) {
-      console.error('Error fetching contact:', error);
+      logger.error('Error fetching contact:', error);
     } finally {
       setLoading(false);
     }
@@ -2350,7 +2351,7 @@ function ContactSection({ isEditing }: { isEditing: boolean }) {
         alert('Failed to save contact information');
       }
     } catch (error) {
-      console.error('Error saving contact:', error);
+      logger.error('Error saving contact:', error);
       alert('Failed to save contact information');
     } finally {
       setSaving(false);
@@ -2456,10 +2457,10 @@ function ReviewsSection() {
         const data = await response.json();
         setReviews(data.reviews || []);
       } else {
-        console.error('Failed to fetch pending reviews');
+        logger.error('Failed to fetch pending reviews');
       }
     } catch (error) {
-      console.error('Error fetching pending reviews:', error);
+      logger.error('Error fetching pending reviews:', error);
     } finally {
       setLoading(false);
     }
@@ -2482,7 +2483,7 @@ function ReviewsSection() {
         alert(`Error: ${error.error || 'Failed to process review'}`);
       }
     } catch (error: any) {
-      console.error('Error processing review:', error);
+      logger.error('Error processing review:', error);
       alert(`Error: ${error.message || 'Failed to process review'}`);
     } finally {
       setProcessing(null);
@@ -2662,7 +2663,7 @@ function PreviewSection() {
         setApprovedReviews(data.reviews || []);
       }
     } catch (error) {
-      console.error('Error fetching approved reviews:', error);
+      logger.error('Error fetching approved reviews:', error);
     } finally {
       setLoading(false);
     }
@@ -2694,7 +2695,7 @@ function PreviewSection() {
         alert(`Error: ${error.error || 'Failed to delete review'}`);
       }
     } catch (error) {
-      console.error('Error deleting review:', error);
+      logger.error('Error deleting review:', error);
       alert('Failed to delete review');
     } finally {
       setProcessing(null);
@@ -2727,7 +2728,7 @@ function PreviewSection() {
         alert(`Error: ${error.error || 'Failed to unapprove review'}`);
       }
     } catch (error) {
-      console.error('Error unapproving review:', error);
+      logger.error('Error unapproving review:', error);
       alert('Failed to unapprove review');
     } finally {
       setProcessing(null);
