@@ -6,6 +6,7 @@ import { X, Images } from 'lucide-react';
 import { useStaggeredReveal } from '@/lib/animations';
 import { ContentInteraction } from '@/components/ContentInteraction';
 import { GroupGallery } from '@/components/GroupGallery';
+import { logger } from '@/lib/logger';
 
 interface GalleryImage {
   id: string;
@@ -32,11 +33,11 @@ export function Product() {
         cache: 'no-store', // Ensure fresh data
       });
       
-      console.log('📡 Response status:', response.status, response.statusText);
+      logger.debug('Response status:', response.status, response.statusText);
       
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('❌ Failed to fetch product images:', {
+        logger.error('Failed to fetch product images:', {
           status: response.status,
           statusText: response.statusText,
           error: errorText,
@@ -47,10 +48,10 @@ export function Product() {
       }
       
       const result = await response.json();
-      console.log('📦 Raw API response:', result);
+      logger.debug('Raw API response:', result);
       
       const data = result.data || result;
-      console.log('📊 Parsed data:', {
+      logger.debug('Parsed data:', {
         isArray: Array.isArray(data),
         length: data?.length || 0,
         data: data,
@@ -61,7 +62,7 @@ export function Product() {
           .filter((item: any) => {
             const hasUrl = item.media_url && item.media_url.trim() !== '';
             if (!hasUrl) {
-              console.warn('⚠️ Item filtered out (no media_url):', item);
+              logger.warn('Item filtered out (no media_url):', item);
             }
             return hasUrl;
           })
@@ -81,13 +82,13 @@ export function Product() {
             return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
           });
         
-        console.log('✅ Product images formatted:', {
+        logger.debug('Product images formatted:', {
           count: formattedImages.length,
           images: formattedImages,
         });
         setImages(formattedImages);
       } else {
-        console.warn('⚠️ No product images found:', {
+        logger.warn('No product images found:', {
           dataExists: !!data,
           isArray: Array.isArray(data),
           length: data?.length || 0,
@@ -96,7 +97,7 @@ export function Product() {
         setImages([]);
       }
     } catch (error: any) {
-      console.error('❌ Error fetching product images:', {
+      logger.error('Error fetching product images:', {
         error: error.message,
         stack: error.stack,
       });
@@ -122,7 +123,7 @@ export function Product() {
       channel.onmessage = (event) => {
         if (mounted && event.data.type === 'content-updated' && 
             (event.data.section === 'product' || !event.data.section)) {
-          console.log('Product section: Content updated, refreshing...');
+          logger.debug('Product section: Content updated, refreshing...');
           fetchImages();
         }
       };
@@ -207,7 +208,7 @@ export function Product() {
               const displayedImages: { item: GalleryImage; index: number; groupImages: GalleryImage[] | null }[] = [];
               
               // Debug: Log all images with their group_id
-              console.log('🔍 All images with group_id:', images.map(img => ({
+              logger.debug('All images with group_id:', images.map(img => ({
                 id: img.id,
                 title: img.title,
                 group_id: img.group_id,
@@ -225,7 +226,7 @@ export function Product() {
               });
               
               // Debug: Log grouped images
-              console.log('📦 Grouped images:', Array.from(groupedImages.entries()).map(([groupId, items]) => ({
+              logger.debug('Grouped images:', Array.from(groupedImages.entries()).map(([groupId, items]) => ({
                 group_id: groupId,
                 count: items.length,
                 items: items.map(i => ({ id: i.id, title: i.title }))
@@ -245,7 +246,7 @@ export function Product() {
                     return aTime - bTime;
                   });
                   
-                  console.log(`✅ Displaying group ${groupId} with ${sortedGroupItems.length} images:`, 
+                  logger.debug(`Displaying group ${groupId} with ${sortedGroupItems.length} images:`, 
                     sortedGroupItems.map(i => ({ id: i.id, title: i.title }))
                   );
                   
@@ -305,7 +306,7 @@ export function Product() {
                     style={{ opacity: 0 }}
                     loading="lazy"
                     onError={(e) => {
-                      console.error('❌ Image failed to load:', {
+                      logger.error('Image failed to load:', {
                         src: item.image,
                         title: item.title,
                         id: item.id,
@@ -315,7 +316,7 @@ export function Product() {
                     }}
                     onLoad={(e) => {
                       (e.target as HTMLImageElement).style.opacity = '1';
-                      console.log('✅ Image loaded successfully:', {
+                      logger.debug('Image loaded successfully:', {
                         src: item.image,
                         title: item.title,
                       });

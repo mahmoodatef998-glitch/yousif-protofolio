@@ -6,6 +6,7 @@ import { X, Images } from 'lucide-react';
 import { useStaggeredReveal } from '@/lib/animations';
 import { ContentInteraction } from '@/components/ContentInteraction';
 import { GroupGallery } from '@/components/GroupGallery';
+import { logger } from '@/lib/logger';
 
 interface GalleryImage {
   id: string;
@@ -75,7 +76,7 @@ export function Restaurant() {
         setImages([]);
       }
     } catch (error) {
-      console.error('Error fetching restaurant images:', error);
+      logger.error('Error fetching restaurant images:', error);
       if (images.length === 0) {
         setImages([]);
       }
@@ -100,7 +101,7 @@ export function Restaurant() {
       channel.onmessage = (event) => {
         if (mounted && event.data.type === 'content-updated' && 
             (event.data.section === 'restaurant' || !event.data.section)) {
-          console.log('Restaurant section: Content updated, refreshing...');
+          logger.debug('Restaurant section: Content updated, refreshing...');
           fetchImages();
         }
       };
@@ -186,7 +187,7 @@ export function Restaurant() {
               const displayedImages: { item: GalleryImage; index: number; groupImages: GalleryImage[] | null }[] = [];
               
               // Debug: Log all images with their group_id
-              console.log('🔍 All restaurant images with group_id:', images.map(img => ({
+              logger.debug('All restaurant images with group_id:', images.map(img => ({
                 id: img.id,
                 title: img.title,
                 group_id: img.group_id,
@@ -204,7 +205,7 @@ export function Restaurant() {
               });
               
               // Debug: Log grouped images
-              console.log('📦 Grouped restaurant images:', Array.from(groupedImages.entries()).map(([groupId, items]) => ({
+              logger.debug('Grouped restaurant images:', Array.from(groupedImages.entries()).map(([groupId, items]) => ({
                 group_id: groupId,
                 count: items.length,
                 items: items.map(i => ({ id: i.id, title: i.title }))
@@ -280,7 +281,7 @@ export function Restaurant() {
                     style={{ opacity: 0 }}
                     loading="lazy"
                     onError={(e) => {
-                      console.error('❌ Image failed to load:', {
+                      logger.error('Image failed to load:', {
                         src: item.image,
                         title: item.title,
                         id: item.id,
@@ -290,7 +291,7 @@ export function Restaurant() {
                     }}
                     onLoad={(e) => {
                       (e.target as HTMLImageElement).style.opacity = '1';
-                      console.log('✅ Image loaded successfully:', {
+                      logger.debug('Image loaded successfully:', {
                         src: item.image,
                         title: item.title,
                       });
