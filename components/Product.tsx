@@ -238,20 +238,6 @@ export function Product() {
                 
                 {/* Enhanced gradient overlay */}
                 <div className="card-overlay" />
-                
-                {/* Content overlay */}
-                <div className="absolute inset-0 flex items-center justify-center p-6 z-10">
-                  <div className="text-center transform translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-700 ease-out">
-                    <h3 className="card-title text-text-primary text-2xl font-bold mb-3 text-glow">
-                      {item.title}
-                    </h3>
-                    <div className="card-subtitle w-16 h-0.5 bg-accent mx-auto mb-3" />
-                    <p className="card-subtitle text-text-secondary text-sm font-medium uppercase tracking-wider">
-                      Product Photography
-                    </p>
-                  </div>
-                </div>
-                
                 {/* Corner accent */}
                 <div className="absolute top-4 right-4 w-12 h-12 border-2 border-accent/30 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-center justify-center z-10">
                   <svg className="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
