@@ -17,6 +17,7 @@ interface GalleryImage {
 export function Restaurant() {
   const sectionRef = useRef<HTMLElement | null>(null);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [selectedGroup, setSelectedGroup] = useState<GalleryImage[] | null>(null);
   const [images, setImages] = useState<GalleryImage[]>([]);
   const [loading, setLoading] = useState(true);
 
