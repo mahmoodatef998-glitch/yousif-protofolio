@@ -175,7 +175,8 @@ export async function POST(request: NextRequest) {
       console.error('Error getting max order_index:', maxOrderError);
     }
 
-    const newContent = {
+    // Build content object, only include group_id if it exists in the request
+    const newContent: any = {
       section_id: sectionData.id,
       title: body.title || '',
       description: body.description || '',
@@ -183,11 +184,15 @@ export async function POST(request: NextRequest) {
       media_url: body.media_url || '',
       thumbnail_url: body.thumbnail_url || body.media_url || '',
       cloudinary_public_id: body.cloudinary_public_id || '',
-      group_id: body.group_id || null, // Optional group identifier
       order_index: (maxOrder?.order_index ?? 0) + 1,
       metadata: body.metadata || {},
       is_active: true, // ✅ إضافة is_active صراحة
     };
+
+    // Only add group_id if it's provided (and column exists in database)
+    if (body.group_id) {
+      newContent.group_id = body.group_id;
+    }
 
     console.log('Inserting content:', {
       section: body.section,
