@@ -398,7 +398,11 @@ function UploadSection() {
           }
           
           // Save to Supabase
-          console.log(`Saving ${file.name} to database...`);
+          console.log(`💾 Saving ${file.name} to database with group_id: ${currentGroupId}`, {
+            fileName,
+            section: category,
+            group_id: currentGroupId
+          });
           const mediaType = file.type.startsWith('video/') ? 'video' : 'image';
           const saveResponse = await fetch('/api/content', {
             method: 'POST',
@@ -531,6 +535,12 @@ function UploadSection() {
               // Save to Supabase automatically
               const mediaType = result.info.resource_type === 'video' ? 'video' : 'image';
               const fileName = result.info.original_filename || result.info.public_id.split('/').pop();
+              
+              console.log(`💾 Saving to database with group_id: ${currentGroupId}`, {
+                fileName,
+                mediaType,
+                section: category
+              });
               
               const saveResponse = await fetch('/api/content', {
                 method: 'POST',

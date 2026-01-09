@@ -206,14 +206,30 @@ export function Product() {
               const groupedImages = new Map<string | null, GalleryImage[]>();
               const displayedImages: { item: GalleryImage; index: number; groupImages: GalleryImage[] | null }[] = [];
               
-              // First, group all images
+              // Debug: Log all images with their group_id
+              console.log('🔍 All images with group_id:', images.map(img => ({
+                id: img.id,
+                title: img.title,
+                group_id: img.group_id,
+                order_index: img.order_index
+              })));
+              
+              // First, group all images by exact group_id match
               images.forEach((item) => {
-                const groupKey = item.group_id || null;
+                // Use exact group_id string (including null for individual items)
+                const groupKey = item.group_id ? String(item.group_id) : null;
                 if (!groupedImages.has(groupKey)) {
                   groupedImages.set(groupKey, []);
                 }
                 groupedImages.get(groupKey)!.push(item);
               });
+              
+              // Debug: Log grouped images
+              console.log('📦 Grouped images:', Array.from(groupedImages.entries()).map(([groupId, items]) => ({
+                group_id: groupId,
+                count: items.length,
+                items: items.map(i => ({ id: i.id, title: i.title }))
+              })));
 
               // Then, create display list (only first image of each group, or all individual images)
               let displayIndex = 0;
