@@ -79,7 +79,32 @@ export async function GET(request: NextRequest) {
         media_url: data[0].media_url,
         is_active: data[0].is_active,
         section_id: data[0].section_id,
+        group_id: data[0].group_id,
       });
+      
+      // Log all items with group_id for debugging
+      const itemsWithGroup = data.filter((item: any) => item.group_id);
+      const itemsWithoutGroup = data.filter((item: any) => !item.group_id);
+      
+      console.log(`📊 Items with group_id: ${itemsWithGroup.length}, without: ${itemsWithoutGroup.length}`);
+      
+      if (itemsWithGroup.length > 0) {
+        // Group by group_id to see what groups exist
+        const groupMap = new Map<string, any[]>();
+        itemsWithGroup.forEach((item: any) => {
+          const gid = String(item.group_id);
+          if (!groupMap.has(gid)) {
+            groupMap.set(gid, []);
+          }
+          groupMap.get(gid)!.push(item);
+        });
+        
+        console.log('📦 Groups found in API:', Array.from(groupMap.entries()).map(([groupId, items]) => ({
+          group_id: groupId,
+          count: items.length,
+          items: items.map((i: any) => ({ id: i.id, title: i.title, created_at: i.created_at }))
+        })));
+      }
       
       // Log all items with media_url status
       const itemsWithUrl = data.filter((item: any) => item.media_url && item.media_url.trim() !== '');
