@@ -183,6 +183,7 @@ export async function POST(request: NextRequest) {
       media_url: body.media_url || '',
       thumbnail_url: body.thumbnail_url || body.media_url || '',
       cloudinary_public_id: body.cloudinary_public_id || '',
+      group_id: body.group_id || null, // Optional group identifier
       order_index: (maxOrder?.order_index ?? 0) + 1,
       metadata: body.metadata || {},
       is_active: true, // ✅ إضافة is_active صراحة

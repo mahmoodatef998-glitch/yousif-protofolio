@@ -238,6 +238,8 @@ function UploadSection() {
   const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({});
   const [category, setCategory] = useState('wedding');
   const [imageName, setImageName] = useState('');
+  const [groupMode, setGroupMode] = useState<'none' | 'group'>('none');
+  const [groupName, setGroupName] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const widgetRef = useRef<any>(null);
   const [widgetScriptLoaded, setWidgetScriptLoaded] = useState(false);
@@ -403,6 +405,7 @@ function UploadSection() {
               media_url: uploadResult.secure_url || uploadResult.url,
               thumbnail_url: uploadResult.secure_url || uploadResult.url,
               cloudinary_public_id: uploadResult.public_id,
+              group_id: groupMode === 'group' ? (groupName || `group-${Date.now()}`) : null,
               metadata: {
                 format: uploadResult.format,
                 width: uploadResult.width,
@@ -428,6 +431,8 @@ function UploadSection() {
 
       setSelectedFiles([]);
       setImageName('');
+      setGroupMode('none');
+      setGroupName('');
       
       // Show success message
       alert('Files uploaded successfully! The homepage will automatically update within 30 seconds, or you can refresh it manually.');
@@ -527,6 +532,7 @@ function UploadSection() {
                   media_url: result.info.secure_url || result.info.url,
                   thumbnail_url: result.info.thumbnail_url || result.info.secure_url || result.info.url,
                   cloudinary_public_id: result.info.public_id,
+                  group_id: groupMode === 'group' ? (groupName || `group-${Date.now()}`) : null,
                   metadata: {
                     format: result.info.format,
                     width: result.info.width,
@@ -677,7 +683,60 @@ function UploadSection() {
               className="w-full px-4 py-2 bg-dark-bg border border-dark-section rounded-lg text-text-primary focus:border-accent focus:outline-none disabled:opacity-50"
               disabled={uploading}
             />
-        </div>
+          </div>
+
+          {/* Group Selection */}
+          <div>
+            <label className="block text-sm font-medium text-text-secondary mb-2">
+              Group *
+            </label>
+            <div className="space-y-3">
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="groupMode"
+                    value="none"
+                    checked={groupMode === 'none'}
+                    onChange={(e) => {
+                      setGroupMode(e.target.value as 'none' | 'group');
+                      if (e.target.value === 'none') setGroupName('');
+                    }}
+                    className="w-4 h-4 text-accent focus:ring-accent"
+                    disabled={uploading}
+                  />
+                  <span className="text-text-primary">None (Individual)</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="groupMode"
+                    value="group"
+                    checked={groupMode === 'group'}
+                    onChange={(e) => setGroupMode(e.target.value as 'none' | 'group')}
+                    className="w-4 h-4 text-accent focus:ring-accent"
+                    disabled={uploading}
+                  />
+                  <span className="text-text-primary">Group</span>
+                </label>
+              </div>
+              {groupMode === 'group' && (
+                <div>
+                  <input
+                    type="text"
+                    value={groupName}
+                    onChange={(e) => setGroupName(e.target.value)}
+                    placeholder="Enter group name (optional, auto-generated if empty)"
+                    className="w-full px-4 py-2 bg-dark-bg border border-dark-section rounded-lg text-text-primary focus:border-accent focus:outline-none disabled:opacity-50 text-sm"
+                    disabled={uploading}
+                  />
+                  <p className="text-xs text-text-secondary mt-1">
+                    All selected files will be grouped together. Click on the main image to view all images in the group.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
 
           <div>
             <label className="block text-sm font-medium text-text-secondary mb-2">

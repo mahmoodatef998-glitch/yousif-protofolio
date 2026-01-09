@@ -47,6 +47,7 @@ export function Restaurant() {
             id: item.id,
             title: item.title || 'Untitled Image',
             image: item.media_url || '',
+            group_id: item.group_id || null,
           }));
         
         // Only update if data actually changed (compare IDs)
@@ -165,21 +166,63 @@ export function Restaurant() {
           </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 md:gap-6">
-            {images.map((item, index) => (
-              <div
-                key={item.id}
-                className={`group card-premium card-glow card-ripple relative aspect-[4/3] overflow-hidden cursor-pointer rounded-2xl ${
-                  index < visibleCount 
-                    ? 'opacity-100 translate-y-0' 
-                    : 'opacity-0 translate-y-[60px]'
-                }`}
-                style={{
-                  transition: 'all 0.8s cubic-bezier(0.16, 1, 0.3, 1)',
-                  transitionDelay: `${index * 0.12}s`,
-                  filter: index < visibleCount ? 'blur(0)' : 'blur(4px)',
-                }}
-                onClick={() => setSelectedImage(item.image)}
-              >
+            {(() => {
+              // Group images by group_id, showing only the first image of each group
+              const groupedImages = new Map<string | null, GalleryImage[]>();
+              const displayedImages: { item: GalleryImage; index: number; groupImages: GalleryImage[] | null }[] = [];
+              
+              // First, group all images
+              images.forEach((item) => {
+                const groupKey = item.group_id || null;
+                if (!groupedImages.has(groupKey)) {
+                  groupedImages.set(groupKey, []);
+                }
+                groupedImages.get(groupKey)!.push(item);
+              });
+
+              // Then, create display list (only first image of each group, or all individual images)
+              let displayIndex = 0;
+              groupedImages.forEach((groupItems, groupId) => {
+                if (groupId && groupItems.length > 1) {
+                  // Group: show only first image
+                  displayedImages.push({
+                    item: groupItems[0],
+                    index: displayIndex++,
+                    groupImages: groupItems,
+                  });
+                } else {
+                  // Individual: show all
+                  groupItems.forEach((item) => {
+                    displayedImages.push({
+                      item,
+                      index: displayIndex++,
+                      groupImages: null,
+                    });
+                  });
+                }
+              });
+
+              return displayedImages.map(({ item, index, groupImages }) => (
+                <div
+                  key={item.id}
+                  className={`group card-premium card-glow card-ripple relative aspect-[4/3] overflow-hidden cursor-pointer rounded-2xl ${
+                    index < visibleCount 
+                      ? 'opacity-100 translate-y-0' 
+                      : 'opacity-0 translate-y-[60px]'
+                  }`}
+                  style={{
+                    transition: 'all 0.8s cubic-bezier(0.16, 1, 0.3, 1)',
+                    transitionDelay: `${index * 0.12}s`,
+                    filter: index < visibleCount ? 'blur(0)' : 'blur(4px)',
+                  }}
+                  onClick={() => {
+                    if (groupImages && groupImages.length > 1) {
+                      setSelectedGroup(groupImages);
+                    } else {
+                      setSelectedImage(item.image);
+                    }
+                  }}
+                >
                 {/* Image with parallax and blur placeholder */}
                 <div className="absolute inset-0">
                   {/* Blur placeholder */}
