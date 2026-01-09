@@ -2,14 +2,16 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import Image from 'next/image';
-import { X } from 'lucide-react';
+import { X, Images } from 'lucide-react';
 import { useStaggeredReveal } from '@/lib/animations';
 import { ContentInteraction } from '@/components/ContentInteraction';
+import { GroupGallery } from '@/components/GroupGallery';
 
 interface GalleryImage {
   id: string;
   title: string;
   image: string;
+  group_id?: string | null;
 }
 
 export function Restaurant() {
