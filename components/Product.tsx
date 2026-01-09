@@ -12,6 +12,8 @@ interface GalleryImage {
   title: string;
   image: string;
   group_id?: string | null;
+  order_index?: number;
+  created_at?: string;
 }
 
 export function Product() {
@@ -68,7 +70,16 @@ export function Product() {
             title: item.title || 'Untitled Image',
             image: item.media_url || '',
             group_id: item.group_id || null,
-          }));
+            order_index: item.order_index || 0,
+            created_at: item.created_at || '',
+          }))
+          .sort((a, b) => {
+            // Sort by order_index first, then by created_at
+            if (a.order_index !== b.order_index) {
+              return a.order_index - b.order_index;
+            }
+            return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+          });
         
         console.log('✅ Product images formatted:', {
           count: formattedImages.length,
@@ -208,11 +219,21 @@ export function Product() {
               let displayIndex = 0;
               groupedImages.forEach((groupItems, groupId) => {
                 if (groupId && groupItems.length > 1) {
-                  // Group: show only first image
+                  // Sort group items by order_index and created_at to ensure correct order
+                  const sortedGroupItems = [...groupItems].sort((a, b) => {
+                    if ((a.order_index || 0) !== (b.order_index || 0)) {
+                      return (a.order_index || 0) - (b.order_index || 0);
+                    }
+                    const aTime = a.created_at ? new Date(a.created_at).getTime() : 0;
+                    const bTime = b.created_at ? new Date(b.created_at).getTime() : 0;
+                    return aTime - bTime;
+                  });
+                  
+                  // Group: show only first image (sorted)
                   displayedImages.push({
-                    item: groupItems[0],
+                    item: sortedGroupItems[0],
                     index: displayIndex++,
-                    groupImages: groupItems,
+                    groupImages: sortedGroupItems,
                   });
                 } else {
                   // Individual: show all
