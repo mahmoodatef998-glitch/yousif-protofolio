@@ -126,7 +126,7 @@ export function About() {
           </video>
         ) : (
           <img
-            src="https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=1920&q=90&auto=format&fit=crop"
+            src="https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=1920&q=90&auto=format&fit=crop"
             alt="About Background"
             className="absolute inset-0 w-full h-full object-cover"
           />
