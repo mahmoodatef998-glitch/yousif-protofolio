@@ -245,6 +245,10 @@ export function Product() {
                     return aTime - bTime;
                   });
                   
+                  console.log(`✅ Displaying group ${groupId} with ${sortedGroupItems.length} images:`, 
+                    sortedGroupItems.map(i => ({ id: i.id, title: i.title }))
+                  );
+                  
                   // Group: show only first image (sorted)
                   displayedImages.push({
                     item: sortedGroupItems[0],
