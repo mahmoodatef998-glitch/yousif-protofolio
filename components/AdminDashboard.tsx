@@ -331,8 +331,13 @@ function UploadSection() {
     setUploading(true);
     const progress: { [key: string]: number } = {};
 
+    // Generate group_id once for all files if group mode is enabled
+    const currentGroupId = groupMode === 'group' 
+      ? (groupName || `group-${Date.now()}`)
+      : null;
+
     try {
-      console.log(`Starting upload of ${selectedFiles.length} file(s) to category: ${category}`);
+      console.log(`Starting upload of ${selectedFiles.length} file(s) to category: ${category}${currentGroupId ? ` with group_id: ${currentGroupId}` : ''}`);
       
       for (let i = 0; i < selectedFiles.length; i++) {
         const file = selectedFiles[i];
@@ -405,7 +410,7 @@ function UploadSection() {
               media_url: uploadResult.secure_url || uploadResult.url,
               thumbnail_url: uploadResult.secure_url || uploadResult.url,
               cloudinary_public_id: uploadResult.public_id,
-              group_id: groupMode === 'group' ? (groupName || `group-${Date.now()}`) : null,
+              group_id: currentGroupId,
               metadata: {
                 format: uploadResult.format,
                 width: uploadResult.width,
@@ -482,6 +487,11 @@ function UploadSection() {
       return;
     }
 
+    // Generate group_id once for all files if group mode is enabled
+    const currentGroupId = groupMode === 'group' 
+      ? (groupName || `group-${Date.now()}`)
+      : null;
+
     // Destroy existing widget if it exists to create a fresh one
     if (widgetRef.current) {
       try {
@@ -532,7 +542,7 @@ function UploadSection() {
                   media_url: result.info.secure_url || result.info.url,
                   thumbnail_url: result.info.thumbnail_url || result.info.secure_url || result.info.url,
                   cloudinary_public_id: result.info.public_id,
-                  group_id: groupMode === 'group' ? (groupName || `group-${Date.now()}`) : null,
+                  group_id: currentGroupId,
                   metadata: {
                     format: result.info.format,
                     width: result.info.width,
