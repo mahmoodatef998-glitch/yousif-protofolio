@@ -143,9 +143,9 @@ export function Restaurant() {
 
   if (images.length === 0) {
     return (
-      <section id="restaurant" className="py-24 md:py-32 bg-dark-section">
-        <div className="max-w-7xl mx-auto px-6 lg:px-8 text-center">
-          <h2 className="text-5xl md:text-6xl font-bold text-text-primary mb-16">Restaurant</h2>
+      <section id="restaurant" className="py-16 sm:py-20 md:py-24 lg:py-32 bg-dark-section">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold text-text-primary mb-12 md:mb-16">Restaurant</h2>
           <p className="text-text-secondary">No images yet. Upload images from the admin dashboard.</p>
         </div>
       </section>
@@ -157,14 +157,14 @@ export function Restaurant() {
       <section
         ref={combinedRef}
         id="restaurant"
-        className="py-24 md:py-32 bg-dark-section"
+        className="py-16 sm:py-20 md:py-24 lg:py-32 bg-dark-section"
       >
-        <div className="max-w-7xl mx-auto px-6 lg:px-8">
-          <h2 className="text-5xl md:text-6xl font-bold text-text-primary mb-16 text-center">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold text-text-primary mb-12 md:mb-16 text-center">
             Restaurant
           </h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 md:gap-6">
             {images.map((item, index) => (
               <div
                 key={item.id}

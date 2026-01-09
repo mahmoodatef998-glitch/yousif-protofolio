@@ -143,12 +143,12 @@ export function Reels() {
 
   if (loading) {
     return (
-      <section id="reels" className="py-24 md:py-32 bg-dark-section">
-        <div className="max-w-7xl mx-auto px-6 lg:px-8">
-          <h2 className="text-5xl md:text-6xl font-bold text-text-primary mb-16 text-center">
+      <section id="reels" className="py-16 sm:py-20 md:py-24 lg:py-32 bg-dark-section">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold text-text-primary mb-12 md:mb-16 text-center">
             Reels
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
             {[...Array(5)].map((_, i) => (
               <div key={i} className="card-skeleton aspect-[9/16] rounded-2xl overflow-hidden">
                 <div className="w-full h-full bg-dark-bg/50" />
@@ -162,9 +162,9 @@ export function Reels() {
 
   if (reels.length === 0) {
     return (
-      <section id="reels" className="py-24 md:py-32 bg-dark-section">
-        <div className="max-w-7xl mx-auto px-6 lg:px-8 text-center">
-          <h2 className="text-5xl md:text-6xl font-bold text-text-primary mb-16">Reels</h2>
+      <section id="reels" className="py-16 sm:py-20 md:py-24 lg:py-32 bg-dark-section">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold text-text-primary mb-12 md:mb-16">Reels</h2>
           <p className="text-text-secondary">No reels yet. Upload reels from the admin dashboard.</p>
         </div>
       </section>
@@ -176,14 +176,14 @@ export function Reels() {
       <section
         ref={combinedRef}
         id="reels"
-        className="py-24 md:py-32 bg-dark-section"
+        className="py-16 sm:py-20 md:py-24 lg:py-32 bg-dark-section"
       >
-        <div className="max-w-7xl mx-auto px-6 lg:px-8">
-          <h2 className="text-5xl md:text-6xl font-bold text-text-primary mb-16 text-center">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold text-text-primary mb-12 md:mb-16 text-center">
             Reels
           </h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
             {reels.map((reel, index) => (
               <div
                 key={reel.id}

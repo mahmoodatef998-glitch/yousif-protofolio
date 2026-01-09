@@ -20,12 +20,12 @@ const filters: { id: FilterType; label: string }[] = [
 
 export function PortfolioFilter({ activeFilter, onFilterChange }: PortfolioFilterProps) {
   return (
-    <div className="flex flex-wrap items-center justify-center gap-4 mb-12">
+    <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 mb-8 md:mb-12 px-4">
       {filters.map((filter) => (
         <button
           key={filter.id}
           onClick={() => onFilterChange(filter.id)}
-          className={`px-6 py-3 rounded-full font-medium transition-all duration-300 btn-magnetic ${
+          className={`px-4 sm:px-6 py-2.5 sm:py-3 rounded-full text-sm sm:text-base font-medium transition-all duration-300 btn-magnetic ${
             activeFilter === filter.id
               ? 'bg-accent text-dark-bg scale-105'
               : 'bg-dark-section text-text-secondary hover:text-accent hover:bg-dark-section/80'

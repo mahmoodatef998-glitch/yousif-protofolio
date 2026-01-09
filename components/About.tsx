@@ -143,7 +143,7 @@ export function About() {
       </div>
 
       {/* Content */}
-      <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 py-12 lg:py-20">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16 lg:py-20">
         {/* 
           Flexbox Container: 
           - flex-col on mobile (stack vertically)
@@ -151,7 +151,7 @@ export function About() {
           - items-center: vertically center items
           - gap-8 lg:gap-16: responsive spacing
         */}
-        <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-16 min-h-[80vh]">
+        <div className="flex flex-col lg:flex-row items-center gap-6 sm:gap-8 lg:gap-16 min-h-[70vh] md:min-h-[80vh]">
           {/* 
             Image Container with Animation:
             - Safe animation: only opacity and transform (no layout shift)
@@ -190,10 +190,10 @@ export function About() {
             }}
           >
             {aboutData.heroSubtitle && (
-              <p className="text-xl md:text-2xl text-accent mb-8">{aboutData.heroSubtitle}</p>
+              <p className="text-lg sm:text-xl md:text-2xl text-accent mb-4 md:mb-8">{aboutData.heroSubtitle}</p>
             )}
             {aboutData.bio && (
-              <div className="space-y-6 text-lg md:text-xl text-text-secondary leading-relaxed mb-8">
+              <div className="space-y-4 md:space-y-6 text-base sm:text-lg md:text-xl text-text-secondary leading-relaxed mb-6 md:mb-8">
                 {aboutData.bio.split('\n').map((paragraph, index) => (
                   <p key={index}>{paragraph}</p>
                 ))}
@@ -201,7 +201,7 @@ export function About() {
             )}
             
             {/* CTA Buttons */}
-            <div className="flex flex-wrap gap-4 mb-12">
+            <div className="flex flex-wrap gap-3 sm:gap-4 mb-8 md:mb-12">
               <a
                 href="#contact"
                 className="group px-8 py-4 bg-accent text-dark-bg font-semibold rounded-lg hover:bg-accent/90 hover:scale-105 active:scale-95 transition-all duration-300 flex items-center gap-2 btn-magnetic"
@@ -233,7 +233,7 @@ export function About() {
             </div>
             
             {/* Stats with Animation */}
-            <div className="mt-12 grid grid-cols-3 gap-8 pt-8 border-t border-dark-section">
+            <div className="mt-8 md:mt-12 grid grid-cols-3 gap-4 sm:gap-6 md:gap-8 pt-6 md:pt-8 border-t border-dark-section">
               <div className="text-center">
                 <AnimatedCounter
                   value={aboutData.stats.projects}

@@ -196,21 +196,21 @@ export function Contact() {
       className="py-24 md:py-32 bg-dark-bg"
     >
       <div className="max-w-6xl mx-auto px-6 lg:px-8">
-        <div className="text-center mb-16">
-          <h2 className="text-5xl md:text-6xl font-bold text-text-primary mb-4">
+        <div className="text-center mb-12 md:mb-16">
+          <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold text-text-primary mb-4">
             Get In Touch
           </h2>
-          <p className="text-xl text-text-secondary max-w-2xl mx-auto">
+          <p className="text-base sm:text-lg md:text-xl text-text-secondary max-w-2xl mx-auto px-4">
             Let's create something amazing together. Reach out and let's discuss your next project.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-12 lg:gap-16">
+        <div className="grid md:grid-cols-2 gap-8 md:gap-12 lg:gap-16">
           {/* Contact Info */}
-          <div className="space-y-8">
+          <div className="space-y-6 md:space-y-8">
             <div>
-              <h3 className="text-2xl font-semibold text-text-primary mb-6">Contact Information</h3>
-              <div className="space-y-6">
+              <h3 className="text-xl md:text-2xl font-semibold text-text-primary mb-4 md:mb-6">Contact Information</h3>
+              <div className="space-y-4 md:space-y-6">
                 <a
                   href={`mailto:${contactInfo.email}`}
                   className="flex items-center space-x-4 group"
@@ -244,8 +244,8 @@ export function Contact() {
             </div>
 
             <div>
-              <h3 className="text-2xl font-semibold text-text-primary mb-6">Follow Me</h3>
-              <div className="flex space-x-4">
+              <h3 className="text-xl md:text-2xl font-semibold text-text-primary mb-4 md:mb-6">Follow Me</h3>
+              <div className="flex flex-wrap gap-3 md:gap-4">
                 <a
                   href={contactInfo.instagram}
                   target="_blank"

@@ -22,20 +22,20 @@ export function Footer() {
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-accent rounded-full blur-3xl" />
       </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 py-20">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-20">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 md:gap-10 lg:gap-12 mb-12 md:mb-16">
           {/* Brand Section */}
           <div className="lg:col-span-2">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-accent to-accent/70 flex items-center justify-center">
-                <Camera className="w-6 h-6 text-dark-bg" />
+            <div className="flex items-center gap-3 mb-4 md:mb-6">
+              <div className="w-10 h-10 md:w-12 md:h-12 rounded-lg bg-gradient-to-br from-accent to-accent/70 flex items-center justify-center">
+                <Camera className="w-5 h-5 md:w-6 md:h-6 text-dark-bg" />
               </div>
-              <h3 className="text-3xl font-bold text-text-primary">YOUSEF RABEA</h3>
+              <h3 className="text-2xl md:text-3xl font-bold text-text-primary">YOUSEF RABEA</h3>
             </div>
-            <p className="text-text-secondary leading-relaxed max-w-md mb-6">
+            <p className="text-text-secondary leading-relaxed max-w-md mb-4 md:mb-6 text-sm md:text-base">
               Professional photographer and videographer capturing authentic moments and creating timeless memories that tell your story.
             </p>
-            <div className="flex items-center gap-6">
+            <div className="flex flex-wrap items-center gap-4 md:gap-6">
               <div className="flex items-center gap-2 text-text-secondary">
                 <Camera className="w-4 h-4 text-accent" />
                 <span className="text-sm">Photography</span>
@@ -130,8 +130,8 @@ export function Footer() {
         </div>
 
         {/* Bottom Bar */}
-        <div className="pt-12 border-t border-dark-bg/50">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="pt-8 md:pt-12 border-t border-dark-bg/50">
+          <div className="flex flex-col md:flex-row items-center justify-center md:justify-between gap-3 md:gap-4">
             <p className="text-text-secondary text-sm">
               © {currentYear} <span className="text-accent font-semibold">YOUSEF RABEA</span>. All rights reserved.
             </p>

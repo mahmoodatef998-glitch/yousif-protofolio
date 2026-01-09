@@ -125,7 +125,7 @@ export function Testimonials() {
     <section
       ref={combinedRef}
       id="testimonials"
-      className="py-24 md:py-32 bg-dark-section relative overflow-hidden"
+      className="py-16 sm:py-20 md:py-24 lg:py-32 bg-dark-section relative overflow-hidden"
     >
       {/* Background decoration */}
       <div className="absolute inset-0 opacity-10">
@@ -133,20 +133,20 @@ export function Testimonials() {
         <div className="absolute bottom-20 right-10 w-96 h-96 bg-accent rounded-full blur-3xl" />
       </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
-        <div className="text-center mb-16">
-          <h2 className="text-5xl md:text-6xl font-bold text-text-primary mb-4">
+        <div className="text-center mb-12 md:mb-16">
+          <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold text-text-primary mb-4">
             What Clients Say
           </h2>
-          <p className="text-xl text-text-secondary max-w-2xl mx-auto">
+          <p className="text-base sm:text-lg md:text-xl text-text-secondary max-w-2xl mx-auto px-4">
             Don't just take our word for it. Here's what our clients have to say about working with us.
           </p>
         </div>
 
         {/* Testimonials Grid - 4 reviews only */}
         {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 md:gap-6 mb-10 md:mb-12">
             {[...Array(4)].map((_, i) => (
               <div
                 key={i}
@@ -155,7 +155,7 @@ export function Testimonials() {
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 md:gap-6 mb-10 md:mb-12">
             {gridReviews.map((testimonial, index) => (
             <div
               key={testimonial.id}

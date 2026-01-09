@@ -130,9 +130,9 @@ export function Wedding() {
 
   if (images.length === 0) {
     return (
-      <section id="wedding" className="py-24 md:py-32 bg-dark-bg">
-        <div className="max-w-7xl mx-auto px-6 lg:px-8 text-center">
-          <h2 className="text-5xl md:text-6xl font-bold text-text-primary mb-16">Wedding</h2>
+      <section id="wedding" className="py-16 sm:py-20 md:py-24 lg:py-32 bg-dark-bg">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold text-text-primary mb-12 md:mb-16">Wedding</h2>
           <p className="text-text-secondary">No images yet. Upload images from the admin dashboard.</p>
         </div>
       </section>
