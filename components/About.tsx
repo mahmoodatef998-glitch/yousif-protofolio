@@ -189,9 +189,6 @@ export function About() {
               transform: textVisible ? 'translateY(0)' : 'translateY(20px)',
             }}
           >
-            <h2 className="text-5xl md:text-6xl lg:text-7xl font-bold text-text-primary mb-8">
-              {aboutData.heroTitle}
-            </h2>
             {aboutData.heroSubtitle && (
               <p className="text-xl md:text-2xl text-accent mb-8">{aboutData.heroSubtitle}</p>
             )}
