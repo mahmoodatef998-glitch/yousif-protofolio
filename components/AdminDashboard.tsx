@@ -502,7 +502,7 @@ function UploadSection() {
         showAdvancedOptions: true,
         tags: [category],
       },
-        async (error: any, result: any) => {
+      async (error: any, result: any) => {
           if (error) {
             console.error('Cloudinary upload error:', error);
             alert('Upload error: ' + (error.message || 'Unknown error'));
@@ -565,12 +565,11 @@ function UploadSection() {
           }
         }
       );
-    }
     
     widgetRef.current.open();
   };
 
-    return (
+  return (
     <div className="space-y-6">
       <div className="bg-dark-section rounded-lg p-6">
         <h3 className="text-lg font-semibold text-text-primary mb-4">Upload Images/Videos</h3>
