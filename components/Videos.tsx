@@ -100,7 +100,7 @@ export function Videos() {
 
   if (loading) {
     return (
-      <section id="videos" className="bg-dark-bg min-h-screen flex items-center justify-center">
+      <section id="videos" className="bg-dark-bg min-h-[60vh] sm:min-h-[70vh] md:min-h-[80vh] lg:min-h-screen flex items-center justify-center">
         <div className="text-text-secondary">Loading videos...</div>
       </section>
     );
@@ -108,10 +108,10 @@ export function Videos() {
 
   if (videos.length === 0) {
     return (
-      <section id="videos" className="bg-dark-bg min-h-screen flex items-center justify-center">
+      <section id="videos" className="bg-dark-bg min-h-[60vh] sm:min-h-[70vh] md:min-h-[80vh] lg:min-h-screen flex items-center justify-center px-4">
         <div className="text-center">
-          <h2 className="text-5xl md:text-6xl font-bold text-text-primary mb-4">Videos</h2>
-          <p className="text-text-secondary">No videos yet. Upload videos from the admin dashboard.</p>
+          <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold text-text-primary mb-4">Videos</h2>
+          <p className="text-text-secondary text-sm sm:text-base">No videos yet. Upload videos from the admin dashboard.</p>
         </div>
       </section>
     );
