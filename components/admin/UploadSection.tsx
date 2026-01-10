@@ -290,6 +290,12 @@ export function UploadSection() {
     const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
     const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
     
+    logger.log('🔧 Cloudinary Widget Configuration Check:', {
+      cloudName: cloudName ? '✅ Set' : '❌ Missing',
+      uploadPreset: uploadPreset ? `✅ Set (${uploadPreset})` : '❌ Missing',
+      category
+    });
+    
     if (!cloudName) {
       alert('Error: Cloudinary Cloud Name is not configured. Please add NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME to your environment variables.');
       return;
@@ -299,6 +305,8 @@ export function UploadSection() {
       alert('Error: Cloudinary Upload Preset is required for widget uploads.\n\nPlease:\n1. Go to Cloudinary Dashboard\n2. Settings → Upload → Upload presets\n3. Create an unsigned upload preset\n4. Add NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET to your environment variables');
       return;
     }
+    
+    logger.log('✅ Cloudinary Widget configuration OK, opening widget...');
 
     // Generate group_id once for all files if group mode is enabled
     // Use UUID-like format to ensure uniqueness even with same group name
@@ -340,19 +348,31 @@ export function UploadSection() {
 
     const folder = process.env.NEXT_PUBLIC_CLOUDINARY_FOLDER || 'portfolio';
     
+    const widgetConfig = {
+      cloudName: cloudName,
+      uploadPreset: uploadPreset,
+      folder: `${folder}/${category}`,
+      multiple: true,
+      resourceType: 'auto' as const,
+      maxFileSize: 200000000, // 200MB
+      clientAllowedFormats: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'mp4', 'mov', 'avi', 'mkv', 'webm'],
+      cropping: false,
+      showAdvancedOptions: true,
+      tags: [category],
+    };
+    
+    logger.log('📋 Cloudinary Widget Configuration:', {
+      cloudName: widgetConfig.cloudName,
+      uploadPreset: widgetConfig.uploadPreset,
+      folder: widgetConfig.folder,
+      multiple: widgetConfig.multiple,
+      maxFileSize: `${widgetConfig.maxFileSize / 1000000}MB`,
+      group_id: currentGroupId || 'none (individual)',
+      category
+    });
+    
     widgetRef.current = window.cloudinary.createUploadWidget(
-      {
-        cloudName: cloudName,
-        uploadPreset: uploadPreset,
-        folder: `${folder}/${category}`,
-        multiple: true,
-        resourceType: 'auto',
-        maxFileSize: 200000000, // 200MB
-        clientAllowedFormats: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'mp4', 'mov', 'avi', 'mkv', 'webm'],
-        cropping: false,
-        showAdvancedOptions: true,
-        tags: [category],
-      },
+      widgetConfig,
       async (error: any, result: any) => {
           if (error) {
             logger.error('Cloudinary upload error:', error);
