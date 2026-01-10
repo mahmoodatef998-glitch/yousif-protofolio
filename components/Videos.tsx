@@ -136,7 +136,7 @@ export function Videos() {
             return (
               <div
                 ref={ref as React.RefObject<HTMLDivElement>}
-                className="relative w-full h-screen flex items-center justify-center overflow-hidden transition-opacity-smooth transition-transform-smooth"
+                className="relative w-full h-[60vh] sm:h-[70vh] md:h-[80vh] lg:h-screen flex items-center justify-center overflow-hidden transition-opacity-smooth transition-transform-smooth"
                 style={{
                   opacity: isVisible ? 1 : 0,
                   transform: isVisible ? 'translateY(0)' : 'translateY(30px)',

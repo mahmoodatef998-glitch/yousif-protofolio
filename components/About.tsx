@@ -161,13 +161,13 @@ export function About() {
           */}
           <div
             ref={imageRef as React.RefObject<HTMLDivElement>}
-            className="relative w-full lg:w-[40%] flex-shrink-0 max-w-full order-1 transition-opacity-smooth transition-transform-smooth"
+            className="relative w-full sm:w-[80%] md:w-[70%] lg:w-[40%] flex-shrink-0 max-w-full order-1 transition-opacity-smooth transition-transform-smooth"
             style={{
               opacity: imageVisible ? 1 : 0,
               transform: imageVisible ? 'scale(1)' : 'scale(0.95)',
             }}
           >
-            <div className="relative w-full aspect-[3/4] overflow-hidden rounded-lg hover-scale bg-dark-section">
+            <div className="relative w-full aspect-[3/4] sm:aspect-[3/4] md:aspect-[3/4] overflow-hidden rounded-lg hover-scale bg-dark-section">
               {aboutData.profileImage ? (
                 <img
                   key={imageKey}

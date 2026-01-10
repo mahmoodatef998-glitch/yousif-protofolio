@@ -148,7 +148,7 @@ export function Reels() {
           <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold text-text-primary mb-12 md:mb-16 text-center">
             Reels
           </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 md:gap-5">
             {[...Array(5)].map((_, i) => (
               <div key={i} className="card-skeleton aspect-[9/16] rounded-2xl overflow-hidden">
                 <div className="w-full h-full bg-dark-bg/50" />
@@ -183,7 +183,7 @@ export function Reels() {
             Reels
           </h2>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 md:gap-5">
             {reels.map((reel, index) => (
               <div
                 key={reel.id}
