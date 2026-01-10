@@ -111,12 +111,18 @@ export function UploadSection() {
     const progress: { [key: string]: number } = {};
 
     // Generate group_id once for all files if group mode is enabled
+    // Use consistent format: groupName-timestamp-randomString
     const currentGroupId = groupMode === 'group' 
-      ? (groupName || `group-${Date.now()}`)
+      ? (groupName ? `${groupName}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}` : `group-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`)
       : null;
 
     try {
-      logger.log(`Starting upload of ${selectedFiles.length} file(s) to category: ${category}${currentGroupId ? ` with group_id: ${currentGroupId}` : ''}`);
+      logger.log(`🚀 Starting upload of ${selectedFiles.length} file(s) to category: ${category}`, {
+        groupMode,
+        groupName: groupName || 'none',
+        group_id: currentGroupId || 'none (individual)',
+        files: selectedFiles.map(f => f.name)
+      });
       
       for (let i = 0; i < selectedFiles.length; i++) {
         const file = selectedFiles[i];
@@ -177,10 +183,12 @@ export function UploadSection() {
           }
           
           // Save to Supabase
-          logger.debug(`Saving ${file.name} to database with group_id: ${currentGroupId}`, {
+          logger.log(`💾 Saving ${file.name} to database`, {
             fileName,
             section: category,
-            group_id: currentGroupId
+            group_id: currentGroupId || 'none (individual)',
+            fileIndex: i + 1,
+            totalFiles: selectedFiles.length
           });
           const mediaType = file.type.startsWith('video/') ? 'video' : 'image';
           const saveResponse = await fetch('/api/content', {
@@ -210,20 +218,29 @@ export function UploadSection() {
           }
           
           const savedData = await saveResponse.json();
-          logger.log(`Successfully saved ${file.name} to database:`, savedData?.id);
+          logger.log(`✅ Successfully saved ${file.name} to database`, {
+            id: savedData?.id,
+            group_id: currentGroupId || 'none',
+            fileIndex: i + 1,
+            totalFiles: selectedFiles.length
+          });
         } catch (error: any) {
           logger.error(`Error uploading ${file.name}:`, error);
           throw error; // Re-throw to be caught by outer catch
         }
       }
 
+      // Show success message with group info
+      if (currentGroupId) {
+        alert(`✅ All files uploaded successfully!\n\n📦 Group ID: ${currentGroupId}\n\nAll ${selectedFiles.length} file(s) have been grouped together. Click on the main image to view all images in the group.\n\nThe homepage will automatically update within 30 seconds, or you can refresh it manually.`);
+      } else {
+        alert(`✅ All ${selectedFiles.length} file(s) uploaded successfully! The homepage will automatically update within 30 seconds, or you can refresh it manually.`);
+      }
+      
       setSelectedFiles([]);
       setImageName('');
       setGroupMode('none');
       setGroupName('');
-      
-      // Show success message
-      alert('Files uploaded successfully! The homepage will automatically update within 30 seconds, or you can refresh it manually.');
       
       // Broadcast message to refresh immediately (if open)
       if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
@@ -272,11 +289,19 @@ export function UploadSection() {
 
     // Generate group_id once for all files if group mode is enabled
     // Use UUID-like format to ensure uniqueness even with same group name
+    // Store in a ref to persist across widget callbacks
     const currentGroupId = groupMode === 'group' 
       ? (groupName ? `${groupName}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}` : `group-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`)
       : null;
     
-    logger.debug('Generated group_id for Cloudinary Widget upload:', currentGroupId);
+    logger.log(`🚀 Starting Cloudinary Widget upload for category: ${category}, groupMode: ${groupMode}, group_id: ${currentGroupId || 'none'}`);
+    
+    // Store group_id in widget ref for access in callbacks
+    if (!widgetRef.current) {
+      (widgetRef.current as any) = { groupId: currentGroupId };
+    } else {
+      (widgetRef.current as any).groupId = currentGroupId;
+    }
 
     // Destroy existing widget if it exists to create a fresh one
     if (widgetRef.current) {
@@ -310,18 +335,27 @@ export function UploadSection() {
             return;
           }
 
+          // Get group_id from widget ref (persisted across callbacks)
+          const widgetGroupId = (widgetRef.current as any)?.groupId || currentGroupId;
+          
           if (result && result.event === 'success') {
-            logger.debug('Cloudinary upload successful:', result.info);
+            logger.log(`✅ Cloudinary upload successful: ${result.info.original_filename || result.info.public_id}`, {
+              fileName: result.info.original_filename,
+              publicId: result.info.public_id,
+              group_id: widgetGroupId,
+              category
+            });
             
             try {
               // Save to Supabase automatically
               const mediaType = result.info.resource_type === 'video' ? 'video' : 'image';
               const fileName = result.info.original_filename || result.info.public_id.split('/').pop();
               
-              logger.debug(`Saving to database with group_id: ${currentGroupId}`, {
+              logger.log(`💾 Saving to database: ${fileName}`, {
                 fileName,
                 mediaType,
-                section: category
+                section: category,
+                group_id: widgetGroupId || 'none (individual)'
               });
               
               const saveResponse = await fetch('/api/content', {
@@ -334,7 +368,7 @@ export function UploadSection() {
                   media_url: result.info.secure_url || result.info.url,
                   thumbnail_url: result.info.thumbnail_url || result.info.secure_url || result.info.url,
                   cloudinary_public_id: result.info.public_id,
-                  group_id: currentGroupId,
+                  group_id: widgetGroupId, // Use persisted group_id
                   metadata: {
                     format: result.info.format,
                     width: result.info.width,
@@ -347,12 +381,16 @@ export function UploadSection() {
 
               if (!saveResponse.ok) {
                 const errorData = await saveResponse.json().catch(() => ({ error: 'Unknown error' }));
-                logger.error('Failed to save to database:', errorData);
+                logger.error('❌ Failed to save to database:', errorData);
                 alert(`Upload successful but failed to save to database: ${errorData.error || 'Unknown error'}`);
                 return;
               }
 
-              logger.log('Saved to database successfully');
+              const savedData = await saveResponse.json();
+              logger.log(`✅ Saved to database successfully: ${savedData?.id || 'unknown'}`, {
+                id: savedData?.id,
+                group_id: widgetGroupId
+              });
               
               // Notify other components
               if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
@@ -361,15 +399,24 @@ export function UploadSection() {
                 channel.close();
               }
 
-              alert(`✅ Upload successful! "${fileName}" has been saved to ${category} section.`);
+              // Show success message with group info
+              if (widgetGroupId) {
+                alert(`✅ Upload successful! "${fileName}" has been saved to ${category} section.\n\n📦 Group ID: ${widgetGroupId}\n\nAll files uploaded in this batch will be grouped together.`);
+              } else {
+                alert(`✅ Upload successful! "${fileName}" has been saved to ${category} section.`);
+              }
             } catch (saveError: any) {
-              logger.error('Error saving to database:', saveError);
+              logger.error('❌ Error saving to database:', saveError);
               alert(`Upload successful but failed to save to database: ${saveError.message || 'Unknown error'}`);
             }
           }
 
           if (result && result.event === 'close') {
-            // Widget closed
+            logger.log('Widget closed');
+            // Clear group_id from widget ref
+            if (widgetRef.current) {
+              (widgetRef.current as any).groupId = null;
+            }
           }
         }
       );
@@ -490,7 +537,7 @@ export function UploadSection() {
           {/* Group Selection */}
           <div>
             <label className="block text-sm font-medium text-text-secondary mb-2">
-              Group *
+              Group Mode *
             </label>
             <div className="space-y-3">
               <div className="flex gap-4">
@@ -523,18 +570,28 @@ export function UploadSection() {
                 </label>
               </div>
               {groupMode === 'group' && (
-                <div>
-                  <input
-                    type="text"
-                    value={groupName}
-                    onChange={(e) => setGroupName(e.target.value)}
-                    placeholder="Enter group name (optional, auto-generated if empty)"
-                    className="w-full px-4 py-2 bg-dark-bg border border-dark-section rounded-lg text-text-primary focus:border-accent focus:outline-none disabled:opacity-50 text-sm"
-                    disabled={uploading}
-                  />
-                  <p className="text-xs text-text-secondary mt-1">
-                    All selected files will be grouped together. Click on the main image to view all images in the group.
-                  </p>
+                <div className="bg-accent/10 border border-accent/30 rounded-lg p-4 space-y-2">
+                  <div>
+                    <input
+                      type="text"
+                      value={groupName}
+                      onChange={(e) => setGroupName(e.target.value)}
+                      placeholder="Enter group name (optional, auto-generated if empty)"
+                      className="w-full px-4 py-2 bg-dark-bg border border-dark-section rounded-lg text-text-primary focus:border-accent focus:outline-none disabled:opacity-50 text-sm"
+                      disabled={uploading}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm text-text-primary font-medium">
+                      📦 Grouping Instructions:
+                    </p>
+                    <ul className="text-xs text-text-secondary space-y-1 list-disc list-inside ml-2">
+                      <li>All {selectedFiles.length > 0 ? `${selectedFiles.length} selected` : 'uploaded'} files will be grouped together</li>
+                      <li>Only the first image will be displayed in the gallery</li>
+                      <li>Click on the grouped image to view all images in the group</li>
+                      <li>Works with both regular upload and Cloudinary Widget</li>
+                    </ul>
+                  </div>
                 </div>
               )}
             </div>
