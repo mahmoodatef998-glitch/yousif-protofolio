@@ -359,6 +359,8 @@ export function UploadSection() {
       cropping: false,
       showAdvancedOptions: true,
       tags: [category],
+      // IMPORTANT: Restrict to local files only to prevent uploading from Cloudinary Library or other sources
+      sources: ['local'], // Only allow local file uploads, not from Cloudinary Library, Google Drive, etc.
     };
     
     logger.log('📋 Cloudinary Widget Configuration:', {
@@ -367,6 +369,7 @@ export function UploadSection() {
       folder: widgetConfig.folder,
       multiple: widgetConfig.multiple,
       maxFileSize: `${widgetConfig.maxFileSize / 1000000}MB`,
+      sources: widgetConfig.sources, // Should be ['local'] only
       group_id: currentGroupId || 'none (individual)',
       category
     });
@@ -387,6 +390,11 @@ export function UploadSection() {
           
           if (result && result.event === 'success') {
             // Log FULL result.info to see all available data
+            // IMPORTANT: Check if this is a NEW upload or from Cloudinary Library
+            const createdAt = result.info.created_at ? new Date(result.info.created_at).getTime() : 0;
+            const now = Date.now();
+            const isNewUpload = !result.info.created_at || (createdAt > now - 60000); // Created in last minute
+            
             logger.log(`✅ Cloudinary upload successful - FULL DATA:`, {
               fullResult: result.info,
               fileName: result.info.original_filename,
@@ -401,8 +409,16 @@ export function UploadSection() {
               height: result.info.height,
               format: result.info.format,
               createdAt: result.info.created_at,
-              uploadedAt: result.info.uploaded_at || new Date().toISOString()
+              uploadedAt: result.info.uploaded_at || new Date().toISOString(),
+              isNewUpload: isNewUpload,
+              warning: !isNewUpload ? '⚠️ This file may be from Cloudinary Library, not a new upload!' : null
             });
+            
+            // Warn if this seems to be an old file from Cloudinary Library
+            if (!isNewUpload) {
+              logger.warn(`⚠️ WARNING: File "${result.info.original_filename}" appears to be from Cloudinary Library (created_at: ${result.info.created_at}), not a new upload!`);
+              alert(`⚠️ Warning: The file "${result.info.original_filename}" appears to be from Cloudinary Library, not a new upload. Please make sure you're uploading files from your device, not selecting from Cloudinary Library.`);
+            }
             
             try {
               // Save to Supabase automatically
