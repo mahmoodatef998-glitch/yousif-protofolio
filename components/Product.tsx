@@ -207,12 +207,14 @@ export function Product() {
               const groupedImages = new Map<string | null, GalleryImage[]>();
               const displayedImages: { item: GalleryImage; index: number; groupImages: GalleryImage[] | null }[] = [];
               
-              // Debug: Log all images with their group_id
-              logger.debug('All images with group_id:', images.map(img => ({
+              // Debug: Log all images with their group_id and FULL data
+              logger.log('📸 ALL PRODUCT IMAGES:', images.map(img => ({
                 id: img.id,
                 title: img.title,
+                image: img.image?.substring(0, 50) + '...',
                 group_id: img.group_id,
-                order_index: img.order_index
+                order_index: img.order_index,
+                created_at: img.created_at
               })));
               
               // First, group all images by exact group_id match
@@ -225,11 +227,17 @@ export function Product() {
                 groupedImages.get(groupKey)!.push(item);
               });
               
-              // Debug: Log grouped images
-              logger.debug('Grouped images:', Array.from(groupedImages.entries()).map(([groupId, items]) => ({
+              // Debug: Log grouped images with FULL details
+              logger.log('📦 GROUPED PRODUCT IMAGES:', Array.from(groupedImages.entries()).map(([groupId, items]) => ({
                 group_id: groupId,
                 count: items.length,
-                items: items.map(i => ({ id: i.id, title: i.title }))
+                items: items.map(i => ({ 
+                  id: i.id, 
+                  title: i.title,
+                  image: i.image?.substring(0, 50) + '...',
+                  created_at: i.created_at,
+                  order_index: i.order_index
+                }))
               })));
 
               // Then, create display list (only first image of each group, or all individual images)

@@ -386,14 +386,22 @@ export function UploadSection() {
           logger.debug(`📦 Widget callback - event: ${result?.event}, group_id from ref: ${widgetGroupId}`);
           
           if (result && result.event === 'success') {
-            logger.log(`✅ Cloudinary upload successful`, {
+            // Log FULL result.info to see all available data
+            logger.log(`✅ Cloudinary upload successful - FULL DATA:`, {
+              fullResult: result.info,
               fileName: result.info.original_filename,
               publicId: result.info.public_id,
-              secureUrl: result.info.secure_url?.substring(0, 50) + '...',
+              secureUrl: result.info.secure_url,
+              thumbnailUrl: result.info.thumbnail_url,
               group_id: widgetGroupId || 'none (individual)',
               category,
               resourceType: result.info.resource_type,
-              bytes: result.info.bytes
+              bytes: result.info.bytes,
+              width: result.info.width,
+              height: result.info.height,
+              format: result.info.format,
+              createdAt: result.info.created_at,
+              uploadedAt: result.info.uploaded_at || new Date().toISOString()
             });
             
             try {
@@ -441,21 +449,41 @@ export function UploadSection() {
               }
 
               const savedData = await saveResponse.json();
-              logger.log(`✅ Saved to database successfully`, {
+              logger.log(`✅ Saved to database successfully - FULL DATA:`, {
+                fullSavedData: savedData,
                 id: savedData?.id,
                 title: savedData?.title,
-                group_id: widgetGroupId || 'none',
-                media_url: savedData?.media_url?.substring(0, 50) + '...',
-                created_at: savedData?.created_at
+                group_id: savedData?.group_id || 'none',
+                media_url: savedData?.media_url,
+                cloudinary_public_id: savedData?.cloudinary_public_id,
+                created_at: savedData?.created_at,
+                section_id: savedData?.section_id
               });
               
-              // Verify the saved data has the correct group_id
-              if (widgetGroupId && savedData?.group_id !== widgetGroupId) {
-                logger.error(`⚠️ WARNING: Saved group_id mismatch!`, {
-                  expected: widgetGroupId,
-                  actual: savedData?.group_id,
+              // Verify the saved data matches what we sent
+              const mediaUrlMatch = savedData?.media_url === savePayload.media_url;
+              const groupIdMatch = savedData?.group_id === widgetGroupId;
+              const publicIdMatch = savedData?.cloudinary_public_id === savePayload.cloudinary_public_id;
+              
+              if (!mediaUrlMatch || !groupIdMatch || !publicIdMatch) {
+                logger.error(`⚠️ WARNING: Data mismatch after save!`, {
+                  mediaUrlMatch,
+                  groupIdMatch,
+                  publicIdMatch,
+                  expected: {
+                    media_url: savePayload.media_url,
+                    group_id: widgetGroupId,
+                    cloudinary_public_id: savePayload.cloudinary_public_id
+                  },
+                  actual: {
+                    media_url: savedData?.media_url,
+                    group_id: savedData?.group_id,
+                    cloudinary_public_id: savedData?.cloudinary_public_id
+                  },
                   savedId: savedData?.id
                 });
+              } else {
+                logger.log(`✅ All data verified - saved correctly!`);
               }
               
               // Notify other components
