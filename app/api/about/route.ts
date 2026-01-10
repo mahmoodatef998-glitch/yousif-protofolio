@@ -125,12 +125,17 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate request body using Zod schema
-    const validation = validateRequest(aboutContentSchema, body);
+    // Use partial() to make all fields optional for partial updates
+    const validation = validateRequest(aboutContentSchema.partial(), body);
     if (!validation.success) {
+      logger.error('Validation failed:', {
+        body,
+        error: validation.error
+      });
       return NextResponse.json(
         { 
           error: 'Validation failed',
-          details: validation.error
+          details: validation.error || 'Invalid input: expected string, received undefined'
         },
         { status: 400 }
       );

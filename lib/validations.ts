@@ -22,12 +22,15 @@ export const contentItemSchema = z.object({
 
 // About Content Schema
 export const aboutContentSchema = z.object({
-  bio_text: z.string().min(1, 'Bio text is required').max(5000, 'Bio text too long'),
+  hero_title: z.string().max(255, 'Hero title too long').optional().nullable(),
+  hero_subtitle: z.string().max(255, 'Hero subtitle too long').optional().nullable(),
+  bio_text: z.string().max(5000, 'Bio text too long').optional().nullable(),
   profile_image_url: z.string().url('Invalid profile image URL').optional().nullable(),
   stats: z.object({
     projects: z.number().int().min(0).optional(),
     clients: z.number().int().min(0).optional(),
     experience: z.number().int().min(0).optional(),
+    awards: z.number().int().min(0).optional(),
   }).optional().nullable(),
 });
 
