@@ -47,8 +47,14 @@ export function AboutSection({ isEditing }: AboutSectionProps) {
   const handleImageUpload = async (file: File) => {
     const fileSizeMB = file.size / 1024 / 1024;
     
+    logger.log('📤 Starting About section image upload:', {
+      fileName: file.name,
+      fileSize: `${fileSizeMB.toFixed(2)} MB`,
+      fileType: file.type
+    });
+    
     if (fileSizeMB > 4.5) {
-      alert('Image is too large (max 4.5 MB). Please compress or use a smaller image.');
+      alert('Image is too large (max 4.5 MB). Please compress or use a smaller image, or use Cloudinary Widget for larger files.');
       return;
     }
     
@@ -59,6 +65,11 @@ export function AboutSection({ isEditing }: AboutSectionProps) {
       formData.append('category', 'about');
       formData.append('name', 'profile-image');
       
+      logger.log('📤 Uploading to /api/cloudinary/upload:', {
+        category: 'about',
+        fileName: file.name
+      });
+      
       const response = await fetch('/api/cloudinary/upload', {
         method: 'POST',
         body: formData,
@@ -66,14 +77,33 @@ export function AboutSection({ isEditing }: AboutSectionProps) {
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        logger.error('❌ Upload failed:', {
+          status: response.status,
+          error: errorData
+        });
         throw new Error(errorData.error || 'Upload failed');
       }
       
-      const { result } = await response.json();
-      setProfileImage(result.secure_url || result.url);
+      const uploadData = await response.json();
+      logger.log('✅ Upload successful:', {
+        result: uploadData.result,
+        secure_url: uploadData.result?.secure_url,
+        url: uploadData.result?.url,
+        public_id: uploadData.result?.public_id
+      });
+      
+      const imageUrl = uploadData.result?.secure_url || uploadData.result?.url;
+      
+      if (!imageUrl) {
+        logger.error('❌ No image URL in response:', uploadData);
+        throw new Error('Upload successful but no image URL returned');
+      }
+      
+      logger.log('💾 Setting profile image URL:', imageUrl);
+      setProfileImage(imageUrl);
       alert('Image uploaded successfully!');
     } catch (error: any) {
-      logger.error('Upload error:', error);
+      logger.error('❌ Upload error:', error);
       alert(`Failed to upload image: ${error.message || 'Please try again.'}`);
     } finally {
       setUploadingImage(false);

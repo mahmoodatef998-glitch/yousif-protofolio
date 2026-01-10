@@ -23,7 +23,7 @@ export function UploadSection() {
   const widgetRef = useRef<any>(null);
   const [widgetScriptLoaded, setWidgetScriptLoaded] = useState(false);
 
-  const categories = ['wedding', 'product', 'restaurant', 'videos', 'reels'];
+  const categories = ['wedding', 'product', 'restaurant', 'videos', 'reels', 'about'];
 
   // Load Cloudinary Widget Script
   useEffect(() => {
@@ -203,40 +203,65 @@ export function UploadSection() {
             fileIndex: i + 1,
             totalFiles: selectedFiles.length
           });
-          const mediaType = file.type.startsWith('video/') ? 'video' : 'image';
-          const saveResponse = await fetch('/api/content', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              section: category,
-              title: fileName,
-              media_type: mediaType,
-              media_url: uploadResult.secure_url || uploadResult.url,
-              thumbnail_url: uploadResult.secure_url || uploadResult.url,
-              cloudinary_public_id: uploadResult.public_id,
-              group_id: currentGroupId,
-              metadata: {
-                format: uploadResult.format,
-                width: uploadResult.width,
-                height: uploadResult.height,
-                bytes: uploadResult.bytes,
-              },
-            }),
-          });
-
-          if (!saveResponse.ok) {
-            const errorData = await saveResponse.json().catch(() => ({ error: 'Unknown error' }));
-            logger.error('Failed to save to database:', errorData);
-            throw new Error(`Failed to save ${file.name} to database: ${errorData.error || 'Unknown error'}`);
-          }
           
-          const savedData = await saveResponse.json();
-          logger.log(`✅ Successfully saved ${file.name} to database`, {
-            id: savedData?.id,
-            group_id: currentGroupId || 'none',
-            fileIndex: i + 1,
-            totalFiles: selectedFiles.length
-          });
+          const mediaType = file.type.startsWith('video/') ? 'video' : 'image';
+          const imageUrl = uploadResult.secure_url || uploadResult.url;
+          
+          // Special handling for 'about' category - save directly to about_content
+          if (category === 'about') {
+            logger.log(`📝 Saving to About section (profile_image_url)`);
+            const aboutResponse = await fetch('/api/about', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                profile_image_url: imageUrl,
+              }),
+            });
+            
+            if (!aboutResponse.ok) {
+              const errorData = await aboutResponse.json().catch(() => ({ error: 'Unknown error' }));
+              logger.error('Failed to save to About section:', errorData);
+              throw new Error(`Failed to save ${file.name} to About section: ${errorData.error || 'Unknown error'}`);
+            }
+            
+            const aboutData = await aboutResponse.json();
+            logger.log(`✅ Saved to About section successfully:`, aboutData);
+          } else {
+            // Regular content items
+            const saveResponse = await fetch('/api/content', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                section: category,
+                title: fileName,
+                media_type: mediaType,
+                media_url: imageUrl,
+                thumbnail_url: imageUrl,
+                cloudinary_public_id: uploadResult.public_id,
+                group_id: currentGroupId,
+                metadata: {
+                  format: uploadResult.format,
+                  width: uploadResult.width,
+                  height: uploadResult.height,
+                  bytes: uploadResult.bytes,
+                },
+              }),
+            });
+
+            if (!saveResponse.ok) {
+              const errorData = await saveResponse.json().catch(() => ({ error: 'Unknown error' }));
+              logger.error('Failed to save to database:', errorData);
+              throw new Error(`Failed to save ${file.name} to database: ${errorData.error || 'Unknown error'}`);
+            }
+            
+            const savedData = await saveResponse.json();
+            logger.log(`✅ Successfully saved ${file.name} to database`, {
+              id: savedData?.id,
+              group_id: currentGroupId || 'none',
+              fileIndex: i + 1,
+              totalFiles: selectedFiles.length
+            });
+          }
         } catch (error: any) {
           logger.error(`Error uploading ${file.name}:`, error);
           throw error; // Re-throw to be caught by outer catch
@@ -451,11 +476,25 @@ export function UploadSection() {
                 cloudinary_public_id: savePayload.cloudinary_public_id
               });
               
-              const saveResponse = await fetch('/api/content', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(savePayload),
-              });
+              // Special handling for 'about' category - save directly to about_content
+              let saveResponse;
+              if (category === 'about') {
+                logger.log(`📝 Saving to About section (profile_image_url) via Widget`);
+                saveResponse = await fetch('/api/about', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    profile_image_url: savePayload.media_url,
+                  }),
+                });
+              } else {
+                // Regular content items
+                saveResponse = await fetch('/api/content', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(savePayload),
+                });
+              }
 
               if (!saveResponse.ok) {
                 const errorData = await saveResponse.json().catch(() => ({ error: 'Unknown error' }));

@@ -45,7 +45,13 @@ export async function POST(request: NextRequest) {
     const fileSizeMB = file.size / 1024 / 1024;
     const maxSizeMB = 4.5; // Vercel's limit
     
-    console.log(`Uploading file: ${file.name} (${fileSizeMB.toFixed(2)} MB) to category: ${category}`);
+    console.log(`📤 Uploading file:`, {
+      fileName: file.name,
+      fileSize: `${fileSizeMB.toFixed(2)} MB`,
+      fileType: file.type,
+      category: category,
+      name: name
+    });
 
     // Check file size before processing
     if (fileSizeMB > maxSizeMB) {
@@ -97,7 +103,14 @@ export async function POST(request: NextRequest) {
       );
     });
 
-    console.log('Upload successful:', uploadResult);
+    console.log('✅ Upload successful:', {
+      public_id: (uploadResult as any).public_id,
+      secure_url: (uploadResult as any).secure_url,
+      url: (uploadResult as any).url,
+      format: (uploadResult as any).format,
+      bytes: (uploadResult as any).bytes
+    });
+    
     return NextResponse.json({
       success: true,
       result: uploadResult,
