@@ -111,20 +111,60 @@ export function UploadSection() {
     const progress: { [key: string]: number } = {};
 
     // Generate group_id once for all files if group mode is enabled
-    // Use consistent format: groupName-timestamp-randomString
+    // Use consistent format: groupName-timestamp-UUID
     // IMPORTANT: Each upload batch gets a UNIQUE group_id to avoid mixing with old groups
+    // Using UUID ensures absolute uniqueness even if multiple uploads happen at the same millisecond
     const timestamp = Date.now();
-    const randomString = Math.random().toString(36).substring(2, 9);
+    const uuid = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).substring(2, 15)}-${Math.random().toString(36).substring(2, 15)}`;
     const currentGroupId = groupMode === 'group' 
-      ? (groupName ? `${groupName}-${timestamp}-${randomString}` : `group-${timestamp}-${randomString}`)
+      ? (groupName ? `${groupName}-${timestamp}-${uuid}` : `group-${timestamp}-${uuid}`)
       : null;
+    
+    // If group mode and groupName is provided, check for old images with same group name pattern
+    // and ask user if they want to delete them
+    if (groupMode === 'group' && groupName && category !== 'about') {
+      try {
+        const checkResponse = await fetch(`/api/content?section=${category}`);
+        const checkData = await checkResponse.json();
+        const existingImages = checkData.data || [];
+        
+        // Find images with group_id that starts with the same groupName
+        const oldGroupImages = existingImages.filter((img: any) => 
+          img.group_id && img.group_id.startsWith(`${groupName}-`)
+        );
+        
+        if (oldGroupImages.length > 0) {
+          const shouldDelete = confirm(
+            `⚠️ Found ${oldGroupImages.length} old image(s) with group name "${groupName}".\n\n` +
+            `Do you want to delete them before uploading new ones?\n\n` +
+            `Click OK to delete old images, or Cancel to keep them (they will appear together with new images).`
+          );
+          
+          if (shouldDelete) {
+            logger.log(`🗑️ Deleting ${oldGroupImages.length} old images with group name "${groupName}"`);
+            for (const img of oldGroupImages) {
+              try {
+                await fetch(`/api/content?id=${img.id}`, { method: 'DELETE' });
+                logger.log(`✅ Deleted old image: ${img.id} - ${img.title}`);
+              } catch (error) {
+                logger.error(`Failed to delete old image ${img.id}:`, error);
+              }
+            }
+            logger.log(`✅ Deleted ${oldGroupImages.length} old images`);
+          }
+        }
+      } catch (error) {
+        logger.warn('Could not check for old images:', error);
+        // Continue with upload even if check fails
+      }
+    }
     
     logger.log(`🔑 Generated UNIQUE group_id for this batch:`, {
       group_id: currentGroupId,
       groupMode,
       groupName: groupName || 'auto-generated',
       timestamp,
-      randomString,
+      uuid: uuid.substring(0, 20) + '...',
       fileCount: selectedFiles.length,
       files: selectedFiles.map(f => f.name)
     });
@@ -334,12 +374,12 @@ export function UploadSection() {
     logger.log('✅ Cloudinary Widget configuration OK, opening widget...');
 
     // Generate group_id once for all files if group mode is enabled
-    // Use UUID-like format to ensure uniqueness even with same group name
+    // Use UUID format to ensure absolute uniqueness even with same group name
     // IMPORTANT: Each upload batch gets a UNIQUE group_id to avoid mixing with old groups
     const timestamp = Date.now();
-    const randomString = Math.random().toString(36).substring(2, 9);
+    const uuid = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).substring(2, 15)}-${Math.random().toString(36).substring(2, 15)}`;
     const currentGroupId = groupMode === 'group' 
-      ? (groupName ? `${groupName}-${timestamp}-${randomString}` : `group-${timestamp}-${randomString}`)
+      ? (groupName ? `${groupName}-${timestamp}-${uuid}` : `group-${timestamp}-${uuid}`)
       : null;
     
     logger.log(`🚀 Starting Cloudinary Widget upload`, {
@@ -348,7 +388,7 @@ export function UploadSection() {
       group_id: currentGroupId || 'none (individual)',
       groupName: groupName || 'auto-generated',
       timestamp,
-      randomString
+      uuid: uuid.substring(0, 20) + '...'
     });
     
     // Store group_id in widget ref for access in callbacks
@@ -729,6 +769,9 @@ export function UploadSection() {
                       className="w-full px-4 py-2 bg-dark-bg border border-dark-section rounded-lg text-text-primary focus:border-accent focus:outline-none disabled:opacity-50 text-sm"
                       disabled={uploading}
                     />
+                    <p className="text-xs text-text-secondary mt-1">
+                      💡 Tip: Use a unique group name to avoid mixing with old images. If you use the same name, old images with that name will be shown together with new ones.
+                    </p>
                   </div>
                   <div className="space-y-1">
                     <p className="text-sm text-text-primary font-medium">
@@ -736,9 +779,10 @@ export function UploadSection() {
                     </p>
                     <ul className="text-xs text-text-secondary space-y-1 list-disc list-inside ml-2">
                       <li>All {selectedFiles.length > 0 ? `${selectedFiles.length} selected` : 'uploaded'} files will be grouped together</li>
-                      <li>Only the first image will be displayed in the gallery</li>
+                      <li>Only the newest image will be displayed in the gallery</li>
                       <li>Click on the grouped image to view all images in the group</li>
-                      <li>Works with both regular upload and Cloudinary Widget</li>
+                      <li>Each upload gets a UNIQUE group_id (UUID-based) to prevent mixing with old images</li>
+                      <li>If you use the same group name, old images with that name will appear together</li>
                     </ul>
                   </div>
                 </div>

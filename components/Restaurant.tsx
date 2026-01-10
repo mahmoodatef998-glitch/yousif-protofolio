@@ -223,17 +223,24 @@ export function Restaurant() {
               let displayIndex = 0;
               groupedImages.forEach((groupItems, groupId) => {
                 if (groupId && groupItems.length > 1) {
-                  // Sort group items by order_index and created_at to ensure correct order
+                  // Sort group items by created_at DESC (newest first) to show most recent images
                   const sortedGroupItems = [...groupItems].sort((a, b) => {
-                    if ((a.order_index || 0) !== (b.order_index || 0)) {
-                      return (a.order_index || 0) - (b.order_index || 0);
-                    }
                     const aTime = a.created_at ? new Date(a.created_at).getTime() : 0;
                     const bTime = b.created_at ? new Date(b.created_at).getTime() : 0;
-                    return aTime - bTime;
+                    // Newest first (DESC)
+                    return bTime - aTime;
                   });
                   
-                  // Group: show only first image (sorted)
+                  logger.log(`📦 Displaying restaurant group ${groupId} with ${sortedGroupItems.length} images (newest first):`, 
+                    sortedGroupItems.map(i => ({ 
+                      id: i.id, 
+                      title: i.title,
+                      created_at: i.created_at,
+                      media_url: i.image?.substring(0, 50) + '...'
+                    }))
+                  );
+                  
+                  // Group: show only first image (newest)
                   displayedImages.push({
                     item: sortedGroupItems[0],
                     index: displayIndex++,
