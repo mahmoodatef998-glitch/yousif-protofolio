@@ -266,6 +266,14 @@ export function UploadSection() {
             
             const aboutData = await aboutResponse.json();
             logger.log(`✅ Saved to About section successfully:`, aboutData);
+            
+            // Notify About component to refresh immediately
+            if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+              const channel = new BroadcastChannel('content-updated');
+              channel.postMessage({ type: 'content-updated', section: 'about' });
+              channel.close();
+              logger.log(`📢 Broadcasted content-updated for About section`);
+            }
           } else {
             // Regular content items
             const saveResponse = await fetch('/api/content', {
@@ -544,6 +552,16 @@ export function UploadSection() {
               }
 
               const savedData = await saveResponse.json();
+              
+              // Notify About component to refresh immediately if this is an About section upload
+              if (category === 'about') {
+                if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+                  const channel = new BroadcastChannel('content-updated');
+                  channel.postMessage({ type: 'content-updated', section: 'about' });
+                  channel.close();
+                  logger.log(`📢 Broadcasted content-updated for About section`);
+                }
+              }
               logger.log(`✅ Saved to database successfully - FULL DATA:`, {
                 fullSavedData: savedData,
                 id: savedData?.id,

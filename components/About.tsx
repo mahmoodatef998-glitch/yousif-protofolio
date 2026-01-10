@@ -11,11 +11,12 @@ export function About() {
     heroTitle: 'About',
     heroSubtitle: '',
     bio: '',
-    profileImage: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&q=80',
+    profileImage: '', // Start empty, will be set from API
     heroVideoUrl: '', // Optional video background URL
     stats: { clients: 500, projects: 10, awards: 100 },
   });
   const [loading, setLoading] = useState(true);
+  const [imageKey, setImageKey] = useState(0); // Force image reload when URL changes
 
   const fetchAbout = useCallback(async () => {
     try {
@@ -166,12 +167,30 @@ export function About() {
               transform: imageVisible ? 'scale(1)' : 'scale(0.95)',
             }}
           >
-            <div className="relative w-full aspect-[3/4] overflow-hidden rounded-lg hover-scale">
-              <img
-                src={aboutData.profileImage}
-                alt={aboutData.heroTitle}
-                className="w-full h-full object-cover"
-              />
+            <div className="relative w-full aspect-[3/4] overflow-hidden rounded-lg hover-scale bg-dark-section">
+              {aboutData.profileImage ? (
+                <img
+                  key={imageKey}
+                  src={`${aboutData.profileImage}${aboutData.profileImage.includes('?') ? '&' : '?'}t=${Date.now()}`}
+                  alt={aboutData.heroTitle}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    // Fallback to default image if current image fails to load
+                    const target = e.target as HTMLImageElement;
+                    if (!target.src.includes('unsplash.com')) {
+                      target.src = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&q=80';
+                    }
+                  }}
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-dark-section text-text-secondary">
+                  {loading ? (
+                    <div className="animate-pulse text-sm">Loading...</div>
+                  ) : (
+                    <div className="text-sm">No image</div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
