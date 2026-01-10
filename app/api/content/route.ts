@@ -238,6 +238,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Build content object, only include group_id if it exists in the request
+    logger.log(`📝 Creating content item`, {
+      section: body.section,
+      title: body.title,
+      media_type: body.media_type,
+      media_url: body.media_url?.substring(0, 50) + '...',
+      group_id: body.group_id || 'none (individual)',
+      cloudinary_public_id: body.cloudinary_public_id
+    });
+    
     const newContent: any = {
       section_id: sectionData.id,
       title: body.title || '',
@@ -254,14 +263,20 @@ export async function POST(request: NextRequest) {
     // Only add group_id if it's provided (and column exists in database)
     if (body.group_id) {
       newContent.group_id = body.group_id;
+      logger.log(`📦 Adding group_id to content: ${body.group_id}`);
+    } else {
+      logger.log(`📦 No group_id provided - content will be individual`);
     }
 
-    logger.debug('Inserting content:', {
+    logger.log('💾 Inserting content into database:', {
       section: body.section,
       section_id: sectionData.id,
       title: newContent.title,
       media_type: newContent.media_type,
+      media_url: newContent.media_url?.substring(0, 50) + '...',
+      group_id: newContent.group_id || 'none (individual)',
       is_active: newContent.is_active,
+      order_index: newContent.order_index,
     });
 
     const { data, error } = await supabase
@@ -282,7 +297,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    logger.log('Content created successfully:', data.id);
+    logger.log('✅ Content created successfully', {
+      id: data.id,
+      title: data.title,
+      group_id: data.group_id || 'none',
+      media_url: data.media_url?.substring(0, 50) + '...',
+      created_at: data.created_at
+    });
+    
+    // Verify group_id was saved correctly
+    if (body.group_id && data.group_id !== body.group_id) {
+      logger.error(`⚠️ WARNING: group_id mismatch after save!`, {
+        expected: body.group_id,
+        actual: data.group_id,
+        savedId: data.id
+      });
+    }
+    
     return NextResponse.json({ data });
   } catch (error: any) {
     logger.error('API route error:', error);

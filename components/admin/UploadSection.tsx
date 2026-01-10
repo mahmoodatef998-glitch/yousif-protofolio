@@ -112,9 +112,22 @@ export function UploadSection() {
 
     // Generate group_id once for all files if group mode is enabled
     // Use consistent format: groupName-timestamp-randomString
+    // IMPORTANT: Each upload batch gets a UNIQUE group_id to avoid mixing with old groups
+    const timestamp = Date.now();
+    const randomString = Math.random().toString(36).substring(2, 9);
     const currentGroupId = groupMode === 'group' 
-      ? (groupName ? `${groupName}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}` : `group-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`)
+      ? (groupName ? `${groupName}-${timestamp}-${randomString}` : `group-${timestamp}-${randomString}`)
       : null;
+    
+    logger.log(`🔑 Generated UNIQUE group_id for this batch:`, {
+      group_id: currentGroupId,
+      groupMode,
+      groupName: groupName || 'auto-generated',
+      timestamp,
+      randomString,
+      fileCount: selectedFiles.length,
+      files: selectedFiles.map(f => f.name)
+    });
 
     try {
       logger.log(`🚀 Starting upload of ${selectedFiles.length} file(s) to category: ${category}`, {
@@ -289,19 +302,31 @@ export function UploadSection() {
 
     // Generate group_id once for all files if group mode is enabled
     // Use UUID-like format to ensure uniqueness even with same group name
-    // Store in a ref to persist across widget callbacks
+    // IMPORTANT: Each upload batch gets a UNIQUE group_id to avoid mixing with old groups
+    const timestamp = Date.now();
+    const randomString = Math.random().toString(36).substring(2, 9);
     const currentGroupId = groupMode === 'group' 
-      ? (groupName ? `${groupName}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}` : `group-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`)
+      ? (groupName ? `${groupName}-${timestamp}-${randomString}` : `group-${timestamp}-${randomString}`)
       : null;
     
-    logger.log(`🚀 Starting Cloudinary Widget upload for category: ${category}, groupMode: ${groupMode}, group_id: ${currentGroupId || 'none'}`);
+    logger.log(`🚀 Starting Cloudinary Widget upload`, {
+      category,
+      groupMode,
+      group_id: currentGroupId || 'none (individual)',
+      groupName: groupName || 'auto-generated',
+      timestamp,
+      randomString
+    });
     
     // Store group_id in widget ref for access in callbacks
+    // This ensures ALL files uploaded in this widget session get the SAME group_id
     if (!widgetRef.current) {
       (widgetRef.current as any) = { groupId: currentGroupId };
     } else {
       (widgetRef.current as any).groupId = currentGroupId;
     }
+    
+    logger.log(`💾 Stored group_id in widget ref:`, (widgetRef.current as any)?.groupId);
 
     // Destroy existing widget if it exists to create a fresh one
     if (widgetRef.current) {
@@ -338,12 +363,17 @@ export function UploadSection() {
           // Get group_id from widget ref (persisted across callbacks)
           const widgetGroupId = (widgetRef.current as any)?.groupId || currentGroupId;
           
+          logger.debug(`📦 Widget callback - event: ${result?.event}, group_id from ref: ${widgetGroupId}`);
+          
           if (result && result.event === 'success') {
-            logger.log(`✅ Cloudinary upload successful: ${result.info.original_filename || result.info.public_id}`, {
+            logger.log(`✅ Cloudinary upload successful`, {
               fileName: result.info.original_filename,
               publicId: result.info.public_id,
-              group_id: widgetGroupId,
-              category
+              secureUrl: result.info.secure_url?.substring(0, 50) + '...',
+              group_id: widgetGroupId || 'none (individual)',
+              category,
+              resourceType: result.info.resource_type,
+              bytes: result.info.bytes
             });
             
             try {
@@ -351,32 +381,36 @@ export function UploadSection() {
               const mediaType = result.info.resource_type === 'video' ? 'video' : 'image';
               const fileName = result.info.original_filename || result.info.public_id.split('/').pop();
               
-              logger.log(`💾 Saving to database: ${fileName}`, {
+              const savePayload = {
+                section: category,
+                title: fileName,
+                media_type: mediaType,
+                media_url: result.info.secure_url || result.info.url,
+                thumbnail_url: result.info.thumbnail_url || result.info.secure_url || result.info.url,
+                cloudinary_public_id: result.info.public_id,
+                group_id: widgetGroupId, // Use persisted group_id
+                metadata: {
+                  format: result.info.format,
+                  width: result.info.width,
+                  height: result.info.height,
+                  bytes: result.info.bytes,
+                  duration: result.info.duration,
+                },
+              };
+              
+              logger.log(`💾 Saving to database`, {
                 fileName,
                 mediaType,
                 section: category,
-                group_id: widgetGroupId || 'none (individual)'
+                group_id: widgetGroupId || 'none (individual)',
+                media_url: savePayload.media_url.substring(0, 50) + '...',
+                cloudinary_public_id: savePayload.cloudinary_public_id
               });
               
               const saveResponse = await fetch('/api/content', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  section: category,
-                  title: fileName,
-                  media_type: mediaType,
-                  media_url: result.info.secure_url || result.info.url,
-                  thumbnail_url: result.info.thumbnail_url || result.info.secure_url || result.info.url,
-                  cloudinary_public_id: result.info.public_id,
-                  group_id: widgetGroupId, // Use persisted group_id
-                  metadata: {
-                    format: result.info.format,
-                    width: result.info.width,
-                    height: result.info.height,
-                    bytes: result.info.bytes,
-                    duration: result.info.duration,
-                  },
-                }),
+                body: JSON.stringify(savePayload),
               });
 
               if (!saveResponse.ok) {
@@ -387,10 +421,22 @@ export function UploadSection() {
               }
 
               const savedData = await saveResponse.json();
-              logger.log(`✅ Saved to database successfully: ${savedData?.id || 'unknown'}`, {
+              logger.log(`✅ Saved to database successfully`, {
                 id: savedData?.id,
-                group_id: widgetGroupId
+                title: savedData?.title,
+                group_id: widgetGroupId || 'none',
+                media_url: savedData?.media_url?.substring(0, 50) + '...',
+                created_at: savedData?.created_at
               });
+              
+              // Verify the saved data has the correct group_id
+              if (widgetGroupId && savedData?.group_id !== widgetGroupId) {
+                logger.error(`⚠️ WARNING: Saved group_id mismatch!`, {
+                  expected: widgetGroupId,
+                  actual: savedData?.group_id,
+                  savedId: savedData?.id
+                });
+              }
               
               // Notify other components
               if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
