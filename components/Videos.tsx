@@ -230,15 +230,6 @@ export function Videos() {
                         </svg>
                       </button>
                     </div>
-
-                    {/* Video title (optional) */}
-                    {video.title && (
-                      <div className="absolute top-4 left-4 right-4">
-                        <h3 className="text-white text-sm sm:text-base font-semibold drop-shadow-lg line-clamp-2">
-                          {video.title}
-                        </h3>
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>
