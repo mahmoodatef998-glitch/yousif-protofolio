@@ -136,23 +136,27 @@ export function Videos() {
             return (
               <div
                 ref={ref as React.RefObject<HTMLDivElement>}
-                className="relative w-full h-[60vh] sm:h-[70vh] md:h-[80vh] lg:h-screen flex items-center justify-center overflow-hidden transition-opacity-smooth transition-transform-smooth"
+                className="relative w-full aspect-video flex items-center justify-center overflow-hidden transition-opacity-smooth transition-transform-smooth bg-dark-section"
                 style={{
                   opacity: isVisible ? 1 : 0,
                   transform: isVisible ? 'translateY(0)' : 'translateY(30px)',
                 }}
               >
-                <video
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  className="absolute inset-0 w-full h-full object-cover"
-                  poster={video.thumbnail}
-                >
-                  <source src={video.src} type="video/mp4" />
-                  Your browser does not support the video tag.
-                </video>
+                {/* Responsive video wrapper with 16:9 aspect ratio */}
+                <div className="absolute inset-0 w-full h-full">
+                  <video
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="w-full h-full object-cover"
+                    poster={video.thumbnail}
+                    preload="metadata"
+                  >
+                    <source src={video.src} type="video/mp4" />
+                    Your browser does not support the video tag.
+                  </video>
+                </div>
               </div>
             );
           };

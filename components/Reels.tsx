@@ -150,7 +150,7 @@ export function Reels() {
           </h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 md:gap-5">
             {[...Array(5)].map((_, i) => (
-              <div key={i} className="card-skeleton aspect-[9/16] rounded-2xl overflow-hidden">
+              <div key={i} className="card-skeleton aspect-video rounded-2xl overflow-hidden">
                 <div className="w-full h-full bg-dark-bg/50" />
               </div>
             ))}
@@ -187,7 +187,7 @@ export function Reels() {
             {reels.map((reel, index) => (
               <div
                 key={reel.id}
-                className={`group card-premium card-glow card-ripple relative aspect-[9/16] overflow-hidden cursor-pointer rounded-2xl ${
+                className={`group card-premium card-glow card-ripple relative aspect-video overflow-hidden cursor-pointer rounded-2xl ${
                   index < visibleCount 
                     ? 'opacity-100 translate-y-0' 
                     : 'opacity-0 translate-y-[60px]'
@@ -252,6 +252,7 @@ export function Reels() {
                   loop
                   muted
                   playsInline
+                  preload="metadata"
                   className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${
                     hoveredReel === reel.id ? 'opacity-100' : 'opacity-0'
                   }`}
@@ -284,12 +285,13 @@ export function Reels() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
-          <div className="relative w-full h-full max-w-4xl max-h-[90vh]">
+          <div className="relative w-full max-w-4xl aspect-video bg-dark-section rounded-lg overflow-hidden">
             <video
               src={selectedReel}
               controls
               autoPlay
               className="w-full h-full object-contain"
+              preload="metadata"
             >
               Your browser does not support the video tag.
             </video>
