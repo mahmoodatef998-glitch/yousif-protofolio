@@ -19,9 +19,9 @@ const getVideoCover = (videoUrl: string): string => {
       const pathParts = url.pathname.split('/');
       const uploadIndex = pathParts.indexOf('upload');
       if (uploadIndex !== -1 && uploadIndex < pathParts.length - 1) {
-        // Insert thumbnail transformation: so_0 = start offset 0, w_400 = width, h_600 = height, c_fill = crop fill
-        // This creates a thumbnail from the first frame of the video
-        const transformations = ['so_0', 'w_400', 'h_600', 'c_fill', 'q_auto', 'f_jpg'];
+        // Insert thumbnail transformation: so_0 = start offset 0, w_800 = width, h_450 = height (16:9), c_fill = crop fill
+        // This creates a landscape thumbnail from the first frame of the video
+        const transformations = ['so_0', 'w_800', 'h_450', 'c_fill', 'q_auto', 'f_jpg'];
         pathParts.splice(uploadIndex + 1, 0, ...transformations);
         return url.origin + pathParts.join('/');
       }
