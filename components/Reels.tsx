@@ -19,9 +19,9 @@ const getVideoCover = (videoUrl: string): string => {
       const pathParts = url.pathname.split('/');
       const uploadIndex = pathParts.indexOf('upload');
       if (uploadIndex !== -1 && uploadIndex < pathParts.length - 1) {
-        // Insert thumbnail transformation: so_0 = start offset 0, w_800 = width, h_450 = height (16:9), c_fill = crop fill
-        // This creates a landscape thumbnail from the first frame of the video
-        const transformations = ['so_0', 'w_800', 'h_450', 'c_fill', 'q_auto', 'f_jpg'];
+        // Insert thumbnail transformation: so_0 = start offset 0, w_400 = width, h_600 = height (9:16 portrait), c_fill = crop fill
+        // This creates a portrait thumbnail from the first frame of the video
+        const transformations = ['so_0', 'w_400', 'h_600', 'c_fill', 'q_auto', 'f_jpg'];
         pathParts.splice(uploadIndex + 1, 0, ...transformations);
         return url.origin + pathParts.join('/');
       }
@@ -150,7 +150,7 @@ export function Reels() {
           </h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 md:gap-5">
             {[...Array(5)].map((_, i) => (
-              <div key={i} className="card-skeleton aspect-video rounded-2xl overflow-hidden">
+              <div key={i} className="card-skeleton aspect-[9/16] rounded-2xl overflow-hidden">
                 <div className="w-full h-full bg-dark-bg/50" />
               </div>
             ))}
@@ -187,7 +187,7 @@ export function Reels() {
             {reels.map((reel, index) => (
               <div
                 key={reel.id}
-                className={`group card-premium card-glow card-ripple relative aspect-video overflow-hidden cursor-pointer rounded-2xl ${
+                className={`group card-premium card-glow card-ripple relative aspect-[9/16] overflow-hidden cursor-pointer rounded-2xl ${
                   index < visibleCount 
                     ? 'opacity-100 translate-y-0' 
                     : 'opacity-0 translate-y-[60px]'
