@@ -130,6 +130,7 @@ export function Videos() {
             const videoRef = useRef<HTMLVideoElement>(null);
             const containerRef = useRef<HTMLDivElement>(null);
             const [isPlaying, setIsPlaying] = useState(true);
+            const [isMuted, setIsMuted] = useState(false);
             const [showControls, setShowControls] = useState(false);
             
             const { ref, isVisible } = useScrollReveal({
@@ -146,6 +147,13 @@ export function Videos() {
                   videoRef.current.play();
                 }
                 setIsPlaying(!isPlaying);
+              }
+            };
+
+            const handleMuteToggle = () => {
+              if (videoRef.current) {
+                videoRef.current.muted = !videoRef.current.muted;
+                setIsMuted(videoRef.current.muted);
               }
             };
 
@@ -184,13 +192,19 @@ export function Videos() {
                     ref={videoRef}
                     autoPlay
                     loop
-                    muted
                     playsInline
                     className="w-full h-full object-cover"
                     poster={video.thumbnail}
                     preload="metadata"
                     onPlay={() => setIsPlaying(true)}
                     onPause={() => setIsPlaying(false)}
+                    onLoadedMetadata={() => {
+                      // Ensure video is not muted when loaded
+                      if (videoRef.current) {
+                        videoRef.current.muted = false;
+                        setIsMuted(false);
+                      }
+                    }}
                   >
                     <source src={video.src} type="video/mp4" />
                     Your browser does not support the video tag.
@@ -215,6 +229,24 @@ export function Videos() {
                         ) : (
                           <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M8 5v14l11-7z"/>
+                          </svg>
+                        )}
+                      </button>
+
+                      {/* Mute/Unmute button */}
+                      <button
+                        onClick={handleMuteToggle}
+                        className="bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full p-3 transition-all duration-200 hover:scale-110"
+                        aria-label={isMuted ? 'Unmute' : 'Mute'}
+                      >
+                        {isMuted ? (
+                          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+                          </svg>
+                        ) : (
+                          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
                           </svg>
                         )}
                       </button>
