@@ -430,10 +430,13 @@ export function UploadSection() {
       maxFileSize: 200000000, // 200MB
       clientAllowedFormats: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'mp4', 'mov', 'avi', 'mkv', 'webm'],
       cropping: false,
-      showAdvancedOptions: true,
+      showAdvancedOptions: false, // Disable advanced options to prevent library access
       tags: [category],
-      // IMPORTANT: Restrict to local files only to prevent uploading from Cloudinary Library or other sources
+      // CRITICAL: Restrict to local files only to prevent uploading from Cloudinary Library or other sources
       sources: ['local'], // Only allow local file uploads, not from Cloudinary Library, Google Drive, etc.
+      // Additional security: Prevent selecting from existing assets
+      showCompletedButton: true,
+      showUploadMoreButton: true,
     };
     
     logger.log('📋 Cloudinary Widget Configuration:', {
@@ -656,6 +659,19 @@ export function UploadSection() {
             if (widgetRef.current) {
               (widgetRef.current as any).groupId = null;
             }
+          }
+          
+          // Log batch completion for debugging
+          if (result && result.event === 'batch-cancelled') {
+            logger.log('Widget batch cancelled');
+          }
+          
+          if (result && result.event === 'batch-completed') {
+            logger.log('Widget batch completed', {
+              uploadedCount: result.info?.length || 0,
+              category,
+              group_id: widgetGroupId || 'none'
+            });
           }
         }
       );
