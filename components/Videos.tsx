@@ -130,7 +130,7 @@ export function Videos() {
             const videoRef = useRef<HTMLVideoElement>(null);
             const containerRef = useRef<HTMLDivElement>(null);
             const [isPlaying, setIsPlaying] = useState(true);
-            const [isMuted, setIsMuted] = useState(false);
+            const [isMuted, setIsMuted] = useState(true); // Start muted for auto-play
             const [showControls, setShowControls] = useState(false);
             
             const { ref, isVisible } = useScrollReveal({
@@ -192,17 +192,24 @@ export function Videos() {
                     ref={videoRef}
                     autoPlay
                     loop
+                    muted
                     playsInline
                     className="w-full h-full object-cover"
                     poster={video.thumbnail}
                     preload="metadata"
-                    onPlay={() => setIsPlaying(true)}
+                    onPlay={() => {
+                      setIsPlaying(true);
+                      // Keep muted state when auto-playing
+                      if (videoRef.current) {
+                        setIsMuted(videoRef.current.muted);
+                      }
+                    }}
                     onPause={() => setIsPlaying(false)}
                     onLoadedMetadata={() => {
-                      // Ensure video is not muted when loaded
+                      // Start muted for auto-play (browser policy)
                       if (videoRef.current) {
-                        videoRef.current.muted = false;
-                        setIsMuted(false);
+                        videoRef.current.muted = true;
+                        setIsMuted(true);
                       }
                     }}
                   >
