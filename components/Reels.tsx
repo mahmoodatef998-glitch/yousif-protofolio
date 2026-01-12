@@ -39,7 +39,9 @@ export function Reels() {
   const [reels, setReels] = useState<Reel[]>([]);
   const [loading, setLoading] = useState(true);
   const [hoveredReel, setHoveredReel] = useState<string | null>(null);
+  const [fullscreenReel, setFullscreenReel] = useState<string | null>(null);
   const videoRefs = useRef<Map<string, HTMLVideoElement>>(new Map());
+  const containerRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
   const fetchReels = useCallback(async () => {
     try {
