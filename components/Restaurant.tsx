@@ -145,9 +145,9 @@ export function Restaurant() {
           <h2 className="text-5xl md:text-6xl font-bold text-text-primary mb-16 text-center">
             Restaurant
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 md:gap-5">
             {[...Array(6)].map((_, i) => (
-              <div key={i} className="card-skeleton aspect-[4/3] rounded-2xl overflow-hidden">
+              <div key={i} className="card-skeleton aspect-[9/16] rounded-2xl overflow-hidden">
                 <div className="w-full h-full bg-dark-bg/50" />
               </div>
             ))}
@@ -180,7 +180,7 @@ export function Restaurant() {
             Restaurant
           </h2>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 md:gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 md:gap-5">
             {(() => {
               // Group images by group_id, showing only the first image of each group
               const groupedImages = new Map<string | null, GalleryImage[]>();
@@ -261,7 +261,7 @@ export function Restaurant() {
               return displayedImages.map(({ item, index, groupImages }) => (
                 <div
                   key={item.id}
-                  className={`group card-premium card-glow card-ripple relative aspect-[4/3] overflow-hidden cursor-pointer rounded-2xl ${
+                  className={`group card-premium card-glow card-ripple relative aspect-[9/16] overflow-hidden cursor-pointer rounded-2xl ${
                     index < visibleCount 
                       ? 'opacity-100 translate-y-0' 
                       : 'opacity-0 translate-y-[60px]'
@@ -369,13 +369,13 @@ export function Restaurant() {
           >
             <X className="w-8 h-8" />
           </button>
-          <div className="relative w-full h-full max-w-7xl max-h-[90vh]">
+          <div className="relative w-full max-w-md aspect-[9/16] mx-auto bg-dark-section rounded-lg overflow-hidden">
             <Image
               src={selectedImage}
               alt="Lightbox"
               fill
-              className="object-contain"
-              sizes="100vw"
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, 400px"
             />
           </div>
         </div>

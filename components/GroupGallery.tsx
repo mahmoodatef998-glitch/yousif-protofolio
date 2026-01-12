@@ -102,18 +102,18 @@ export function GroupGallery({ images, isOpen, onClose, initialIndex = 0 }: Grou
         </>
       )}
 
-      {/* Image Container */}
+      {/* Image Container - Portrait Mode */}
       <div
-        className="relative w-full h-full max-w-7xl max-h-[90vh] flex items-center justify-center"
+        className="relative w-full max-w-md aspect-[9/16] mx-auto flex items-center justify-center"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="relative w-full h-full">
+        <div className="relative w-full h-full bg-dark-section rounded-lg overflow-hidden">
           <Image
             src={currentImage.image}
             alt={currentImage.title}
             fill
-            className="object-contain"
-            sizes="100vw"
+            className="object-cover"
+            sizes="(max-width: 768px) 100vw, 400px"
             priority
           />
         </div>
