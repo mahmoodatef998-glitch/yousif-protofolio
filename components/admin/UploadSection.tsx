@@ -19,6 +19,7 @@ export function UploadSection() {
   const [imageName, setImageName] = useState('');
   const [groupMode, setGroupMode] = useState<'none' | 'group'>('none');
   const [groupName, setGroupName] = useState('');
+  const [videoCaption, setVideoCaption] = useState(''); // Caption for videos
   const fileInputRef = useRef<HTMLInputElement>(null);
   const widgetRef = useRef<any>(null);
   const [widgetScriptLoaded, setWidgetScriptLoaded] = useState(false);

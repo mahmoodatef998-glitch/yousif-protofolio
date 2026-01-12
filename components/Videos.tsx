@@ -217,6 +217,15 @@ export function Videos() {
                     Your browser does not support the video tag.
                   </video>
 
+                  {/* Video Caption/Title Overlay */}
+                  {video.title && video.title !== 'Untitled Video' && (
+                    <div className="absolute top-0 left-0 right-0 z-10 px-4 py-3 bg-gradient-to-b from-black/80 via-black/60 to-transparent">
+                      <h3 className="text-white text-sm sm:text-base md:text-lg font-semibold text-center drop-shadow-lg">
+                        {video.title}
+                      </h3>
+                    </div>
+                  )}
+
                   {/* Controls overlay */}
                   <div className={`absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent transition-opacity duration-300 ${
                     showControls ? 'opacity-100' : 'opacity-0'
