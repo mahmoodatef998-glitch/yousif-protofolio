@@ -7,22 +7,7 @@ import { aboutContentSchema, validateRequest } from '@/lib/validations';
 // GET - Fetch about content
 export async function GET(request: NextRequest) {
   try {
-    // Rate limiting
-    const rateLimitResult = await apiRateLimiter(request);
-    if (!rateLimitResult.success) {
-      return NextResponse.json(
-        { error: rateLimitResult.message },
-        { 
-          status: 429,
-          headers: {
-            'Retry-After': String(Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000)),
-            'X-RateLimit-Limit': '60',
-            'X-RateLimit-Remaining': String(rateLimitResult.remaining),
-            'X-RateLimit-Reset': new Date(rateLimitResult.resetTime).toISOString(),
-          },
-        }
-      );
-    }
+    // No rate limiting for GET requests (read-only, safe)
 
     // Check environment variables
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
