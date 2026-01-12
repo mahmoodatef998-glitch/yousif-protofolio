@@ -462,11 +462,27 @@ export function UploadSection() {
           logger.debug(`📦 Widget callback - event: ${result?.event}, group_id from ref: ${widgetGroupId}`);
           
           if (result && result.event === 'success') {
-            // Log FULL result.info to see all available data
-            // IMPORTANT: Check if this is a NEW upload or from Cloudinary Library
+            // CRITICAL: Check if this is a NEW upload or from Cloudinary Library
+            // Use uploaded_at if available (more reliable), otherwise use created_at
+            const uploadedAt = result.info.uploaded_at ? new Date(result.info.uploaded_at).getTime() : 0;
             const createdAt = result.info.created_at ? new Date(result.info.created_at).getTime() : 0;
             const now = Date.now();
-            const isNewUpload = !result.info.created_at || (createdAt > now - 60000); // Created in last minute
+            
+            // File is NEW if:
+            // 1. uploaded_at exists and is within last 2 minutes (120 seconds for safety)
+            // 2. OR created_at is within last 2 minutes AND uploaded_at doesn't exist
+            // 3. OR both don't exist (shouldn't happen, but treat as new)
+            const isNewUpload = uploadedAt > 0 
+              ? (uploadedAt > now - 120000) // uploaded_at within last 2 minutes
+              : (createdAt > 0 ? (createdAt > now - 120000) : true); // created_at within last 2 minutes, or treat as new
+            
+            // Additional check: uploaded_at should be very recent (within 5 seconds of now)
+            // This ensures the file was just uploaded, not selected from library
+            const isJustUploaded = uploadedAt > 0 && (now - uploadedAt < 5000);
+            
+            // Check if public_id matches the expected folder structure
+            const expectedFolder = `${process.env.NEXT_PUBLIC_CLOUDINARY_FOLDER || 'portfolio'}/${category}`;
+            const publicIdMatchesFolder = result.info.public_id?.startsWith(expectedFolder);
             
             logger.log(`✅ Cloudinary upload successful - FULL DATA:`, {
               fullResult: result.info,
@@ -482,15 +498,31 @@ export function UploadSection() {
               height: result.info.height,
               format: result.info.format,
               createdAt: result.info.created_at,
-              uploadedAt: result.info.uploaded_at || new Date().toISOString(),
+              uploadedAt: result.info.uploaded_at || 'NOT PROVIDED',
+              now: new Date(now).toISOString(),
+              timeDiff: uploadedAt > 0 ? `${(now - uploadedAt) / 1000}s ago` : 'N/A',
               isNewUpload: isNewUpload,
-              warning: !isNewUpload ? '⚠️ This file may be from Cloudinary Library, not a new upload!' : null
+              isJustUploaded: isJustUploaded,
+              publicIdMatchesFolder: publicIdMatchesFolder,
+              expectedFolder: expectedFolder,
+              warning: (!isNewUpload || !isJustUploaded || !publicIdMatchesFolder) 
+                ? '⚠️ This file may be from Cloudinary Library, not a new upload!' 
+                : null
             });
             
-            // Warn if this seems to be an old file from Cloudinary Library
-            if (!isNewUpload) {
-              logger.warn(`⚠️ WARNING: File "${result.info.original_filename}" appears to be from Cloudinary Library (created_at: ${result.info.created_at}), not a new upload!`);
-              alert(`⚠️ Warning: The file "${result.info.original_filename}" appears to be from Cloudinary Library, not a new upload. Please make sure you're uploading files from your device, not selecting from Cloudinary Library.`);
+            // STRICT CHECK: Only save if file is definitely new
+            if (!isNewUpload || !isJustUploaded || !publicIdMatchesFolder) {
+              logger.error(`❌ REJECTED: File "${result.info.original_filename}" appears to be from Cloudinary Library!`, {
+                isNewUpload,
+                isJustUploaded,
+                publicIdMatchesFolder,
+                uploadedAt: result.info.uploaded_at,
+                createdAt: result.info.created_at,
+                publicId: result.info.public_id,
+                expectedFolder
+              });
+              alert(`❌ Error: The file "${result.info.original_filename}" appears to be from Cloudinary Library, not a new upload.\n\nPlease:\n1. Make sure you're uploading files from your device\n2. Don't select files from Cloudinary Library\n3. Only use "Local Files" option in the widget\n\nThis file was NOT saved to the database.`);
+              return; // Skip saving this file
             }
             
             try {
