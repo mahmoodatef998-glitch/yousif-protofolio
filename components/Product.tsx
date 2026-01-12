@@ -389,13 +389,13 @@ export function Product() {
           >
             <X className="w-8 h-8" />
           </button>
-          <div className="relative w-full h-full max-w-7xl max-h-[90vh]">
+          <div className="relative w-full max-w-md aspect-[9/16] mx-auto bg-dark-section rounded-lg overflow-hidden">
             <Image
               src={selectedImage}
               alt="Lightbox"
               fill
-              className="object-contain"
-              sizes="100vw"
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, 400px"
             />
           </div>
         </div>
