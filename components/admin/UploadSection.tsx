@@ -538,9 +538,17 @@ export function UploadSection() {
               const mediaType = result.info.resource_type === 'video' ? 'video' : 'image';
               const fileName = result.info.original_filename || result.info.public_id.split('/').pop();
               
+              // Get group_id from widget ref (persisted across callbacks)
+              const widgetGroupId = (widgetRef.current as any)?.groupId || currentGroupId;
+              
+              // Use videoCaption if available for videos, otherwise use fileName
+              const videoTitle = category === 'videos' && videoCaption.trim() 
+                ? videoCaption.trim() 
+                : fileName;
+              
               const savePayload = {
                 section: category,
-                title: fileName,
+                title: videoTitle,
                 media_type: mediaType,
                 media_url: result.info.secure_url || result.info.url,
                 thumbnail_url: result.info.thumbnail_url || result.info.secure_url || result.info.url,
