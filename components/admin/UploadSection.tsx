@@ -282,7 +282,7 @@ export function UploadSection() {
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 section: category,
-                title: fileName,
+                title: category === 'videos' && videoCaption.trim() ? videoCaption.trim() : fileName,
                 media_type: mediaType,
                 media_url: imageUrl,
                 thumbnail_url: imageUrl,
@@ -328,6 +328,10 @@ export function UploadSection() {
       setImageName('');
       setGroupMode('none');
       setGroupName('');
+      // Clear video caption after successful upload
+      if (category === 'videos') {
+        setVideoCaption('');
+      }
       
       // Broadcast message to refresh immediately (if open)
       if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
@@ -642,6 +646,11 @@ export function UploadSection() {
                 channel.close();
               }
 
+              // Clear video caption after successful upload (only for videos)
+              if (category === 'videos') {
+                setVideoCaption('');
+              }
+
               // Show success message with group info
               if (widgetGroupId) {
                 alert(`✅ Upload successful! "${fileName}" has been saved to ${category} section.\n\n📦 Group ID: ${widgetGroupId}\n\nAll files uploaded in this batch will be grouped together.`);
@@ -857,13 +866,40 @@ export function UploadSection() {
             </div>
           </div>
 
+          {/* Video Caption Input (only for videos) */}
+          {category === 'videos' && (
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-text-primary">
+                Video Caption (سيظهر على الفيديو):
+              </label>
+              <input
+                type="text"
+                placeholder="أدخل عنوان الفيديو..."
+                value={videoCaption}
+                onChange={(e) => setVideoCaption(e.target.value)}
+                className="w-full px-4 py-2 bg-dark-bg border border-dark-section rounded-lg text-text-primary text-sm focus:border-accent focus:outline-none disabled:opacity-50"
+                maxLength={100}
+                disabled={uploading}
+              />
+              <p className="text-xs text-text-secondary">
+                هذا العنوان سيظهر على الفيديو من فوق
+              </p>
+            </div>
+          )}
+
           <div>
             <label className="block text-sm font-medium text-text-secondary mb-2">
               Category/Section *
             </label>
             <select
               value={category}
-              onChange={(e) => setCategory(e.target.value)}
+              onChange={(e) => {
+                setCategory(e.target.value);
+                // Clear video caption when switching away from videos
+                if (e.target.value !== 'videos') {
+                  setVideoCaption('');
+                }
+              }}
               className="w-full px-4 py-2 bg-dark-bg border border-dark-section rounded-lg text-text-primary focus:border-accent focus:outline-none disabled:opacity-50"
               disabled={uploading}
             >
