@@ -113,6 +113,18 @@ export function Reels() {
       };
     }
     
+    // Handle fullscreen exit
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement && !(document as any).webkitFullscreenElement && !(document as any).mozFullScreenElement && !(document as any).msFullscreenElement) {
+        setFullscreenReel(null);
+      }
+    };
+    
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+    
     // Refresh data every 5 minutes to show new uploads (reduced from 30s to prevent lag)
     interval = setInterval(() => {
       if (mounted) {
@@ -124,6 +136,10 @@ export function Reels() {
       mounted = false;
       if (channel) channel.close();
       if (interval) clearInterval(interval);
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
     };
   }, [fetchReels]);
 
@@ -186,9 +202,34 @@ export function Reels() {
           </h2>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 md:gap-5">
-            {reels.map((reel, index) => (
+            {reels.map((reel, index) => {
+              const handleFullscreen = (e: React.MouseEvent) => {
+                e.stopPropagation(); // Prevent opening modal
+                const container = containerRefs.current.get(reel.id);
+                if (container) {
+                  if (container.requestFullscreen) {
+                    container.requestFullscreen();
+                  } else if ((container as any).webkitRequestFullscreen) {
+                    (container as any).webkitRequestFullscreen();
+                  } else if ((container as any).mozRequestFullScreen) {
+                    (container as any).mozRequestFullScreen();
+                  } else if ((container as any).msRequestFullscreen) {
+                    (container as any).msRequestFullscreen();
+                  }
+                  setFullscreenReel(reel.id);
+                }
+              };
+
+              return (
               <div
                 key={reel.id}
+                ref={(el) => {
+                  if (el) {
+                    containerRefs.current.set(reel.id, el);
+                  } else {
+                    containerRefs.current.delete(reel.id);
+                  }
+                }}
                 className={`group card-premium card-glow card-ripple relative aspect-[9/16] overflow-hidden cursor-pointer rounded-2xl ${
                   index < visibleCount 
                     ? 'opacity-100 translate-y-0' 
@@ -266,9 +307,23 @@ export function Reels() {
                     }
                   }}
                 />
+
+                {/* Fullscreen button - shows on hover */}
+                <button
+                  onClick={handleFullscreen}
+                  className={`absolute top-4 right-4 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full p-2.5 transition-all duration-200 hover:scale-110 opacity-0 group-hover:opacity-100 z-10 ${
+                    hoveredReel === reel.id ? 'opacity-100' : ''
+                  }`}
+                  aria-label="Fullscreen"
+                >
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                  </svg>
+                </button>
                 
               </div>
-            ))}
+            );
+            })}
           </div>
         </div>
       </section>
@@ -287,12 +342,12 @@ export function Reels() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
-          <div className="relative w-full max-w-4xl aspect-video bg-dark-section rounded-lg overflow-hidden">
+          <div className="relative w-full max-w-md aspect-[9/16] bg-dark-section rounded-lg overflow-hidden">
             <video
               src={selectedReel}
               controls
               autoPlay
-              className="w-full h-full object-contain"
+              className="w-full h-full object-cover"
               preload="metadata"
             >
               Your browser does not support the video tag.
@@ -300,6 +355,59 @@ export function Reels() {
           </div>
         </div>
       )}
+
+      {/* Fullscreen Reel - Portrait Mode */}
+      {fullscreenReel && (() => {
+        const reel = reels.find(r => r.id === fullscreenReel);
+        if (!reel) return null;
+        
+        const isFullscreen = !!(
+          document.fullscreenElement ||
+          (document as any).webkitFullscreenElement ||
+          (document as any).mozFullScreenElement ||
+          (document as any).msFullscreenElement
+        );
+
+        if (!isFullscreen) return null;
+
+        return (
+          <div className="fixed inset-0 z-[60] bg-dark-bg flex items-center justify-center">
+            <button
+              onClick={() => {
+                if (document.exitFullscreen) {
+                  document.exitFullscreen();
+                } else if ((document as any).webkitExitFullscreen) {
+                  (document as any).webkitExitFullscreen();
+                } else if ((document as any).mozCancelFullScreen) {
+                  (document as any).mozCancelFullScreen();
+                } else if ((document as any).msExitFullscreen) {
+                  (document as any).msExitFullscreen();
+                }
+                setFullscreenReel(null);
+              }}
+              className="absolute top-6 right-6 text-white hover:text-accent transition-colors z-10 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full p-3"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            <div className="w-full h-full flex items-center justify-center p-4">
+              <div className="w-full max-w-md aspect-[9/16] bg-dark-section rounded-lg overflow-hidden shadow-2xl">
+                <video
+                  src={reel.video}
+                  controls
+                  autoPlay
+                  loop
+                  className="w-full h-full object-cover"
+                  preload="metadata"
+                >
+                  Your browser does not support the video tag.
+                </video>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </>
   );
 }
