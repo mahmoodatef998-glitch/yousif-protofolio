@@ -6,15 +6,15 @@ import { logger } from '@/lib/logger';
 import { createClient } from '@/lib/supabase/client';
 import { UploadSection } from './admin/UploadSection';
 import { AboutSection } from './admin/AboutSection';
-import { 
-  LayoutDashboard, 
-  User, 
-  Video, 
-  Film, 
-  Heart, 
-  ShoppingBag, 
-  UtensilsCrossed, 
-  Mail, 
+import {
+  LayoutDashboard,
+  User,
+  Video,
+  Film,
+  Heart,
+  ShoppingBag,
+  UtensilsCrossed,
+  Mail,
   Image as ImageIcon,
   Settings,
   Eye,
@@ -39,16 +39,17 @@ declare global {
   }
 }
 
-type SectionType = 'about' | 'videos' | 'reels' | 'wedding' | 'product' | 'restaurant' | 'contact' | 'upload' | 'reviews' | 'preview';
+type SectionType = string;
 
 interface Section {
-  id: SectionType;
+  id: string;
   name: string;
   icon: any;
   description: string;
+  isDynamic?: boolean;
 }
 
-const sections: Section[] = [
+const STATIC_SECTIONS: Section[] = [
   { id: 'upload', name: 'Upload', icon: Upload, description: 'Upload images and videos' },
   { id: 'about', name: 'About Me', icon: User, description: 'Manage your bio and personal information' },
   { id: 'videos', name: 'Videos', icon: Video, description: 'Manage full-screen videos' },
@@ -56,6 +57,9 @@ const sections: Section[] = [
   { id: 'wedding', name: 'Wedding', icon: Heart, description: 'Manage wedding gallery' },
   { id: 'product', name: 'Product', icon: ShoppingBag, description: 'Manage product photography' },
   { id: 'restaurant', name: 'Restaurant', icon: UtensilsCrossed, description: 'Manage restaurant photography' },
+];
+
+const FOOTER_SECTIONS: Section[] = [
   { id: 'contact', name: 'Contact', icon: Mail, description: 'Manage contact information' },
   { id: 'reviews', name: 'Reviews', icon: Star, description: 'Review and approve user reviews' },
   { id: 'preview', name: 'Preview', icon: Eye, description: 'Manage approved reviews displayed on website' },
@@ -67,13 +71,58 @@ export default function AdminDashboard() {
   const [activeSection, setActiveSection] = useState<SectionType>('upload');
   const [isEditing, setIsEditing] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [dynamicSections, setDynamicSections] = useState<Section[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchDynamicSections = async () => {
+    try {
+      const response = await fetch('/api/sections');
+      const { data } = await response.json();
+      if (data) {
+        // Map dynamic sections and filter out those that match static IDs
+        const staticIds = new Set(STATIC_SECTIONS.map(s => s.id));
+        const filtered = data
+          .filter((s: any) => !staticIds.has(s.name.toLowerCase()))
+          .map((s: any) => ({
+            id: s.name.toLowerCase(),
+            name: s.name,
+            icon: ImageIcon, // Default icon for dynamic sections
+            description: s.description || `Manage ${s.name} gallery`,
+            isDynamic: true
+          }));
+        setDynamicSections(filtered);
+      }
+    } catch (error) {
+      logger.error('Error fetching sections:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDynamicSections();
+
+    // Listen for section updates
+    if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+      const channel = new BroadcastChannel('sections-updated');
+      channel.onmessage = (event) => {
+        if (event.data.type === 'sections-updated') {
+          fetchDynamicSections();
+        }
+      };
+      return () => channel.close();
+    }
+  }, []);
+
+  const allMainSections = [...STATIC_SECTIONS, ...dynamicSections];
+  const allSections = [...allMainSections, ...FOOTER_SECTIONS];
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.push('/admin/login');
   };
 
-  const currentSection = sections.find(s => s.id === activeSection);
+  const currentSection = allSections.find(s => s.id === activeSection);
   const Icon = currentSection?.icon || LayoutDashboard;
 
   return (
@@ -96,20 +145,51 @@ export default function AdminDashboard() {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-2">
-          {sections.map((section) => {
+        <nav className="flex-1 p-4 space-y-2 overflow-y-auto custom-scrollbar">
+          {allMainSections.map((section) => {
             const SectionIcon = section.icon;
             const isActive = activeSection === section.id;
-            
+
             return (
               <button
                 key={section.id}
-                onClick={() => setActiveSection(section.id)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
-                  isActive
+                onClick={() => {
+                  setActiveSection(section.id);
+                  setIsEditing(false); // Reset editing when switching sections
+                }}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${isActive
                     ? 'bg-accent text-dark-bg'
                     : 'text-text-secondary hover:bg-dark-bg hover:text-text-primary'
-                }`}
+                  }`}
+                title={!sidebarOpen ? section.name : undefined}
+              >
+                <SectionIcon className="w-5 h-5 flex-shrink-0" />
+                {sidebarOpen && (
+                  <span className="font-medium">{section.name}</span>
+                )}
+              </button>
+            );
+          })}
+
+          <div className="pt-4 pb-2">
+            <div className="border-t border-dark-section mx-2" />
+          </div>
+
+          {FOOTER_SECTIONS.map((section) => {
+            const SectionIcon = section.icon;
+            const isActive = activeSection === section.id;
+
+            return (
+              <button
+                key={section.id}
+                onClick={() => {
+                  setActiveSection(section.id);
+                  setIsEditing(false);
+                }}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${isActive
+                    ? 'bg-accent text-dark-bg'
+                    : 'text-text-secondary hover:bg-dark-bg hover:text-text-primary'
+                  }`}
                 title={!sidebarOpen ? section.name : undefined}
               >
                 <SectionIcon className="w-5 h-5 flex-shrink-0" />
@@ -162,11 +242,10 @@ export default function AdminDashboard() {
             {activeSection !== 'upload' && (
               <button
                 onClick={() => setIsEditing(!isEditing)}
-                className={`px-6 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${
-                  isEditing
+                className={`px-6 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${isEditing
                     ? 'bg-accent text-dark-bg hover:bg-accent/90'
                     : 'bg-dark-bg text-text-primary hover:bg-dark-section border border-dark-section'
-                }`}
+                  }`}
               >
                 {isEditing ? (
                   <>
@@ -186,8 +265,8 @@ export default function AdminDashboard() {
 
         {/* Content Area */}
         <div className="p-8">
-          <SectionContent 
-            section={activeSection} 
+          <SectionContent
+            section={activeSection}
             isEditing={isEditing}
             onEditChange={setIsEditing}
           />
@@ -198,12 +277,12 @@ export default function AdminDashboard() {
 }
 
 // Section Content Component
-function SectionContent({ 
-  section, 
-  isEditing, 
-  onEditChange 
-}: { 
-  section: SectionType; 
+function SectionContent({
+  section,
+  isEditing,
+  onEditChange
+}: {
+  section: SectionType;
   isEditing: boolean;
   onEditChange: (editing: boolean) => void;
 }) {
@@ -229,7 +308,8 @@ function SectionContent({
     case 'preview':
       return <PreviewSection />;
     default:
-      return <div className="text-text-secondary">Select a section to manage</div>;
+      // Check if it's a dynamic section or one of the static gallery sections
+      return <GallerySection section={section} isEditing={isEditing} />;
   }
 }
 
@@ -288,7 +368,7 @@ function VideosSection({ isEditing }: { isEditing: boolean }) {
     try {
       const response = await fetch('/api/content?section=videos');
       const { data } = await response.json();
-      
+
       if (data) {
         const formattedVideos = data.map((item: any) => ({
           id: item.id,
@@ -331,14 +411,14 @@ function VideosSection({ isEditing }: { isEditing: boolean }) {
 
   const handleVideoUpload = async (file: File, videoId: string) => {
     const fileSizeMB = file.size / 1024 / 1024;
-    
+
     if (fileSizeMB > 200) {
       alert('Video is too large (max 200 MB). Please compress or use a smaller video.');
       return;
     }
-    
+
     setUploadingVideo(videoId);
-    
+
     try {
       // For files <= 4.5MB, use API route
       if (fileSizeMB <= 4.5) {
@@ -346,25 +426,25 @@ function VideosSection({ isEditing }: { isEditing: boolean }) {
         formData.append('file', file);
         formData.append('category', 'videos');
         formData.append('name', `video-${videoId}`);
-        
+
         const response = await fetch('/api/cloudinary/upload', {
           method: 'POST',
           body: formData,
         });
-        
+
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
           throw new Error(errorData.error || 'Upload failed');
         }
-        
+
         const { result } = await response.json();
-        const updated = videos.map(v => 
-          v.id === videoId 
-            ? { 
-                ...v, 
-                url: result.secure_url || result.url,
-                thumbnail: result.thumbnail_url || result.secure_url || result.url
-              }
+        const updated = videos.map(v =>
+          v.id === videoId
+            ? {
+              ...v,
+              url: result.secure_url || result.url,
+              thumbnail: result.thumbnail_url || result.secure_url || result.url
+            }
             : v
         );
         setVideos(updated);
@@ -386,23 +466,23 @@ function VideosSection({ isEditing }: { isEditing: boolean }) {
       setUploadingVideo(null);
       return;
     }
-    
+
     // Check for required environment variables
     const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
     const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
-    
+
     if (!cloudName) {
       alert('Error: Cloudinary Cloud Name is not configured. Please add NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME to your environment variables.');
       setUploadingVideo(null);
       return;
     }
-    
+
     if (!uploadPreset) {
       alert('Error: Cloudinary Upload Preset is required for widget uploads.\n\nPlease:\n1. Go to Cloudinary Dashboard\n2. Settings → Upload → Upload presets\n3. Create an unsigned upload preset\n4. Add NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET to your environment variables');
       setUploadingVideo(null);
       return;
     }
-    
+
     // Destroy existing widget if it exists to create a fresh one
     if (widgetRef.current) {
       try {
@@ -412,7 +492,7 @@ function VideosSection({ isEditing }: { isEditing: boolean }) {
       }
       widgetRef.current = null;
     }
-    
+
     widgetRef.current = window.cloudinary.createUploadWidget(
       {
         cloudName: cloudName,
@@ -430,32 +510,32 @@ function VideosSection({ isEditing }: { isEditing: boolean }) {
         cropping: false,
       },
       async (error: any, result: any) => {
-          if (error) {
-            logger.error('Cloudinary Widget Upload error:', error);
-            let errorMessage = 'Upload error: ';
-            if (error.status === 'Upload preset must be specified when using unsigned upload' || error.message?.includes('Upload preset')) {
-              errorMessage = 'Error: Upload Preset is required.\n\nPlease add NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET to your environment variables.\n\nTo create an upload preset:\n1. Go to Cloudinary Dashboard\n2. Settings → Upload → Upload presets\n3. Create an unsigned upload preset\n4. Copy the preset name and add it to Vercel environment variables';
-            } else if (error.message) {
-              errorMessage += error.message;
-            } else if (error.status === 400) {
-              errorMessage += 'File is too large or invalid format. Please check Cloudinary settings.';
-            } else {
-              errorMessage += 'Unknown error. Please try again or check Cloudinary configuration.';
-            }
-            alert(errorMessage);
-            setUploadingVideo(null);
-            return;
+        if (error) {
+          logger.error('Cloudinary Widget Upload error:', error);
+          let errorMessage = 'Upload error: ';
+          if (error.status === 'Upload preset must be specified when using unsigned upload' || error.message?.includes('Upload preset')) {
+            errorMessage = 'Error: Upload Preset is required.\n\nPlease add NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET to your environment variables.\n\nTo create an upload preset:\n1. Go to Cloudinary Dashboard\n2. Settings → Upload → Upload presets\n3. Create an unsigned upload preset\n4. Copy the preset name and add it to Vercel environment variables';
+          } else if (error.message) {
+            errorMessage += error.message;
+          } else if (error.status === 400) {
+            errorMessage += 'File is too large or invalid format. Please check Cloudinary settings.';
+          } else {
+            errorMessage += 'Unknown error. Please try again or check Cloudinary configuration.';
           }
-        
+          alert(errorMessage);
+          setUploadingVideo(null);
+          return;
+        }
+
         if (result && result.event === 'success') {
           const uploadResult = result.info;
-          const updated = videos.map(v => 
-            v.id === videoId 
-              ? { 
-                  ...v, 
-                  url: uploadResult.secure_url || uploadResult.url,
-                  thumbnail: uploadResult.thumbnail_url || uploadResult.secure_url || uploadResult.url
-                }
+          const updated = videos.map(v =>
+            v.id === videoId
+              ? {
+                ...v,
+                url: uploadResult.secure_url || uploadResult.url,
+                thumbnail: uploadResult.thumbnail_url || uploadResult.secure_url || uploadResult.url
+              }
               : v
           );
           setVideos(updated);
@@ -467,7 +547,7 @@ function VideosSection({ isEditing }: { isEditing: boolean }) {
         }
       }
     );
-    
+
     widgetRef.current.open();
   };
 
@@ -501,7 +581,7 @@ function VideosSection({ isEditing }: { isEditing: boolean }) {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this video?')) return;
-    
+
     setDeleting(id);
     try {
       const response = await fetch(`/api/content?id=${id}`, {
@@ -535,7 +615,7 @@ function VideosSection({ isEditing }: { isEditing: boolean }) {
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-text-primary">Videos ({videos.length})</h3>
         {isEditing && (
-          <button 
+          <button
             onClick={handleAdd}
             className="px-4 py-2 bg-accent text-dark-bg rounded-lg hover:bg-accent/90 transition-colors flex items-center gap-2"
           >
@@ -567,7 +647,7 @@ function VideosSection({ isEditing }: { isEditing: boolean }) {
                 />
                 {isEditing && (
                   <div className="flex gap-2">
-                    <button 
+                    <button
                       onClick={() => handleSave(video)}
                       disabled={saving === video.id}
                       className="p-1 hover:bg-dark-bg rounded disabled:opacity-50"
@@ -578,7 +658,7 @@ function VideosSection({ isEditing }: { isEditing: boolean }) {
                         <Save className="w-4 h-4 text-accent" />
                       )}
                     </button>
-                    <button 
+                    <button
                       onClick={() => handleDelete(video.id)}
                       disabled={deleting === video.id}
                       className="p-1 hover:bg-red-500/10 rounded disabled:opacity-50"
@@ -625,9 +705,8 @@ function VideosSection({ isEditing }: { isEditing: boolean }) {
                     };
                     input.click();
                   }}
-                  className={`border-2 border-dashed border-dark-section rounded-lg p-4 text-center transition-colors ${
-                    isEditing ? 'cursor-pointer hover:border-accent' : 'opacity-50 cursor-not-allowed'
-                  }`}
+                  className={`border-2 border-dashed border-dark-section rounded-lg p-4 text-center transition-colors ${isEditing ? 'cursor-pointer hover:border-accent' : 'opacity-50 cursor-not-allowed'
+                    }`}
                 >
                   {uploadingVideo === video.id ? (
                     <>
@@ -642,7 +721,7 @@ function VideosSection({ isEditing }: { isEditing: boolean }) {
                     </>
                   )}
                 </div>
-                
+
                 {/* Cloudinary Widget Button for Large Files */}
                 {isEditing && (
                   <button
@@ -653,7 +732,7 @@ function VideosSection({ isEditing }: { isEditing: boolean }) {
                     Upload Large Video (Up to 200 MB)
                   </button>
                 )}
-                
+
                 {/* Fallback URL Input */}
                 <input
                   type="url"
@@ -747,7 +826,7 @@ function ReelsSection({ isEditing }: { isEditing: boolean }) {
     try {
       const response = await fetch('/api/content?section=reels');
       const { data } = await response.json();
-      
+
       if (data) {
         const formattedReels = data.map((item: any) => ({
           id: item.id,
@@ -789,14 +868,14 @@ function ReelsSection({ isEditing }: { isEditing: boolean }) {
 
   const handleReelUpload = async (file: File, reelId: string) => {
     const fileSizeMB = file.size / 1024 / 1024;
-    
+
     if (fileSizeMB > 200) {
       alert('Video is too large (max 200 MB). Please compress or use a smaller video.');
       return;
     }
-    
+
     setUploadingReel(reelId);
-    
+
     try {
       // For files <= 4.5MB, use API route
       if (fileSizeMB <= 4.5) {
@@ -804,25 +883,25 @@ function ReelsSection({ isEditing }: { isEditing: boolean }) {
         formData.append('file', file);
         formData.append('category', 'reels');
         formData.append('name', `reel-${reelId}`);
-        
+
         const response = await fetch('/api/cloudinary/upload', {
           method: 'POST',
           body: formData,
         });
-        
+
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
           throw new Error(errorData.error || 'Upload failed');
         }
-        
+
         const { result } = await response.json();
-        const updated = reels.map(r => 
-          r.id === reelId 
-            ? { 
-                ...r, 
-                video: result.secure_url || result.url,
-                thumbnail: result.thumbnail_url || result.secure_url || result.url
-              }
+        const updated = reels.map(r =>
+          r.id === reelId
+            ? {
+              ...r,
+              video: result.secure_url || result.url,
+              thumbnail: result.thumbnail_url || result.secure_url || result.url
+            }
             : r
         );
         setReels(updated);
@@ -844,23 +923,23 @@ function ReelsSection({ isEditing }: { isEditing: boolean }) {
       setUploadingReel(null);
       return;
     }
-    
+
     // Check for required environment variables
     const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
     const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
-    
+
     if (!cloudName) {
       alert('Error: Cloudinary Cloud Name is not configured. Please add NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME to your environment variables.');
       setUploadingReel(null);
       return;
     }
-    
+
     if (!uploadPreset) {
       alert('Error: Cloudinary Upload Preset is required for widget uploads.\n\nPlease:\n1. Go to Cloudinary Dashboard\n2. Settings → Upload → Upload presets\n3. Create an unsigned upload preset\n4. Add NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET to your environment variables');
       setUploadingReel(null);
       return;
     }
-    
+
     // Destroy existing widget if it exists to create a fresh one
     if (widgetRef.current) {
       try {
@@ -870,7 +949,7 @@ function ReelsSection({ isEditing }: { isEditing: boolean }) {
       }
       widgetRef.current = null;
     }
-    
+
     widgetRef.current = window.cloudinary.createUploadWidget(
       {
         cloudName: cloudName,
@@ -888,32 +967,32 @@ function ReelsSection({ isEditing }: { isEditing: boolean }) {
         cropping: false,
       },
       async (error: any, result: any) => {
-          if (error) {
-            logger.error('Cloudinary Widget Upload error:', error);
-            let errorMessage = 'Upload error: ';
-            if (error.status === 'Upload preset must be specified when using unsigned upload' || error.message?.includes('Upload preset')) {
-              errorMessage = 'Error: Upload Preset is required.\n\nPlease add NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET to your environment variables.\n\nTo create an upload preset:\n1. Go to Cloudinary Dashboard\n2. Settings → Upload → Upload presets\n3. Create an unsigned upload preset\n4. Copy the preset name and add it to Vercel environment variables';
-            } else if (error.message) {
-              errorMessage += error.message;
-            } else if (error.status === 400) {
-              errorMessage += 'File is too large or invalid format. Please check Cloudinary settings.';
-            } else {
-              errorMessage += 'Unknown error. Please try again or check Cloudinary configuration.';
-            }
-            alert(errorMessage);
-            setUploadingReel(null);
-            return;
+        if (error) {
+          logger.error('Cloudinary Widget Upload error:', error);
+          let errorMessage = 'Upload error: ';
+          if (error.status === 'Upload preset must be specified when using unsigned upload' || error.message?.includes('Upload preset')) {
+            errorMessage = 'Error: Upload Preset is required.\n\nPlease add NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET to your environment variables.\n\nTo create an upload preset:\n1. Go to Cloudinary Dashboard\n2. Settings → Upload → Upload presets\n3. Create an unsigned upload preset\n4. Copy the preset name and add it to Vercel environment variables';
+          } else if (error.message) {
+            errorMessage += error.message;
+          } else if (error.status === 400) {
+            errorMessage += 'File is too large or invalid format. Please check Cloudinary settings.';
+          } else {
+            errorMessage += 'Unknown error. Please try again or check Cloudinary configuration.';
           }
-        
+          alert(errorMessage);
+          setUploadingReel(null);
+          return;
+        }
+
         if (result && result.event === 'success') {
           const uploadResult = result.info;
-          const updated = reels.map(r => 
-            r.id === reelId 
-              ? { 
-                  ...r, 
-                  video: uploadResult.secure_url || uploadResult.url,
-                  thumbnail: uploadResult.thumbnail_url || uploadResult.secure_url || uploadResult.url
-                }
+          const updated = reels.map(r =>
+            r.id === reelId
+              ? {
+                ...r,
+                video: uploadResult.secure_url || uploadResult.url,
+                thumbnail: uploadResult.thumbnail_url || uploadResult.secure_url || uploadResult.url
+              }
               : r
           );
           setReels(updated);
@@ -925,7 +1004,7 @@ function ReelsSection({ isEditing }: { isEditing: boolean }) {
         }
       }
     );
-    
+
     widgetRef.current.open();
   };
 
@@ -958,7 +1037,7 @@ function ReelsSection({ isEditing }: { isEditing: boolean }) {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this reel?')) return;
-    
+
     setDeleting(id);
     try {
       const response = await fetch(`/api/content?id=${id}`, {
@@ -992,7 +1071,7 @@ function ReelsSection({ isEditing }: { isEditing: boolean }) {
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-text-primary">Reels ({reels.length})</h3>
         {isEditing && (
-          <button 
+          <button
             onClick={handleAdd}
             className="px-4 py-2 bg-accent text-dark-bg rounded-lg hover:bg-accent/90 transition-colors flex items-center gap-2"
           >
@@ -1024,7 +1103,7 @@ function ReelsSection({ isEditing }: { isEditing: boolean }) {
                 />
                 {isEditing && (
                   <div className="flex gap-2">
-                    <button 
+                    <button
                       onClick={() => handleSave(reel)}
                       disabled={saving === reel.id}
                       className="p-1 hover:bg-dark-bg rounded disabled:opacity-50"
@@ -1035,7 +1114,7 @@ function ReelsSection({ isEditing }: { isEditing: boolean }) {
                         <Save className="w-4 h-4 text-accent" />
                       )}
                     </button>
-                    <button 
+                    <button
                       onClick={() => handleDelete(reel.id)}
                       disabled={deleting === reel.id}
                       className="p-1 hover:bg-red-500/10 rounded disabled:opacity-50"
@@ -1082,9 +1161,8 @@ function ReelsSection({ isEditing }: { isEditing: boolean }) {
                     };
                     input.click();
                   }}
-                  className={`border-2 border-dashed border-dark-section rounded-lg p-4 text-center transition-colors ${
-                    isEditing ? 'cursor-pointer hover:border-accent' : 'opacity-50 cursor-not-allowed'
-                  }`}
+                  className={`border-2 border-dashed border-dark-section rounded-lg p-4 text-center transition-colors ${isEditing ? 'cursor-pointer hover:border-accent' : 'opacity-50 cursor-not-allowed'
+                    }`}
                 >
                   {uploadingReel === reel.id ? (
                     <>
@@ -1099,7 +1177,7 @@ function ReelsSection({ isEditing }: { isEditing: boolean }) {
                     </>
                   )}
                 </div>
-                
+
                 {/* Cloudinary Widget Button for Large Files */}
                 {isEditing && (
                   <button
@@ -1110,7 +1188,7 @@ function ReelsSection({ isEditing }: { isEditing: boolean }) {
                     Upload Large Video (Up to 200 MB)
                   </button>
                 )}
-                
+
                 {/* Fallback URL Input */}
                 <input
                   type="url"
@@ -1156,20 +1234,20 @@ function GallerySection({ section, isEditing }: { section: string; isEditing: bo
 
   useEffect(() => {
     fetchImages();
-    
+
     // Listen for content updates from upload section
     let channel: BroadcastChannel | null = null;
     if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
       channel = new BroadcastChannel('content-updated');
       channel.onmessage = (event) => {
-        if (event.data.type === 'content-updated' && 
-            (event.data.section === section || !event.data.section)) {
+        if (event.data.type === 'content-updated' &&
+          (event.data.section === section || !event.data.section)) {
           logger.debug(`Content updated for section: ${section}, refreshing...`);
           fetchImages();
         }
       };
     }
-    
+
     return () => {
       if (channel) {
         channel.close();
@@ -1184,18 +1262,18 @@ function GallerySection({ section, isEditing }: { section: string; isEditing: bo
       const response = await fetch(`/api/content?section=${section}`, {
         cache: 'no-store', // Ensure fresh data
       });
-      
+
       if (!response.ok) {
         logger.error(`Failed to fetch ${section} images:`, response.status, response.statusText);
         setImages([]);
         return;
       }
-      
+
       const result = await response.json();
       const data = result.data || result;
-      
+
       logger.debug(`Fetched ${section} images:`, data?.length || 0);
-      
+
       if (data && Array.isArray(data) && data.length > 0) {
         const formattedImages = data
           .filter((item: any) => item.media_url && item.media_url.trim() !== '')
@@ -1272,7 +1350,7 @@ function GallerySection({ section, isEditing }: { section: string; isEditing: bo
 
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this image?')) return;
-    
+
     setDeleting(id);
     try {
       const response = await fetch(`/api/content?id=${id}`, {
@@ -1306,7 +1384,7 @@ function GallerySection({ section, isEditing }: { section: string; isEditing: bo
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-text-primary">Gallery ({images.length})</h3>
         {isEditing && (
-          <button 
+          <button
             onClick={handleAdd}
             className="px-4 py-2 bg-accent text-dark-bg rounded-lg hover:bg-accent/90 transition-colors flex items-center gap-2"
           >
@@ -1338,7 +1416,7 @@ function GallerySection({ section, isEditing }: { section: string; isEditing: bo
                 />
                 {isEditing && (
                   <div className="flex gap-2">
-                    <button 
+                    <button
                       onClick={() => handleSave(image)}
                       disabled={saving === image.id}
                       className="p-1 hover:bg-dark-bg rounded disabled:opacity-50"
@@ -1349,7 +1427,7 @@ function GallerySection({ section, isEditing }: { section: string; isEditing: bo
                         <Save className="w-4 h-4 text-accent" />
                       )}
                     </button>
-                    <button 
+                    <button
                       onClick={() => handleDelete(image.id)}
                       disabled={deleting === image.id}
                       className="p-1 hover:bg-red-500/10 rounded disabled:opacity-50"
@@ -1405,7 +1483,7 @@ function ContactSection({ isEditing }: { isEditing: boolean }) {
     try {
       const response = await fetch('/api/contact');
       const { data } = await response.json();
-      
+
       if (data) {
         setEmail(data.email || '');
         setPhone(data.phone || '');
@@ -1612,10 +1690,10 @@ function ReviewsSection() {
 
       <div className="grid gap-6">
         {reviews.map((review) => {
-          const contentItem = Array.isArray(review.content_items) 
-            ? review.content_items[0] 
+          const contentItem = Array.isArray(review.content_items)
+            ? review.content_items[0]
             : review.content_items;
-          const section = contentItem?.sections 
+          const section = contentItem?.sections
             ? (Array.isArray(contentItem.sections) ? contentItem.sections[0] : contentItem.sections)
             : null;
 
@@ -1631,11 +1709,10 @@ function ReviewsSection() {
                       {[...Array(5)].map((_, i) => (
                         <Star
                           key={i}
-                          className={`w-5 h-5 ${
-                            i < review.rating
+                          className={`w-5 h-5 ${i < review.rating
                               ? 'fill-accent text-accent'
                               : 'text-text-secondary/20'
-                          }`}
+                            }`}
                         />
                       ))}
                     </div>
@@ -1870,11 +1947,10 @@ function PreviewSection() {
                       {[...Array(5)].map((_, i) => (
                         <Star
                           key={i}
-                          className={`w-4 h-4 ${
-                            i < review.rating
+                          className={`w-4 h-4 ${i < review.rating
                               ? 'fill-accent text-accent'
                               : 'fill-dark-section text-dark-section'
-                          }`}
+                            }`}
                         />
                       ))}
                     </div>

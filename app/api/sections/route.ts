@@ -30,21 +30,37 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// PATCH - Update section
-export async function PATCH(request: NextRequest) {
+// POST - Create new section
+export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
     const body = await request.json();
-    const { name, ...updates } = body;
+    const { name, description, icon_name } = body;
 
     if (!name) {
       return NextResponse.json({ error: 'Section name is required' }, { status: 400 });
     }
 
+    // Get max display_order
+    const { data: maxOrder } = await supabase
+      .from('sections')
+      .select('display_order')
+      .order('display_order', { ascending: false })
+      .limit(1)
+      .single();
+
+    const newSection = {
+      name,
+      description: description || `Manage ${name} gallery`,
+      is_active: true,
+      display_order: (maxOrder?.display_order || 0) + 1,
+      // Default icon if not provided
+      icon_name: icon_name || 'ImageIcon'
+    };
+
     const { data, error } = await supabase
       .from('sections')
-      .update(updates)
-      .eq('name', name)
+      .insert([newSection])
       .select()
       .single();
 
@@ -53,6 +69,32 @@ export async function PATCH(request: NextRequest) {
     }
 
     return NextResponse.json({ data });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+// DELETE - Delete section
+export async function DELETE(request: NextRequest) {
+  try {
+    const supabase = await createClient();
+    const { searchParams } = new URL(request.url);
+    const name = searchParams.get('name');
+
+    if (!name) {
+      return NextResponse.json({ error: 'Section name is required' }, { status: 400 });
+    }
+
+    const { error } = await supabase
+      .from('sections')
+      .delete()
+      .eq('name', name);
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
