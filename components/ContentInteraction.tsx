@@ -62,7 +62,7 @@ export function ContentInteraction({
             type: 'view',
           }),
         });
-        
+
         if (response.ok) {
           const data = await response.json();
           if (data.views !== undefined) {
@@ -78,12 +78,12 @@ export function ContentInteraction({
 
   const handleLike = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    
+
     if (isLoading) return;
-    
+
     setIsLoading(true);
     const newLikedState = !isLiked;
-    
+
     try {
       const response = await fetch('/api/content/interaction', {
         method: 'POST',
@@ -102,7 +102,7 @@ export function ContentInteraction({
         } else {
           setLikes((prev) => newLikedState ? prev + 1 : Math.max(0, prev - 1));
         }
-        
+
         // Save to localStorage
         const likedItems = JSON.parse(localStorage.getItem('likedItems') || '[]');
         if (newLikedState) {
@@ -125,39 +125,38 @@ export function ContentInteraction({
 
   return (
     <>
-      <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-        <div className="flex items-center gap-4">
+      <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between z-20">
+        <div className="flex items-center gap-3">
           {/* Like Button */}
           <button
             onClick={handleLike}
             disabled={isLoading}
-            className={`flex items-center gap-2 px-3 py-2 rounded-full backdrop-blur-sm transition-all duration-300 ${
-              isLiked
-                ? 'bg-red-500/80 text-white'
-                : 'bg-dark-bg/60 text-text-secondary hover:text-red-400 hover:bg-dark-bg/80'
-            }`}
+            className={`flex items-center gap-2 px-3 py-2 rounded-full backdrop-blur-md transition-all duration-300 shadow-lg border border-white/10 ${isLiked
+                ? 'bg-red-500/90 text-white border-red-400/50'
+                : 'bg-dark-bg/70 text-text-secondary hover:text-red-400 hover:bg-dark-bg/90'
+              }`}
             aria-label={isLiked ? 'Unlike' : 'Like'}
           >
             <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
-            <span className="text-sm font-medium">{likes}</span>
+            <span className="text-sm font-bold">{likes}</span>
           </button>
 
           {/* Review Button */}
           {showReviewButton && (
             <button
               onClick={handleReviewClick}
-              className="flex items-center gap-2 px-3 py-2 rounded-full bg-dark-bg/60 text-text-secondary hover:text-accent hover:bg-dark-bg/80 backdrop-blur-sm transition-all duration-300"
+              className="flex items-center gap-2 px-3 py-2 rounded-full bg-dark-bg/70 text-text-secondary hover:text-accent hover:bg-dark-bg/90 backdrop-blur-md transition-all duration-300 shadow-lg border border-white/10"
               aria-label="Add review"
             >
-              <Star className="w-4 h-4" />
-              <span className="text-sm font-medium">{rating > 0 ? rating.toFixed(1) : 'Rate'}</span>
+              <Star className="w-4 h-4 fill-accent/20" />
+              <span className="text-sm font-bold text-accent">{rating > 0 ? rating.toFixed(1) : 'Rate'}</span>
             </button>
           )}
 
           {/* Views Counter */}
-          <div className="flex items-center gap-2 px-3 py-2 rounded-full bg-dark-bg/60 text-text-secondary backdrop-blur-sm">
-            <Eye className="w-4 h-4" />
-            <span className="text-sm font-medium">{views}</span>
+          <div className="flex items-center gap-2 px-3 py-2 rounded-full bg-dark-bg/70 text-text-secondary/80 backdrop-blur-sm shadow-lg border border-white/5">
+            <Eye className="w-3.5 h-3.5" />
+            <span className="text-xs font-medium">{views}</span>
           </div>
         </div>
       </div>
@@ -196,14 +195,14 @@ function ReviewModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (rating === 0) {
       alert('Please select a rating');
       return;
     }
 
     setIsSubmitting(true);
-    
+
     try {
       const response = await fetch('/api/content/review', {
         method: 'POST',
@@ -234,11 +233,11 @@ function ReviewModal({
     <div
       className="fixed inset-0 z-[9999] bg-dark-bg/95 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn overflow-y-auto"
       onClick={onClose}
-      style={{ 
-        position: 'fixed', 
-        top: 0, 
-        left: 0, 
-        right: 0, 
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
         bottom: 0,
         zIndex: 9999
       }}
@@ -246,8 +245,8 @@ function ReviewModal({
       <div
         className="bg-dark-section rounded-2xl p-6 md:p-8 max-w-lg w-full mx-auto my-8 border border-dark-bg shadow-2xl animate-fadeInScale"
         onClick={(e) => e.stopPropagation()}
-        style={{ 
-          maxHeight: '90vh', 
+        style={{
+          maxHeight: '90vh',
           overflowY: 'auto',
           position: 'relative',
           zIndex: 10000
@@ -266,7 +265,7 @@ function ReviewModal({
             </svg>
           </button>
         </div>
-        
+
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Star Rating */}
           <div>
@@ -285,11 +284,10 @@ function ReviewModal({
                   aria-label={`Rate ${star} star${star > 1 ? 's' : ''}`}
                 >
                   <Star
-                    className={`w-10 h-10 transition-all ${
-                      star <= (hoverRating || rating)
+                    className={`w-10 h-10 transition-all ${star <= (hoverRating || rating)
                         ? 'fill-accent text-accent scale-110'
                         : 'text-text-secondary/40'
-                    }`}
+                      }`}
                   />
                 </button>
               ))}

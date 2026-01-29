@@ -396,6 +396,20 @@ export function Product() {
               className="object-contain"
               sizes="100vw"
             />
+
+            {/* Subtle Bottom Gradient for Buttons Visibility */}
+            <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
+
+            {/* Find the selected image object to get its ID */}
+            {(() => {
+              const imgObj = images.find(img => img.image === selectedImage);
+              return imgObj ? (
+                <ContentInteraction
+                  contentId={imgObj.id}
+                  showReviewButton={true}
+                />
+              ) : null;
+            })()}
           </div>
         </div>
       )}

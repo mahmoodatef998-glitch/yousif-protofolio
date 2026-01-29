@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { X, ChevronLeft, ChevronRight } from 'lucide-react';
 import Image from 'next/image';
+import { ContentInteraction } from './ContentInteraction';
 
 interface GroupImage {
   id: string;
@@ -64,74 +65,90 @@ export function GroupGallery({ images, isOpen, onClose, initialIndex = 0 }: Grou
 
   return (
     <div
-      className="fixed inset-0 z-[9999] bg-dark-bg/98 backdrop-blur-md flex items-center justify-center p-4 animate-modal-enter"
+      className={`fixed inset-0 z-50 flex flex-col bg-dark-bg/98 backdrop-blur-xl transition-all duration-300 ${isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        }`}
       onClick={onClose}
     >
-      {/* Close Button */}
-      <button
-        onClick={onClose}
-        className="absolute top-4 right-4 z-10 w-10 h-10 flex items-center justify-center bg-dark-section/80 hover:bg-dark-section rounded-full text-text-primary hover:text-accent transition-all"
-        aria-label="Close gallery"
-      >
-        <X className="w-6 h-6" />
-      </button>
+      {/* Header / Close Button */}
+      <div className="absolute top-6 right-6 z-[60]">
+        <button
+          onClick={onClose}
+          className="p-3 text-text-primary hover:text-accent bg-dark-section/50 backdrop-blur-md rounded-full transition-all hover:scale-110 active:scale-95"
+          aria-label="Close gallery"
+        >
+          <X className="w-8 h-8" />
+        </button>
+      </div>
 
-      {/* Navigation Buttons */}
+      {/* Navigation Controls */}
       {images.length > 1 && (
         <>
           <button
+            className="absolute left-6 top-1/2 -translate-y-1/2 z-[60] p-4 text-text-primary hover:text-accent bg-dark-section/30 hover:bg-dark-section/60 backdrop-blur-md rounded-full transition-all group active:scale-95"
             onClick={(e) => {
               e.stopPropagation();
               handlePrevious();
             }}
-            className="absolute left-4 top-1/2 -translate-y-1/2 z-10 w-12 h-12 flex items-center justify-center bg-dark-section/80 hover:bg-dark-section rounded-full text-text-primary hover:text-accent transition-all"
             aria-label="Previous image"
           >
-            <ChevronLeft className="w-6 h-6" />
+            <ChevronLeft className="w-8 h-8 group-hover:-translate-x-1 transition-transform" />
           </button>
           <button
+            className="absolute right-6 top-1/2 -translate-y-1/2 z-[60] p-4 text-text-primary hover:text-accent bg-dark-section/30 hover:bg-dark-section/60 backdrop-blur-md rounded-full transition-all group active:scale-95"
             onClick={(e) => {
               e.stopPropagation();
               handleNext();
             }}
-            className="absolute right-4 top-1/2 -translate-y-1/2 z-10 w-12 h-12 flex items-center justify-center bg-dark-section/80 hover:bg-dark-section rounded-full text-text-primary hover:text-accent transition-all"
             aria-label="Next image"
           >
-            <ChevronRight className="w-6 h-6" />
+            <ChevronRight className="w-8 h-8 group-hover:translate-x-1 transition-transform" />
           </button>
         </>
       )}
 
       {/* Image Container */}
       <div
-        className="relative w-full h-full max-h-[70vh] md:max-h-[80vh] flex items-center justify-center"
+        className="relative flex-1 flex items-center justify-center p-4 md:p-8"
         onClick={(e) => e.stopPropagation()}
       >
-        <Image
-          src={currentImage.image}
-          alt={currentImage.title}
-          fill
-          className="object-contain"
-          sizes="100vw"
-          priority
-        />
-      </div>    {/* Image Counter */}
-      {images.length > 1 && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-dark-section/80 backdrop-blur-sm px-4 py-2 rounded-full text-sm text-text-primary">
-          {currentIndex + 1} / {images.length}
+        <div className="relative w-full h-full max-h-[70vh] md:max-h-[80vh] flex items-center justify-center">
+          <Image
+            src={currentImage.image}
+            alt={currentImage.title}
+            fill
+            className="object-contain"
+            sizes="100vw"
+            priority
+          />
+
+          {/* Subtle Bottom Gradient for Buttons Visibility */}
+          <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
+
+          {/* Interaction Buttons in Modal */}
+          <ContentInteraction
+            contentId={currentImage.id}
+            showReviewButton={true}
+          />
         </div>
-      )}
+
+        {/* Image Counter */}
+        {images.length > 1 && (
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-dark-section/80 backdrop-blur-sm px-4 py-2 rounded-full text-sm text-text-primary">
+            {currentIndex + 1} / {images.length}
+          </div>
+        )}
+      </div>
 
       {/* Thumbnail Strip */}
       {images.length > 1 && (
-        <div className="absolute bottom-20 left-1/2 -translate-x-1/2 flex gap-2 max-w-full overflow-x-auto px-4 pb-2">
+        <div className="h-24 flex-shrink-0 flex items-center justify-center gap-2 max-w-full overflow-x-auto px-4 pb-6 mt-auto">
           {images.map((img, idx) => (
             <button
               key={img.id}
               onClick={() => setCurrentIndex(idx)}
               className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${idx === currentIndex
-                  ? 'border-accent scale-110'
-                  : 'border-dark-section hover:border-accent/50 opacity-60 hover:opacity-100'
+                ? 'border-accent scale-110'
+                : 'border-dark-section hover:border-accent/50 opacity-60 hover:opacity-100'
                 }`}
             >
               <img
@@ -144,7 +161,5 @@ export function GroupGallery({ images, isOpen, onClose, initialIndex = 0 }: Grou
         </div>
       )}
     </div>
-    </div >
   );
 }
-
