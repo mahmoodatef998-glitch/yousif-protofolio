@@ -283,8 +283,8 @@ export function Product() {
                 <div
                   key={item.id}
                   className={`group card-premium card-glow card-ripple relative aspect-[9/16] overflow-hidden cursor-pointer rounded-2xl ${index < visibleCount
-                      ? 'opacity-100 translate-y-0'
-                      : 'opacity-0 translate-y-[60px]'
+                    ? 'opacity-100 translate-y-0'
+                    : 'opacity-0 translate-y-[60px]'
                     }`}
                   style={{
                     transition: 'all 0.8s cubic-bezier(0.16, 1, 0.3, 1)',
@@ -388,13 +388,13 @@ export function Product() {
           >
             <X className="w-8 h-8" />
           </button>
-          <div className="relative w-full max-w-md aspect-[9/16] mx-auto bg-dark-section rounded-lg overflow-hidden">
+          <div className="relative w-full h-[70vh] md:h-[80vh] flex items-center justify-center">
             <Image
               src={selectedImage}
               alt="Lightbox"
               fill
-              className="object-cover"
-              sizes="(max-width: 768px) 100vw, 400px"
+              className="object-contain"
+              sizes="100vw"
             />
           </div>
         </div>

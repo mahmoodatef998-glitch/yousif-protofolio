@@ -102,53 +102,49 @@ export function GroupGallery({ images, isOpen, onClose, initialIndex = 0 }: Grou
         </>
       )}
 
-      {/* Image Container - Portrait Mode */}
+      {/* Image Container */}
       <div
-        className="relative w-full max-w-md aspect-[9/16] mx-auto flex items-center justify-center"
+        className="relative w-full h-full max-h-[70vh] md:max-h-[80vh] flex items-center justify-center"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="relative w-full h-full bg-dark-section rounded-lg overflow-hidden">
-          <Image
-            src={currentImage.image}
-            alt={currentImage.title}
-            fill
-            className="object-cover"
-            sizes="(max-width: 768px) 100vw, 400px"
-            priority
-          />
+        <Image
+          src={currentImage.image}
+          alt={currentImage.title}
+          fill
+          className="object-contain"
+          sizes="100vw"
+          priority
+        />
+      </div>    {/* Image Counter */}
+      {images.length > 1 && (
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-dark-section/80 backdrop-blur-sm px-4 py-2 rounded-full text-sm text-text-primary">
+          {currentIndex + 1} / {images.length}
         </div>
+      )}
 
-        {/* Image Counter */}
-        {images.length > 1 && (
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-dark-section/80 backdrop-blur-sm px-4 py-2 rounded-full text-sm text-text-primary">
-            {currentIndex + 1} / {images.length}
-          </div>
-        )}
-
-        {/* Thumbnail Strip */}
-        {images.length > 1 && (
-          <div className="absolute bottom-20 left-1/2 -translate-x-1/2 flex gap-2 max-w-full overflow-x-auto px-4 pb-2">
-            {images.map((img, idx) => (
-              <button
-                key={img.id}
-                onClick={() => setCurrentIndex(idx)}
-                className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
-                  idx === currentIndex
-                    ? 'border-accent scale-110'
-                    : 'border-dark-section hover:border-accent/50 opacity-60 hover:opacity-100'
+      {/* Thumbnail Strip */}
+      {images.length > 1 && (
+        <div className="absolute bottom-20 left-1/2 -translate-x-1/2 flex gap-2 max-w-full overflow-x-auto px-4 pb-2">
+          {images.map((img, idx) => (
+            <button
+              key={img.id}
+              onClick={() => setCurrentIndex(idx)}
+              className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${idx === currentIndex
+                  ? 'border-accent scale-110'
+                  : 'border-dark-section hover:border-accent/50 opacity-60 hover:opacity-100'
                 }`}
-              >
-                <img
-                  src={img.image}
-                  alt={img.title}
-                  className="w-full h-full object-cover"
-                />
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
+            >
+              <img
+                src={img.image}
+                alt={img.title}
+                className="w-full h-full object-cover"
+              />
+            </button>
+          ))}
+        </div>
+      )}
     </div>
+    </div >
   );
 }
 

@@ -279,13 +279,13 @@ export function DynamicGallery({ section, title }: DynamicGalleryProps) {
                     >
                         <X className="w-8 h-8" />
                     </button>
-                    <div className="relative w-full max-w-md aspect-[9/16] mx-auto bg-dark-section rounded-lg overflow-hidden">
+                    <div className="relative w-full h-[70vh] md:h-[80vh] flex items-center justify-center">
                         <Image
                             src={selectedImage}
                             alt="Lightbox"
                             fill
-                            className="object-cover"
-                            sizes="(max-width: 768px) 100vw, 400px"
+                            className="object-contain"
+                            sizes="100vw"
                         />
                     </div>
                 </div>
