@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Menu, X, Lock } from 'lucide-react';
 import Link from 'next/link';
 
-const navItems = [
+const STATIC_NAV_ITEMS = [
   { name: 'About', href: '#about' },
   { name: 'Videos', href: '#videos' },
   { name: 'Reels', href: '#reels' },
@@ -15,9 +15,47 @@ const navItems = [
 ];
 
 export function Navbar() {
+  const [navItems, setNavItems] = useState(STATIC_NAV_ITEMS);
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('');
+
+  const fetchSections = async () => {
+    try {
+      const response = await fetch('/api/sections');
+      const { data } = await response.json();
+      if (data) {
+        const dynamicNav = data
+          .filter((s: any) => !STATIC_NAV_ITEMS.find(sf => sf.href === `#${s.name.toLowerCase()}`))
+          .map((s: any) => ({
+            name: s.name.charAt(0).toUpperCase() + s.name.slice(1),
+            href: `#${s.name.toLowerCase()}`
+          }));
+
+        // Insert dynamic items before 'Contact'
+        const contactIndex = STATIC_NAV_ITEMS.findIndex(item => item.name === 'Contact');
+        const updatedNav = [...STATIC_NAV_ITEMS];
+        updatedNav.splice(contactIndex, 0, ...dynamicNav);
+        setNavItems(updatedNav);
+      }
+    } catch (error) {
+      console.error('Error fetching nav items:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchSections();
+
+    if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+      const channel = new BroadcastChannel('sections-updated');
+      channel.onmessage = (event) => {
+        if (event.data.type === 'sections-updated') {
+          fetchSections();
+        }
+      };
+      return () => channel.close();
+    }
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -65,9 +103,8 @@ export function Navbar() {
 
   return (
     <nav
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled ? 'bg-dark-bg/95 backdrop-blur-md' : 'bg-transparent'
-      }`}
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'bg-dark-bg/95 backdrop-blur-md' : 'bg-transparent'
+        }`}
     >
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
@@ -88,11 +125,10 @@ export function Navbar() {
                   key={item.name}
                   href={item.href}
                   onClick={(e) => handleNavClick(e, item.href)}
-                  className={`text-sm transition-colors relative ${
-                    isActive
+                  className={`text-sm transition-colors relative ${isActive
                       ? 'text-accent'
                       : 'text-text-secondary hover:text-accent'
-                  }`}
+                    }`}
                 >
                   {item.name}
                   {isActive && (
@@ -130,11 +166,10 @@ export function Navbar() {
                   key={item.name}
                   href={item.href}
                   onClick={(e) => handleNavClick(e, item.href)}
-                  className={`block transition-colors ${
-                    isActive
+                  className={`block transition-colors ${isActive
                       ? 'text-accent'
                       : 'text-text-secondary hover:text-accent'
-                  }`}
+                    }`}
                 >
                   {item.name}
                 </a>

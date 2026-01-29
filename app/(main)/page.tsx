@@ -10,13 +10,32 @@ import { Restaurant } from '@/components/Restaurant';
 import { Contact } from '@/components/Contact';
 import { Testimonials } from '@/components/Testimonials';
 import { PortfolioFilter, FilterType } from '@/components/PortfolioFilter';
+import { DynamicGallery } from '@/components/DynamicGallery';
 import { ScrollProgress } from '@/components/ScrollProgress';
 import { BackToTop } from '@/components/BackToTop';
 import { usePageLoad } from '@/lib/animations';
+import { useEffect } from 'react';
 
 export default function Home() {
   const mounted = usePageLoad();
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
+  const [sections, setSections] = useState<any[]>([]);
+
+  const fetchSections = async () => {
+    try {
+      const response = await fetch('/api/sections');
+      const { data } = await response.json();
+      if (data) {
+        setSections(data);
+      }
+    } catch (error) {
+      console.error('Error fetching sections:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchSections();
+  }, []);
 
   const handleFilterChange = (filter: FilterType) => {
     setActiveFilter(filter);
@@ -29,6 +48,8 @@ export default function Home() {
     }, 100);
   };
 
+  const STATIC_SECTION_NAMES = ['about', 'videos', 'reels', 'wedding', 'product', 'restaurant', 'contact'];
+
   return (
     <main
       className="transition-opacity-smooth"
@@ -38,10 +59,10 @@ export default function Home() {
     >
       <ScrollProgress />
       <BackToTop />
-      
+
       {/* About Section - Hero at top */}
       <About />
-      
+
       {/* Portfolio Filter */}
       <section id="portfolio-filter" className="py-10 sm:py-12 md:py-16 bg-dark-section">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -59,25 +80,43 @@ export default function Home() {
           />
         </div>
       </section>
-      
-      {/* Videos Section - 4 full-screen videos */}
-      {(activeFilter === 'all' || activeFilter === 'videos') && <Videos />}
-      
-      {/* Reels Section - 5 reels */}
-      {(activeFilter === 'all' || activeFilter === 'reels') && <Reels />}
-      
-      {/* Wedding Section */}
-      {(activeFilter === 'all' || activeFilter === 'wedding') && <Wedding />}
-      
-      {/* Product Section */}
-      {(activeFilter === 'all' || activeFilter === 'product') && <Product />}
-      
-      {/* Restaurant Section */}
-      {(activeFilter === 'all' || activeFilter === 'restaurant') && <Restaurant />}
-      
+
+      {/* Portfolio Sections in Order */}
+      {sections
+        .filter(s => s.is_active && !['about', 'contact'].includes(s.name.toLowerCase()))
+        .sort((a, b) => (a.display_order || 0) - (b.display_order || 0))
+        .map(section => {
+          const name = section.name.toLowerCase();
+          const isVisible = activeFilter === 'all' || activeFilter === name;
+
+          if (!isVisible) return null;
+
+          switch (name) {
+            case 'videos':
+              return <Videos key={section.id} />;
+            case 'reels':
+              return <Reels key={section.id} />;
+            case 'wedding':
+              return <Wedding key={section.id} />;
+            case 'product':
+              return <Product key={section.id} />;
+            case 'restaurant':
+              return <Restaurant key={section.id} />;
+            default:
+              return (
+                <DynamicGallery
+                  key={section.id}
+                  section={name}
+                  title={section.name}
+                />
+              );
+          }
+        })
+      }
+
       {/* Testimonials Section - What Clients Say */}
       <Testimonials />
-      
+
       {/* Contact Section */}
       <Contact />
     </main>
