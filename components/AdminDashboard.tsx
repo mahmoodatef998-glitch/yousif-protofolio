@@ -31,7 +31,9 @@ import {
   Check,
   XCircle,
   RefreshCw,
+  Camera,
 } from 'lucide-react';
+import { ThumbnailSelector } from './admin/ThumbnailSelector';
 
 declare global {
   interface Window {
@@ -158,8 +160,8 @@ export default function AdminDashboard() {
                   setIsEditing(false); // Reset editing when switching sections
                 }}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${isActive
-                    ? 'bg-accent text-dark-bg'
-                    : 'text-text-secondary hover:bg-dark-bg hover:text-text-primary'
+                  ? 'bg-accent text-dark-bg'
+                  : 'text-text-secondary hover:bg-dark-bg hover:text-text-primary'
                   }`}
                 title={!sidebarOpen ? section.name : undefined}
               >
@@ -187,8 +189,8 @@ export default function AdminDashboard() {
                   setIsEditing(false);
                 }}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${isActive
-                    ? 'bg-accent text-dark-bg'
-                    : 'text-text-secondary hover:bg-dark-bg hover:text-text-primary'
+                  ? 'bg-accent text-dark-bg'
+                  : 'text-text-secondary hover:bg-dark-bg hover:text-text-primary'
                   }`}
                 title={!sidebarOpen ? section.name : undefined}
               >
@@ -243,8 +245,8 @@ export default function AdminDashboard() {
               <button
                 onClick={() => setIsEditing(!isEditing)}
                 className={`px-6 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${isEditing
-                    ? 'bg-accent text-dark-bg hover:bg-accent/90'
-                    : 'bg-dark-bg text-text-primary hover:bg-dark-section border border-dark-section'
+                  ? 'bg-accent text-dark-bg hover:bg-accent/90'
+                  : 'bg-dark-bg text-text-primary hover:bg-dark-section border border-dark-section'
                   }`}
               >
                 {isEditing ? (
@@ -332,6 +334,7 @@ function VideosSection({ isEditing }: { isEditing: boolean }) {
   const [uploadingVideo, setUploadingVideo] = useState<string | null>(null);
   const widgetRef = useRef<any>(null);
   const [widgetScriptLoaded, setWidgetScriptLoaded] = useState(false);
+  const [selectingThumbnail, setSelectingThumbnail] = useState<{ id: string; url: string } | null>(null);
 
   // Load Cloudinary Widget Script
   useEffect(() => {
@@ -756,6 +759,17 @@ function VideosSection({ isEditing }: { isEditing: boolean }) {
                   disabled={!isEditing}
                   className="w-full px-3 py-2 bg-dark-bg border border-dark-section rounded text-text-primary text-sm focus:border-accent focus:outline-none disabled:opacity-50"
                 />
+
+                {isEditing && video.url && (
+                  <button
+                    onClick={() => setSelectingThumbnail({ id: video.id, url: video.url })}
+                    className="w-full flex items-center justify-center gap-2 py-2 bg-accent/10 border border-accent/20 text-accent rounded-lg text-sm hover:bg-accent/20 transition-all"
+                  >
+                    <Camera className="w-4 h-4" />
+                    Pick Cover from Video
+                  </button>
+                )}
+
                 <textarea
                   placeholder="Description (optional)"
                   value={video.description || ''}
@@ -771,6 +785,20 @@ function VideosSection({ isEditing }: { isEditing: boolean }) {
             </div>
           ))}
         </div>
+      )}
+
+      {selectingThumbnail && (
+        <ThumbnailSelector
+          videoUrl={selectingThumbnail.url}
+          onSelect={(thumbUrl) => {
+            const updated = videos.map(v => v.id === selectingThumbnail.id ? { ...v, thumbnail: thumbUrl } : v);
+            setVideos(updated);
+            // Auto-save the new thumbnail
+            const videoToSave = updated.find(v => v.id === selectingThumbnail.id);
+            if (videoToSave) handleSave(videoToSave);
+          }}
+          onClose={() => setSelectingThumbnail(null)}
+        />
       )}
     </div>
   );
@@ -790,6 +818,7 @@ function ReelsSection({ isEditing }: { isEditing: boolean }) {
   const [uploadingReel, setUploadingReel] = useState<string | null>(null);
   const widgetRef = useRef<any>(null);
   const [widgetScriptLoaded, setWidgetScriptLoaded] = useState(false);
+  const [selectingThumbnail, setSelectingThumbnail] = useState<{ id: string; url: string } | null>(null);
 
   // Load Cloudinary Widget Script
   useEffect(() => {
@@ -1212,10 +1241,33 @@ function ReelsSection({ isEditing }: { isEditing: boolean }) {
                   disabled={!isEditing}
                   className="w-full px-3 py-2 bg-dark-bg border border-dark-section rounded text-text-primary text-sm focus:border-accent focus:outline-none disabled:opacity-50"
                 />
+
+                {isEditing && reel.video && (
+                  <button
+                    onClick={() => setSelectingThumbnail({ id: reel.id, url: reel.video })}
+                    className="w-full flex items-center justify-center gap-2 py-2 bg-accent/10 border border-accent/20 text-accent rounded-lg text-sm hover:bg-accent/20 transition-all"
+                  >
+                    <Camera className="w-4 h-4" />
+                    Pick Cover from Video
+                  </button>
+                )}
               </div>
             </div>
           ))}
         </div>
+      )}
+      {selectingThumbnail && (
+        <ThumbnailSelector
+          videoUrl={selectingThumbnail.url}
+          onSelect={(thumbUrl) => {
+            const updated = reels.map(r => r.id === selectingThumbnail.id ? { ...r, thumbnail: thumbUrl } : r);
+            setReels(updated);
+            // Auto-save the new thumbnail
+            const reelToSave = updated.find(r => r.id === selectingThumbnail.id);
+            if (reelToSave) handleSave(reelToSave);
+          }}
+          onClose={() => setSelectingThumbnail(null)}
+        />
       )}
     </div>
   );
@@ -1710,8 +1762,8 @@ function ReviewsSection() {
                         <Star
                           key={i}
                           className={`w-5 h-5 ${i < review.rating
-                              ? 'fill-accent text-accent'
-                              : 'text-text-secondary/20'
+                            ? 'fill-accent text-accent'
+                            : 'text-text-secondary/20'
                             }`}
                         />
                       ))}
@@ -1948,8 +2000,8 @@ function PreviewSection() {
                         <Star
                           key={i}
                           className={`w-4 h-4 ${i < review.rating
-                              ? 'fill-accent text-accent'
-                              : 'fill-dark-section text-dark-section'
+                            ? 'fill-accent text-accent'
+                            : 'fill-dark-section text-dark-section'
                             }`}
                         />
                       ))}
