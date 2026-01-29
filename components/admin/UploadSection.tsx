@@ -477,16 +477,16 @@ export function UploadSection() {
             const now = Date.now();
             
             // File is NEW if:
-            // 1. uploaded_at exists and is within last 2 minutes (120 seconds for safety)
-            // 2. OR created_at is within last 2 minutes AND uploaded_at doesn't exist
+            // 1. uploaded_at exists and is within last 1 hour (3600 seconds) - very safe
+            // 2. OR created_at is within last 1 hour AND uploaded_at doesn't exist
             // 3. OR both don't exist (shouldn't happen, but treat as new)
             const isNewUpload = uploadedAt > 0 
-              ? (uploadedAt > now - 120000) // uploaded_at within last 2 minutes
-              : (createdAt > 0 ? (createdAt > now - 120000) : true); // created_at within last 2 minutes, or treat as new
+              ? (uploadedAt > now - 3600000) // uploaded_at within last 1 hour
+              : (createdAt > 0 ? (createdAt > now - 3600000) : true); // created_at within last 1 hour, or treat as new
             
-            // Additional check: uploaded_at should be very recent (within 5 seconds of now)
-            // This ensures the file was just uploaded, not selected from library
-            const isJustUploaded = uploadedAt > 0 && (now - uploadedAt < 5000);
+            // Additional check: uploaded_at should be recent (within 2 minutes of now)
+            // This is mostly to distinguish from very old library files
+            const isJustUploaded = uploadedAt > 0 && (now - uploadedAt < 120000); // 2 minutes window
             
             // Check if public_id matches the expected folder structure
             const expectedFolder = `${process.env.NEXT_PUBLIC_CLOUDINARY_FOLDER || 'portfolio'}/${category}`;
@@ -518,9 +518,11 @@ export function UploadSection() {
                 : null
             });
             
-            // STRICT CHECK: Only save if file is definitely new
-            if (!isNewUpload || !isJustUploaded || !publicIdMatchesFolder) {
-              logger.error(`❌ REJECTED: File "${result.info.original_filename}" appears to be from Cloudinary Library!`, {
+            // RELAXED CHECK: Only reject if it's very clearly an old file from the library
+            // We now use a much wider window (1 hour for isNewUpload and 2 minutes for isJustUploaded)
+            if (!isNewUpload || !publicIdMatchesFolder) {
+              const reason = !isNewUpload ? "Timestamp is too old" : "Public ID folder mismatch";
+              logger.error(`❌ REJECTED: File "${result.info.original_filename}" rejected. Reason: ${reason}`, {
                 isNewUpload,
                 isJustUploaded,
                 publicIdMatchesFolder,
@@ -529,7 +531,7 @@ export function UploadSection() {
                 publicId: result.info.public_id,
                 expectedFolder
               });
-              alert(`❌ Error: The file "${result.info.original_filename}" appears to be from Cloudinary Library, not a new upload.\n\nPlease:\n1. Make sure you're uploading files from your device\n2. Don't select files from Cloudinary Library\n3. Only use "Local Files" option in the widget\n\nThis file was NOT saved to the database.`);
+              alert(`❌ Error: The file "${result.info.original_filename}" could not be verified as a new upload.\n\nReason: ${reason}\n\nPlease try again and ensure you are selecting a file from your device.`);
               return; // Skip saving this file
             }
             
