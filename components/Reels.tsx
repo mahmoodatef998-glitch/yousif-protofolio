@@ -49,7 +49,7 @@ export function Reels() {
       const response = await fetch('/api/content?section=reels', {
         cache: 'no-store', // Ensure fresh data
       });
-      
+
       if (!response.ok) {
         console.error('Failed to fetch reels:', response.status, response.statusText);
         const errorText = await response.text();
@@ -58,18 +58,22 @@ export function Reels() {
         setReels([]);
         return;
       }
-      
+
       const result = await response.json();
       const data = result.data || result;
-      
+
       console.log('Reels fetched:', data);
-      
+
       if (data && Array.isArray(data) && data.length > 0) {
         const formattedReels = data
           .filter((item: any) => item.media_url && item.media_url.trim() !== '') // Filter out empty URLs
           .map((item: any) => {
             const videoUrl = item.media_url || '';
-            const coverImage = getVideoCover(videoUrl) || item.thumbnail_url || '';
+            // HIGHLIGHT: Prioritize the thumbnail from database (custom upload or picker)
+            // If it's the same as the video URL, it's likely not a real thumbnail yet
+            const hasCustomThumbnail = item.thumbnail_url && item.thumbnail_url !== videoUrl;
+            const coverImage = hasCustomThumbnail ? item.thumbnail_url : (getVideoCover(videoUrl) || item.thumbnail_url || '');
+
             return {
               id: item.id,
               title: item.title || 'Untitled Reel',
@@ -77,7 +81,7 @@ export function Reels() {
               video: videoUrl,
             };
           });
-        
+
         console.log('Reels formatted:', formattedReels);
         setReels(formattedReels);
       } else {
@@ -96,42 +100,42 @@ export function Reels() {
     let mounted = true;
     let channel: BroadcastChannel | null = null;
     let interval: NodeJS.Timeout | null = null;
-    
+
     // Initial fetch
     if (mounted) {
       fetchReels();
     }
-    
+
     // Listen for content updates from admin dashboard
     if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
       channel = new BroadcastChannel('content-updated');
       channel.onmessage = (event) => {
-        if (mounted && event.data.type === 'content-updated' && 
-            (event.data.section === 'reels' || !event.data.section)) {
+        if (mounted && event.data.type === 'content-updated' &&
+          (event.data.section === 'reels' || !event.data.section)) {
           fetchReels();
         }
       };
     }
-    
+
     // Handle fullscreen exit
     const handleFullscreenChange = () => {
       if (!document.fullscreenElement && !(document as any).webkitFullscreenElement && !(document as any).mozFullScreenElement && !(document as any).msFullscreenElement) {
         setFullscreenReel(null);
       }
     };
-    
+
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
     document.addEventListener('mozfullscreenchange', handleFullscreenChange);
     document.addEventListener('MSFullscreenChange', handleFullscreenChange);
-    
+
     // Refresh data every 5 minutes to show new uploads (reduced from 30s to prevent lag)
     interval = setInterval(() => {
       if (mounted) {
         fetchReels();
       }
     }, 300000); // 5 minutes instead of 30 seconds
-    
+
     return () => {
       mounted = false;
       if (channel) channel.close();
@@ -221,108 +225,104 @@ export function Reels() {
               };
 
               return (
-              <div
-                key={reel.id}
-                ref={(el) => {
-                  if (el) {
-                    containerRefs.current.set(reel.id, el);
-                  } else {
-                    containerRefs.current.delete(reel.id);
-                  }
-                }}
-                className={`group card-premium card-glow card-ripple relative aspect-[9/16] overflow-hidden cursor-pointer rounded-2xl ${
-                  index < visibleCount 
-                    ? 'opacity-100 translate-y-0' 
-                    : 'opacity-0 translate-y-[60px]'
-                }`}
-                style={{
-                  transition: 'all 0.8s cubic-bezier(0.16, 1, 0.3, 1)',
-                  transitionDelay: `${index * 0.1}s`,
-                  filter: index < visibleCount ? 'blur(0)' : 'blur(4px)',
-                }}
-                onClick={() => setSelectedReel(reel.video)}
-                onMouseEnter={() => {
-                  setHoveredReel(reel.id);
-                  const video = videoRefs.current.get(reel.id);
-                  if (video) {
-                    video.currentTime = 0; // Start from beginning
-                    video.play().catch(console.error);
-                  }
-                }}
-                onMouseLeave={() => {
-                  setHoveredReel(null);
-                  const video = videoRefs.current.get(reel.id);
-                  if (video) {
-                    video.pause();
-                    video.currentTime = 0; // Reset to beginning
-                  }
-                }}
-              >
-                {/* Cover Image - shown when not hovering */}
-                <div className={`absolute inset-0 transition-opacity duration-300 ${
-                  hoveredReel === reel.id ? 'opacity-0' : 'opacity-100'
-                }`}>
-                  {/* Blur placeholder */}
-                  <img
-                    src={reel.thumbnail}
-                    alt=""
-                    className="absolute inset-0 w-full h-full object-cover blur-xl scale-110 opacity-50"
-                    aria-hidden="true"
-                  />
-                  {/* Main cover image */}
-                  <img
-                    src={reel.thumbnail}
-                    alt={reel.title}
-                    className="card-image-parallax relative w-full h-full object-cover transition-opacity duration-500"
-                    style={{ opacity: 0 }}
-                    loading="lazy"
-                    onLoad={(e) => {
-                      (e.target as HTMLImageElement).style.opacity = '1';
-                    }}
-                  />
-                </div>
-
-                {/* Video - plays on hover */}
-                <video
+                <div
+                  key={reel.id}
                   ref={(el) => {
                     if (el) {
-                      videoRefs.current.set(reel.id, el);
+                      containerRefs.current.set(reel.id, el);
                     } else {
-                      videoRefs.current.delete(reel.id);
+                      containerRefs.current.delete(reel.id);
                     }
                   }}
-                  src={reel.video}
-                  loop
-                  muted
-                  playsInline
-                  preload="metadata"
-                  className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${
-                    hoveredReel === reel.id ? 'opacity-100' : 'opacity-0'
-                  }`}
-                  onLoadedData={(e) => {
-                    // Extract frame at 1 second as cover if no thumbnail
-                    const video = e.currentTarget;
-                    if (!reel.thumbnail && video.readyState >= 2) {
-                      video.currentTime = 1; // Seek to 1 second for cover
+                  className={`group card-premium card-glow card-ripple relative aspect-[9/16] overflow-hidden cursor-pointer rounded-2xl ${index < visibleCount
+                      ? 'opacity-100 translate-y-0'
+                      : 'opacity-0 translate-y-[60px]'
+                    }`}
+                  style={{
+                    transition: 'all 0.8s cubic-bezier(0.16, 1, 0.3, 1)',
+                    transitionDelay: `${index * 0.1}s`,
+                    filter: index < visibleCount ? 'blur(0)' : 'blur(4px)',
+                  }}
+                  onClick={() => setSelectedReel(reel.video)}
+                  onMouseEnter={() => {
+                    setHoveredReel(reel.id);
+                    const video = videoRefs.current.get(reel.id);
+                    if (video) {
+                      video.currentTime = 0; // Start from beginning
+                      video.play().catch(console.error);
                     }
                   }}
-                />
-
-                {/* Fullscreen button - shows on hover */}
-                <button
-                  onClick={handleFullscreen}
-                  className={`absolute top-4 right-4 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full p-2.5 transition-all duration-200 hover:scale-110 opacity-0 group-hover:opacity-100 z-10 ${
-                    hoveredReel === reel.id ? 'opacity-100' : ''
-                  }`}
-                  aria-label="Fullscreen"
+                  onMouseLeave={() => {
+                    setHoveredReel(null);
+                    const video = videoRefs.current.get(reel.id);
+                    if (video) {
+                      video.pause();
+                      video.currentTime = 0; // Reset to beginning
+                    }
+                  }}
                 >
-                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-                  </svg>
-                </button>
-                
-              </div>
-            );
+                  {/* Cover Image - shown when not hovering */}
+                  <div className={`absolute inset-0 transition-opacity duration-300 ${hoveredReel === reel.id ? 'opacity-0' : 'opacity-100'
+                    }`}>
+                    {/* Blur placeholder */}
+                    <img
+                      src={reel.thumbnail}
+                      alt=""
+                      className="absolute inset-0 w-full h-full object-cover blur-xl scale-110 opacity-50"
+                      aria-hidden="true"
+                    />
+                    {/* Main cover image */}
+                    <img
+                      src={reel.thumbnail}
+                      alt={reel.title}
+                      className="card-image-parallax relative w-full h-full object-cover transition-opacity duration-500"
+                      style={{ opacity: 0 }}
+                      loading="lazy"
+                      onLoad={(e) => {
+                        (e.target as HTMLImageElement).style.opacity = '1';
+                      }}
+                    />
+                  </div>
+
+                  {/* Video - plays on hover */}
+                  <video
+                    ref={(el) => {
+                      if (el) {
+                        videoRefs.current.set(reel.id, el);
+                      } else {
+                        videoRefs.current.delete(reel.id);
+                      }
+                    }}
+                    src={reel.video}
+                    loop
+                    muted
+                    playsInline
+                    preload="metadata"
+                    className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${hoveredReel === reel.id ? 'opacity-100' : 'opacity-0'
+                      }`}
+                    onLoadedData={(e) => {
+                      // Extract frame at 1 second as cover if no thumbnail
+                      const video = e.currentTarget;
+                      if (!reel.thumbnail && video.readyState >= 2) {
+                        video.currentTime = 1; // Seek to 1 second for cover
+                      }
+                    }}
+                  />
+
+                  {/* Fullscreen button - shows on hover */}
+                  <button
+                    onClick={handleFullscreen}
+                    className={`absolute top-4 right-4 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full p-2.5 transition-all duration-200 hover:scale-110 opacity-0 group-hover:opacity-100 z-10 ${hoveredReel === reel.id ? 'opacity-100' : ''
+                      }`}
+                    aria-label="Fullscreen"
+                  >
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                    </svg>
+                  </button>
+
+                </div>
+              );
             })}
           </div>
         </div>
@@ -360,7 +360,7 @@ export function Reels() {
       {fullscreenReel && (() => {
         const reel = reels.find(r => r.id === fullscreenReel);
         if (!reel) return null;
-        
+
         const isFullscreen = !!(
           document.fullscreenElement ||
           (document as any).webkitFullscreenElement ||

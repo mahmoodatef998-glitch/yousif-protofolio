@@ -53,7 +53,10 @@ export function DynamicGallery({ section, title }: DynamicGalleryProps) {
                     .map((item: any) => ({
                         id: item.id,
                         title: item.title || 'Untitled Image',
-                        image: item.media_url || '',
+                        // If media_url is a video, we MUST use thumbnail_url for display in the gallery
+                        image: item.thumbnail_url || item.media_url || '',
+                        media_url: item.media_url, // Keep original for modal/playback
+                        media_type: item.media_type,
                         group_id: item.group_id || null,
                         order_index: item.order_index || 0,
                         created_at: item.created_at || '',
@@ -201,8 +204,8 @@ export function DynamicGallery({ section, title }: DynamicGalleryProps) {
                                 <div
                                     key={item.id}
                                     className={`group card-premium card-glow card-ripple relative aspect-[9/16] overflow-hidden cursor-pointer rounded-2xl ${index < visibleCount
-                                            ? 'opacity-100 translate-y-0'
-                                            : 'opacity-0 translate-y-[60px]'
+                                        ? 'opacity-100 translate-y-0'
+                                        : 'opacity-0 translate-y-[60px]'
                                         }`}
                                     style={{
                                         transition: 'all 0.8s cubic-bezier(0.16, 1, 0.3, 1)',

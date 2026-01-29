@@ -27,28 +27,28 @@ export function Wedding() {
   const fetchImages = useCallback(async () => {
     try {
       setLoading(true);
-      
+
       const response = await fetch('/api/content?section=wedding', {
         cache: 'no-store',
       });
-      
+
       if (!response.ok) {
         logger.error('Failed to fetch wedding images:', response.status, response.statusText);
         setLoading(false);
         setImages([]);
         return;
       }
-      
+
       const result = await response.json();
       const data = result.data || result;
-      
+
       if (data && Array.isArray(data) && data.length > 0) {
         const formattedImages = data
           .filter((item: any) => item.media_url && item.media_url.trim() !== '')
           .map((item: any) => ({
             id: item.id,
             title: item.title || 'Untitled Image',
-            image: item.media_url || '',
+            image: item.thumbnail_url || item.media_url || '',
             group_id: item.group_id || null,
             order_index: item.order_index || 0,
             created_at: item.created_at || '',
@@ -60,7 +60,7 @@ export function Wedding() {
             }
             return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
           });
-        
+
         setImages(formattedImages);
       } else {
         setImages([]);
@@ -77,31 +77,31 @@ export function Wedding() {
     let mounted = true;
     let channel: BroadcastChannel | null = null;
     let interval: NodeJS.Timeout | null = null;
-    
+
     // Initial fetch
     if (mounted) {
       fetchImages();
     }
-    
+
     // Listen for content updates from admin dashboard
     if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
       channel = new BroadcastChannel('content-updated');
       channel.onmessage = (event) => {
-        if (mounted && event.data.type === 'content-updated' && 
-            (event.data.section === 'wedding' || !event.data.section)) {
+        if (mounted && event.data.type === 'content-updated' &&
+          (event.data.section === 'wedding' || !event.data.section)) {
           logger.debug('Wedding section: Content updated, refreshing...');
           fetchImages();
         }
       };
     }
-    
+
     // Refresh data every 5 minutes to show new uploads (reduced from 30s to prevent lag)
     interval = setInterval(() => {
       if (mounted) {
         fetchImages();
       }
     }, 300000); // 5 minutes instead of 30 seconds
-    
+
     return () => {
       mounted = false;
       if (channel) channel.close();
@@ -172,7 +172,7 @@ export function Wedding() {
               // Group images by group_id, showing only the first image of each group
               const groupedImages = new Map<string | null, GalleryImage[]>();
               const displayedImages: { item: GalleryImage; index: number; groupImages: GalleryImage[] | null }[] = [];
-              
+
               // Debug: Log all images with their group_id and FULL data
               logger.log('📸 ALL WEDDING IMAGES:', images.map(img => ({
                 id: img.id,
@@ -182,7 +182,7 @@ export function Wedding() {
                 order_index: img.order_index,
                 created_at: img.created_at
               })));
-              
+
               // First, group all images by exact group_id match
               images.forEach((item) => {
                 // Use exact group_id string (including null for individual items)
@@ -192,13 +192,13 @@ export function Wedding() {
                 }
                 groupedImages.get(groupKey)!.push(item);
               });
-              
+
               // Debug: Log grouped images with FULL details
               logger.log('📦 GROUPED WEDDING IMAGES:', Array.from(groupedImages.entries()).map(([groupId, items]) => ({
                 group_id: groupId,
                 count: items.length,
-                items: items.map(i => ({ 
-                  id: i.id, 
+                items: items.map(i => ({
+                  id: i.id,
                   title: i.title,
                   image: i.image?.substring(0, 50) + '...',
                   created_at: i.created_at,
@@ -217,16 +217,16 @@ export function Wedding() {
                     // Newest first (DESC)
                     return bTime - aTime;
                   });
-                  
-                  logger.log(`📦 Displaying wedding group ${groupId} with ${sortedGroupItems.length} images (newest first):`, 
-                    sortedGroupItems.map(i => ({ 
-                      id: i.id, 
+
+                  logger.log(`📦 Displaying wedding group ${groupId} with ${sortedGroupItems.length} images (newest first):`,
+                    sortedGroupItems.map(i => ({
+                      id: i.id,
                       title: i.title,
                       created_at: i.created_at,
                       media_url: i.image?.substring(0, 50) + '...'
                     }))
                   );
-                  
+
                   // Group: show only first image (newest)
                   displayedImages.push({
                     item: sortedGroupItems[0],
@@ -248,11 +248,10 @@ export function Wedding() {
               return displayedImages.map(({ item, index, groupImages }) => (
                 <div
                   key={item.id}
-                  className={`group card-premium card-glow card-ripple relative aspect-[9/16] overflow-hidden cursor-pointer rounded-2xl ${
-                    index < visibleCount 
-                      ? 'opacity-100 translate-y-0' 
+                  className={`group card-premium card-glow card-ripple relative aspect-[9/16] overflow-hidden cursor-pointer rounded-2xl ${index < visibleCount
+                      ? 'opacity-100 translate-y-0'
                       : 'opacity-0 translate-y-[60px]'
-                  }`}
+                    }`}
                   style={{
                     transition: 'all 0.8s cubic-bezier(0.16, 1, 0.3, 1)',
                     transitionDelay: `${index * 0.12}s`,
@@ -266,68 +265,68 @@ export function Wedding() {
                     }
                   }}
                 >
-                {/* Image with parallax and blur placeholder */}
-                <div className="absolute inset-0">
-                  {/* Blur placeholder */}
-                  <img
-                    src={item.image}
-                    alt=""
-                    className="absolute inset-0 w-full h-full object-cover blur-xl scale-110 opacity-50"
-                    aria-hidden="true"
-                  />
-                  {/* Main image */}
-                  <img
-                    src={item.image}
-                    alt={item.title}
-                    className="card-image-parallax relative w-full h-full object-cover transition-opacity duration-500"
-                    style={{ opacity: 0 }}
-                    loading="lazy"
-                    onError={(e) => {
-                      logger.error('Image failed to load:', {
-                        src: item.image,
-                        title: item.title,
-                        id: item.id,
-                      });
-                      (e.target as HTMLImageElement).src = 'https://via.placeholder.com/800x600?text=Image+Not+Found';
-                      (e.target as HTMLImageElement).style.opacity = '1';
-                    }}
-                    onLoad={(e) => {
-                      (e.target as HTMLImageElement).style.opacity = '1';
-                      logger.debug('Image loaded successfully:', {
-                        src: item.image,
-                        title: item.title,
-                      });
-                    }}
+                  {/* Image with parallax and blur placeholder */}
+                  <div className="absolute inset-0">
+                    {/* Blur placeholder */}
+                    <img
+                      src={item.image}
+                      alt=""
+                      className="absolute inset-0 w-full h-full object-cover blur-xl scale-110 opacity-50"
+                      aria-hidden="true"
+                    />
+                    {/* Main image */}
+                    <img
+                      src={item.image}
+                      alt={item.title}
+                      className="card-image-parallax relative w-full h-full object-cover transition-opacity duration-500"
+                      style={{ opacity: 0 }}
+                      loading="lazy"
+                      onError={(e) => {
+                        logger.error('Image failed to load:', {
+                          src: item.image,
+                          title: item.title,
+                          id: item.id,
+                        });
+                        (e.target as HTMLImageElement).src = 'https://via.placeholder.com/800x600?text=Image+Not+Found';
+                        (e.target as HTMLImageElement).style.opacity = '1';
+                      }}
+                      onLoad={(e) => {
+                        (e.target as HTMLImageElement).style.opacity = '1';
+                        logger.debug('Image loaded successfully:', {
+                          src: item.image,
+                          title: item.title,
+                        });
+                      }}
+                    />
+                  </div>
+
+                  {/* Enhanced gradient overlay */}
+                  <div className="card-overlay" />
+
+                  {/* Group Badge */}
+                  {groupImages && groupImages.length > 1 && (
+                    <div className="absolute top-4 right-4 bg-accent/90 text-dark-bg px-3 py-1.5 rounded-full flex items-center gap-1.5 text-xs font-semibold z-10">
+                      <Images className="w-3.5 h-3.5" />
+                      <span>{groupImages.length}</span>
+                    </div>
+                  )}
+
+                  {/* Corner accent (for individual images) */}
+                  {(!groupImages || groupImages.length === 1) && (
+                    <div className="absolute top-4 right-4 w-12 h-12 border-2 border-accent/30 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-center justify-center z-10">
+                      <svg className="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                    </div>
+                  )}
+
+                  {/* Content Interaction (Like, Review, Views) */}
+                  <ContentInteraction
+                    contentId={item.id}
+                    showReviewButton={true}
                   />
                 </div>
-                
-                {/* Enhanced gradient overlay */}
-                <div className="card-overlay" />
-                
-                {/* Group Badge */}
-                {groupImages && groupImages.length > 1 && (
-                  <div className="absolute top-4 right-4 bg-accent/90 text-dark-bg px-3 py-1.5 rounded-full flex items-center gap-1.5 text-xs font-semibold z-10">
-                    <Images className="w-3.5 h-3.5" />
-                    <span>{groupImages.length}</span>
-                  </div>
-                )}
-
-                {/* Corner accent (for individual images) */}
-                {(!groupImages || groupImages.length === 1) && (
-                  <div className="absolute top-4 right-4 w-12 h-12 border-2 border-accent/30 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-center justify-center z-10">
-                    <svg className="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
-                  </div>
-                )}
-
-                {/* Content Interaction (Like, Review, Views) */}
-                <ContentInteraction
-                  contentId={item.id}
-                  showReviewButton={true}
-                />
-              </div>
               ));
             })()}
           </div>
