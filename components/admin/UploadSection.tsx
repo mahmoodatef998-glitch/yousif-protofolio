@@ -96,8 +96,7 @@ export function UploadSection() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: newSectionName,
-          description: newSectionDesc,
-          icon_name: 'ImageIcon'
+          description: newSectionDesc
         })
       });
 

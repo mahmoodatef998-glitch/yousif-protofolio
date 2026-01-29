@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
     const body = await request.json();
-    const { name, description, icon_name } = body;
+    const { name, description } = body;
 
     if (!name) {
       return NextResponse.json({ error: 'Section name is required' }, { status: 400 });
@@ -50,12 +50,12 @@ export async function POST(request: NextRequest) {
       .single();
 
     const newSection = {
-      name,
+      name: name.toLowerCase(),
+      title: name,
       description: description || `Manage ${name} gallery`,
+      type: 'gallery', // Required by schema
       is_active: true,
-      display_order: (maxOrder?.display_order || 0) + 1,
-      // Default icon if not provided
-      icon_name: icon_name || 'ImageIcon'
+      display_order: (maxOrder?.display_order || 0) + 1
     };
 
     const { data, error } = await supabase
