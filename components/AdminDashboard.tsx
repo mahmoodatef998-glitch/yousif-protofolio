@@ -554,6 +554,57 @@ function VideosSection({ isEditing }: { isEditing: boolean }) {
     widgetRef.current.open();
   };
 
+  const handleThumbnailUpload = async (file: File, videoId: string) => {
+    const fileSizeMB = file.size / 1024 / 1024;
+    if (fileSizeMB > 10) {
+      alert('Image is too large (max 10 MB).');
+      return;
+    }
+
+    setUploadingVideo(videoId);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('category', 'thumbnails');
+      formData.append('name', `thumb-${videoId}`);
+
+      const response = await fetch('/api/cloudinary/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || 'Upload failed');
+      }
+
+      const { result } = await response.json();
+      const updated = videos.map(v =>
+        v.id === videoId
+          ? {
+            ...v,
+            thumbnail: result.secure_url || result.url
+          }
+          : v
+      );
+      setVideos(updated);
+
+      // Find the updated video to save
+      const videoToSave = updated.find(v => v.id === videoId);
+      if (videoToSave) {
+        await handleSave(videoToSave);
+      }
+
+      alert('Thumbnail uploaded and saved successfully!');
+    } catch (error: any) {
+      logger.error('Thumbnail upload error:', error);
+      alert(`Failed to upload thumbnail: ${error.message}`);
+    } finally {
+      setUploadingVideo(null);
+    }
+  };
+
   const handleSave = async (video: typeof videos[0]) => {
     setSaving(video.id);
     try {
@@ -761,13 +812,31 @@ function VideosSection({ isEditing }: { isEditing: boolean }) {
                 />
 
                 {isEditing && video.url && (
-                  <button
-                    onClick={() => setSelectingThumbnail({ id: video.id, url: video.url })}
-                    className="w-full flex items-center justify-center gap-2 py-2 bg-accent/10 border border-accent/20 text-accent rounded-lg text-sm hover:bg-accent/20 transition-all"
-                  >
-                    <Camera className="w-4 h-4" />
-                    Pick Cover from Video
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setSelectingThumbnail({ id: video.id, url: video.url })}
+                      className="flex-1 flex items-center justify-center gap-2 py-2 bg-accent/10 border border-accent/20 text-accent rounded-lg text-sm hover:bg-accent/20 transition-all"
+                    >
+                      <Camera className="w-4 h-4" />
+                      Pick from Video
+                    </button>
+                    <button
+                      onClick={() => {
+                        const input = document.createElement('input');
+                        input.type = 'file';
+                        input.accept = 'image/*';
+                        input.onchange = (e: any) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleThumbnailUpload(file, video.id);
+                        };
+                        input.click();
+                      }}
+                      className="flex-1 flex items-center justify-center gap-2 py-2 bg-blue-600/10 border border-blue-600/20 text-blue-400 rounded-lg text-sm hover:bg-blue-600/20 transition-all"
+                    >
+                      <Upload className="w-4 h-4" />
+                      Upload Image
+                    </button>
+                  </div>
                 )}
 
                 <textarea
@@ -1037,6 +1106,57 @@ function ReelsSection({ isEditing }: { isEditing: boolean }) {
     widgetRef.current.open();
   };
 
+  const handleThumbnailUpload = async (file: File, reelId: string) => {
+    const fileSizeMB = file.size / 1024 / 1024;
+    if (fileSizeMB > 10) {
+      alert('Image is too large (max 10 MB).');
+      return;
+    }
+
+    setUploadingReel(reelId);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('category', 'thumbnails');
+      formData.append('name', `thumb-${reelId}`);
+
+      const response = await fetch('/api/cloudinary/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || 'Upload failed');
+      }
+
+      const { result } = await response.json();
+      const updated = reels.map(r =>
+        r.id === reelId
+          ? {
+            ...r,
+            thumbnail: result.secure_url || result.url
+          }
+          : r
+      );
+      setReels(updated);
+
+      // Find the updated reel to save
+      const reelToSave = updated.find(r => r.id === reelId);
+      if (reelToSave) {
+        await handleSave(reelToSave);
+      }
+
+      alert('Thumbnail uploaded and saved successfully!');
+    } catch (error: any) {
+      logger.error('Thumbnail upload error:', error);
+      alert(`Failed to upload thumbnail: ${error.message}`);
+    } finally {
+      setUploadingReel(null);
+    }
+  };
+
   const handleSave = async (reel: typeof reels[0]) => {
     setSaving(reel.id);
     try {
@@ -1243,13 +1363,31 @@ function ReelsSection({ isEditing }: { isEditing: boolean }) {
                 />
 
                 {isEditing && reel.video && (
-                  <button
-                    onClick={() => setSelectingThumbnail({ id: reel.id, url: reel.video })}
-                    className="w-full flex items-center justify-center gap-2 py-2 bg-accent/10 border border-accent/20 text-accent rounded-lg text-sm hover:bg-accent/20 transition-all"
-                  >
-                    <Camera className="w-4 h-4" />
-                    Pick Cover from Video
-                  </button>
+                  <div className="flex gap-2 mt-2">
+                    <button
+                      onClick={() => setSelectingThumbnail({ id: reel.id, url: reel.video })}
+                      className="flex-1 flex items-center justify-center gap-2 py-2 bg-accent/10 border border-accent/20 text-accent rounded-lg text-sm hover:bg-accent/20 transition-all"
+                    >
+                      <Camera className="w-4 h-4" />
+                      Pick from Video
+                    </button>
+                    <button
+                      onClick={() => {
+                        const input = document.createElement('input');
+                        input.type = 'file';
+                        input.accept = 'image/*';
+                        input.onchange = (e: any) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleThumbnailUpload(file, reel.id);
+                        };
+                        input.click();
+                      }}
+                      className="flex-1 flex items-center justify-center gap-2 py-2 bg-blue-600/10 border border-blue-600/20 text-blue-400 rounded-lg text-sm hover:bg-blue-600/20 transition-all"
+                    >
+                      <Upload className="w-4 h-4" />
+                      Upload Image
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
