@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
+import Image from 'next/image';
 import { useScrollReveal } from '@/lib/animations';
 import { AnimatedCounter } from '@/components/AnimatedCounter';
 import { ArrowDown, Calendar, Eye } from 'lucide-react';
@@ -23,7 +24,7 @@ export function About() {
       const response = await fetch('/api/about', {
         cache: 'no-store',
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         console.error('Failed to fetch about:', {
@@ -34,10 +35,10 @@ export function About() {
         setLoading(false);
         return;
       }
-      
+
       const result = await response.json();
       const { data } = result;
-      
+
       if (data) {
         setAboutData({
           heroTitle: data.hero_title || 'About',
@@ -62,30 +63,30 @@ export function About() {
     let mounted = true;
     let channel: BroadcastChannel | null = null;
     let interval: NodeJS.Timeout | null = null;
-    
+
     // Initial fetch
     if (mounted) {
       fetchAbout();
     }
-    
+
     // Listen for content updates from admin dashboard
     if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
       channel = new BroadcastChannel('content-updated');
       channel.onmessage = (event) => {
-        if (mounted && event.data.type === 'content-updated' && 
-            (event.data.section === 'about' || !event.data.section)) {
+        if (mounted && event.data.type === 'content-updated' &&
+          (event.data.section === 'about' || !event.data.section)) {
           fetchAbout();
         }
       };
     }
-    
-    // Refresh data every 30 seconds to show new updates
+
+    // Refresh data every 5 minutes to show new updates (reduced from 30s)
     interval = setInterval(() => {
       if (mounted) {
         fetchAbout();
       }
-    }, 30000);
-    
+    }, 300000);
+
     return () => {
       mounted = false;
       if (channel) channel.close();
@@ -126,10 +127,12 @@ export function About() {
             <source src={aboutData.heroVideoUrl} type="video/mp4" />
           </video>
         ) : (
-          <img
+          <Image
             src="https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=1920&q=90&auto=format&fit=crop"
             alt="About Background"
-            className="absolute inset-0 w-full h-full object-cover"
+            fill
+            className="object-cover"
+            priority
           />
         )}
         <div className="absolute inset-0 bg-dark-bg/80" />
@@ -167,20 +170,15 @@ export function About() {
               transform: imageVisible ? 'scale(1)' : 'scale(0.95)',
             }}
           >
-            <div className="relative w-full aspect-[3/4] sm:aspect-[3/4] md:aspect-[3/4] overflow-hidden rounded-lg hover-scale bg-dark-section">
+            <div className="relative w-full aspect-[3/4] overflow-hidden rounded-lg hover-scale bg-dark-section">
               {aboutData.profileImage ? (
-                <img
-                  key={imageKey}
-                  src={`${aboutData.profileImage}${aboutData.profileImage.includes('?') ? '&' : '?'}t=${Date.now()}`}
+                <Image
+                  src={aboutData.profileImage}
                   alt={aboutData.heroTitle}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    // Fallback to default image if current image fails to load
-                    const target = e.target as HTMLImageElement;
-                    if (!target.src.includes('unsplash.com')) {
-                      target.src = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&q=80';
-                    }
-                  }}
+                  fill
+                  className="object-cover"
+                  priority
+                  sizes="(max-width: 768px) 100vw, 40vw"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-dark-section text-text-secondary">
@@ -218,7 +216,7 @@ export function About() {
                 ))}
               </div>
             )}
-            
+
             {/* CTA Buttons */}
             <div className="flex flex-wrap gap-3 sm:gap-4 mb-8 md:mb-12">
               <a
@@ -250,7 +248,7 @@ export function About() {
                 <span>View Portfolio</span>
               </a>
             </div>
-            
+
             {/* Stats with Animation */}
             <div className="mt-8 md:mt-12 grid grid-cols-3 gap-4 sm:gap-6 md:gap-8 pt-6 md:pt-8 border-t border-dark-section">
               <div className="text-center">

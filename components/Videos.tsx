@@ -22,7 +22,7 @@ export function Videos() {
       const response = await fetch('/api/content?section=videos', {
         cache: 'no-store', // Ensure fresh data
       });
-      
+
       if (!response.ok) {
         console.error('Failed to fetch videos:', response.status, response.statusText);
         const errorText = await response.text();
@@ -31,12 +31,12 @@ export function Videos() {
         setVideos([]);
         return;
       }
-      
+
       const result = await response.json();
       const data = result.data || result;
-      
+
       console.log('Videos fetched:', data);
-      
+
       if (data && Array.isArray(data) && data.length > 0) {
         const formattedVideos = data
           .filter((item: any) => item.media_url && item.media_url.trim() !== '') // Filter out empty URLs
@@ -47,7 +47,7 @@ export function Videos() {
             thumbnail: item.thumbnail_url || item.media_url || '',
             description: item.description || '',
           }));
-        
+
         console.log('Videos formatted:', formattedVideos);
         setVideos(formattedVideos);
       } else {
@@ -66,30 +66,30 @@ export function Videos() {
     let mounted = true;
     let channel: BroadcastChannel | null = null;
     let interval: NodeJS.Timeout | null = null;
-    
+
     // Initial fetch
     if (mounted) {
       fetchVideos();
     }
-    
+
     // Listen for content updates from admin dashboard
     if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
       channel = new BroadcastChannel('content-updated');
       channel.onmessage = (event) => {
-        if (mounted && event.data.type === 'content-updated' && 
-            (event.data.section === 'videos' || !event.data.section)) {
+        if (mounted && event.data.type === 'content-updated' &&
+          (event.data.section === 'videos' || !event.data.section)) {
           fetchVideos();
         }
       };
     }
-    
+
     // Refresh data every 5 minutes to show new uploads (reduced from 30s to prevent lag)
     interval = setInterval(() => {
       if (mounted) {
         fetchVideos();
       }
     }, 300000); // 5 minutes instead of 30 seconds
-    
+
     return () => {
       mounted = false;
       if (channel) channel.close();
@@ -132,12 +132,35 @@ export function Videos() {
             const [isPlaying, setIsPlaying] = useState(true);
             const [isMuted, setIsMuted] = useState(true); // Start muted for auto-play
             const [showControls, setShowControls] = useState(false);
-            
+
             const { ref, isVisible } = useScrollReveal({
               threshold: 0.3,
               triggerOnce: true,
               delay: index * 100, // Staggered delay
             });
+
+            // Intersection Observer for play/pause
+            useEffect(() => {
+              const video = videoRef.current;
+              if (!video) return;
+
+              const observer = new IntersectionObserver(
+                ([entry]) => {
+                  if (entry.isIntersecting) {
+                    video.play().catch(() => {
+                      // Video play might fail if not interacted with, catch it gracefully
+                      setIsPlaying(false);
+                    });
+                  } else {
+                    video.pause();
+                  }
+                },
+                { threshold: 0.5 } // Play when 50% visible
+              );
+
+              observer.observe(video);
+              return () => observer.disconnect();
+            }, []);
 
             const handlePlayPause = () => {
               if (videoRef.current) {
@@ -190,7 +213,6 @@ export function Videos() {
                   {/* Video element */}
                   <video
                     ref={videoRef}
-                    autoPlay
                     loop
                     muted
                     playsInline
@@ -199,19 +221,11 @@ export function Videos() {
                     preload="metadata"
                     onPlay={() => {
                       setIsPlaying(true);
-                      // Keep muted state when auto-playing
                       if (videoRef.current) {
                         setIsMuted(videoRef.current.muted);
                       }
                     }}
                     onPause={() => setIsPlaying(false)}
-                    onLoadedMetadata={() => {
-                      // Start muted for auto-play (browser policy)
-                      if (videoRef.current) {
-                        videoRef.current.muted = true;
-                        setIsMuted(true);
-                      }
-                    }}
                   >
                     <source src={video.src} type="video/mp4" />
                     Your browser does not support the video tag.
@@ -227,9 +241,8 @@ export function Videos() {
                   )}
 
                   {/* Controls overlay */}
-                  <div className={`absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent transition-opacity duration-300 ${
-                    showControls ? 'opacity-100' : 'opacity-0'
-                  }`}>
+                  <div className={`absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0'
+                    }`}>
                     {/* Control buttons */}
                     <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-4">
                       {/* Play/Pause button */}
@@ -240,11 +253,11 @@ export function Videos() {
                       >
                         {isPlaying ? (
                           <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
+                            <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
                           </svg>
                         ) : (
                           <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M8 5v14l11-7z"/>
+                            <path d="M8 5v14l11-7z" />
                           </svg>
                         )}
                       </button>

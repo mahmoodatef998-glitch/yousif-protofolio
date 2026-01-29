@@ -1,20 +1,53 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { About } from '@/components/About';
-import { Videos } from '@/components/Videos';
-import { Reels } from '@/components/Reels';
-import { Wedding } from '@/components/Wedding';
-import { Product } from '@/components/Product';
-import { Restaurant } from '@/components/Restaurant';
-import { Contact } from '@/components/Contact';
-import { Testimonials } from '@/components/Testimonials';
 import { PortfolioFilter, FilterType } from '@/components/PortfolioFilter';
-import { DynamicGallery } from '@/components/DynamicGallery';
 import { ScrollProgress } from '@/components/ScrollProgress';
 import { BackToTop } from '@/components/BackToTop';
 import { usePageLoad } from '@/lib/animations';
-import { useEffect } from 'react';
+
+// Dynamic imports for below-the-fold components
+const Videos = dynamic(() => import('@/components/Videos').then(mod => mod.Videos), {
+  loading: () => <SectionSkeleton />
+});
+const Reels = dynamic(() => import('@/components/Reels').then(mod => mod.Reels), {
+  loading: () => <SectionSkeleton />
+});
+const Wedding = dynamic(() => import('@/components/Wedding').then(mod => mod.Wedding), {
+  loading: () => <SectionSkeleton />
+});
+const Product = dynamic(() => import('@/components/Product').then(mod => mod.Product), {
+  loading: () => <SectionSkeleton />
+});
+const Restaurant = dynamic(() => import('@/components/Restaurant').then(mod => mod.Restaurant), {
+  loading: () => <SectionSkeleton />
+});
+const DynamicGallery = dynamic(() => import('@/components/DynamicGallery').then(mod => mod.DynamicGallery), {
+  loading: () => <SectionSkeleton />
+});
+const Testimonials = dynamic(() => import('@/components/Testimonials').then(mod => mod.Testimonials), {
+  loading: () => <SectionSkeleton />
+});
+const Contact = dynamic(() => import('@/components/Contact').then(mod => mod.Contact), {
+  loading: () => <SectionSkeleton />
+});
+
+function SectionSkeleton() {
+  return (
+    <div className="py-24 bg-dark-bg animate-pulse">
+      <div className="max-w-7xl mx-auto px-6 lg:px-8">
+        <div className="h-12 w-48 bg-dark-section rounded-lg mx-auto mb-16"></div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="aspect-[9/16] bg-dark-section rounded-2xl"></div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function Home() {
   const mounted = usePageLoad();
