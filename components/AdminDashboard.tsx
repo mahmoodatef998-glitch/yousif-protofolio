@@ -139,6 +139,39 @@ export default function AdminDashboard() {
     router.push('/admin/login');
   };
 
+  const handleDeleteSection = async () => {
+    if (!currentSection || !currentSection.isDynamic) return;
+
+    if (!confirm(`Are you sure you want to delete the section "${currentSection.name}"? This will also delete all images within it.`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/sections?name=${currentSection.id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        // Broadcast to sidebar and other components
+        if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+          const channel = new BroadcastChannel('sections-updated');
+          channel.postMessage({ type: 'sections-updated' });
+          channel.close();
+        }
+
+        setActiveSection('upload');
+        await fetchDynamicSections();
+        alert('Section deleted successfully');
+      } else {
+        const err = await response.json();
+        alert(`Error: ${err.error}`);
+      }
+    } catch (error) {
+      logger.error('Error deleting section:', error);
+      alert('Failed to delete section');
+    }
+  };
+
   const currentSection = allSections.find(s => s.id === activeSection);
   const Icon = currentSection?.icon || LayoutDashboard;
 
@@ -256,27 +289,38 @@ export default function AdminDashboard() {
                 {currentSection?.description}
               </p>
             </div>
-            {activeSection !== 'upload' && (
-              <button
-                onClick={() => setIsEditing(!isEditing)}
-                className={`px-6 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${isEditing
-                  ? 'bg-accent text-dark-bg hover:bg-accent/90'
-                  : 'bg-dark-bg text-text-primary hover:bg-dark-section border border-dark-section'
-                  }`}
-              >
-                {isEditing ? (
-                  <>
-                    <Save className="w-4 h-4" />
-                    Save Changes
-                  </>
-                ) : (
-                  <>
-                    <Edit2 className="w-4 h-4" />
-                    Edit
-                  </>
-                )}
-              </button>
-            )}
+            <div className="flex items-center gap-3">
+              {currentSection?.isDynamic && (
+                <button
+                  onClick={handleDeleteSection}
+                  className="px-4 py-2 bg-red-500/10 text-red-400 rounded-lg font-medium hover:bg-red-500/20 transition-all flex items-center gap-2 border border-red-500/20"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Delete Section
+                </button>
+              )}
+              {activeSection !== 'upload' && (
+                <button
+                  onClick={() => setIsEditing(!isEditing)}
+                  className={`px-6 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${isEditing
+                    ? 'bg-accent text-dark-bg hover:bg-accent/90'
+                    : 'bg-dark-bg text-text-primary hover:bg-dark-section border border-dark-section'
+                    }`}
+                >
+                  {isEditing ? (
+                    <>
+                      <Save className="w-4 h-4" />
+                      Save Changes
+                    </>
+                  ) : (
+                    <>
+                      <Edit2 className="w-4 h-4" />
+                      Edit
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
           </div>
         </header>
 
