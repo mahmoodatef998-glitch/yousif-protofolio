@@ -34,7 +34,7 @@ export function DynamicGallery({ section, title }: DynamicGalleryProps) {
             setLoading(true);
 
             const response = await fetch(`/api/content?section=${section}`, {
-                cache: 'no-store',
+                next: { revalidate: 3600 }, // Cache for 1 hour
             });
 
             if (!response.ok) {
@@ -54,8 +54,8 @@ export function DynamicGallery({ section, title }: DynamicGalleryProps) {
                         id: item.id,
                         title: item.title || 'Untitled Image',
                         // If media_url is a video, we MUST use thumbnail_url for display in the gallery
-                        image: item.thumbnail_url || item.media_url || '',
-                        media_url: item.media_url, // Keep original for modal/playback
+                        image: (item.thumbnail_url || item.media_url || '').replace('/upload/', '/upload/q_auto,f_auto,w_800/'),
+                        media_url: item.media_url,
                         media_type: item.media_type,
                         group_id: item.group_id || null,
                         order_index: item.order_index || 0,
@@ -220,22 +220,14 @@ export function DynamicGallery({ section, title }: DynamicGalleryProps) {
                                         }
                                     }}
                                 >
-                                    <div className="absolute inset-0">
-                                        <img
-                                            src={item.image}
-                                            alt=""
-                                            className="absolute inset-0 w-full h-full object-cover blur-xl scale-110 opacity-50"
-                                            aria-hidden="true"
-                                        />
-                                        <img
+                                    <div className="absolute inset-0 bg-dark-section">
+                                        <Image
                                             src={item.image}
                                             alt={item.title}
-                                            className="card-image-parallax relative w-full h-full object-cover transition-opacity duration-500"
-                                            style={{ opacity: 0 }}
+                                            fill
+                                            className="card-image-parallax object-cover transition-transform duration-700 group-hover:scale-110"
+                                            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
                                             loading="lazy"
-                                            onLoad={(e) => {
-                                                (e.target as HTMLImageElement).style.opacity = '1';
-                                            }}
                                         />
                                     </div>
 

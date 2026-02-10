@@ -20,7 +20,7 @@ export function Videos() {
     try {
       setLoading(true);
       const response = await fetch('/api/content?section=videos', {
-        cache: 'no-store', // Ensure fresh data
+        next: { revalidate: 3600 }, // Cache for 1 hour
       });
 
       if (!response.ok) {
@@ -44,7 +44,7 @@ export function Videos() {
             id: item.id,
             title: item.title || 'Untitled Video',
             src: item.media_url || '',
-            thumbnail: item.thumbnail_url || item.media_url || '',
+            thumbnail: (item.thumbnail_url || item.media_url || '').replace('/upload/', '/upload/q_auto,f_auto,w_800/'),
             description: item.description || '',
           }));
 

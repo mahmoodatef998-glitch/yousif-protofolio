@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
+import Image from 'next/image';
 import { useStaggeredReveal } from '@/lib/animations';
 
 interface Reel {
@@ -21,7 +22,7 @@ const getVideoCover = (videoUrl: string): string => {
       if (uploadIndex !== -1 && uploadIndex < pathParts.length - 1) {
         // Insert thumbnail transformation: so_0 = start offset 0, w_400 = width, h_600 = height (9:16 portrait), c_fill = crop fill
         // This creates a portrait thumbnail from the first frame of the video
-        const transformations = ['so_0', 'w_400', 'h_600', 'c_fill', 'q_auto', 'f_jpg'];
+        const transformations = ['so_0', 'w_400', 'h_600', 'c_fill', 'q_auto', 'f_auto'];
         pathParts.splice(uploadIndex + 1, 0, ...transformations);
         return url.origin + pathParts.join('/');
       }
@@ -47,7 +48,7 @@ export function Reels() {
     try {
       setLoading(true);
       const response = await fetch('/api/content?section=reels', {
-        cache: 'no-store', // Ensure fresh data
+        next: { revalidate: 3600 },
       });
 
       if (!response.ok) {
@@ -235,8 +236,8 @@ export function Reels() {
                     }
                   }}
                   className={`group card-premium card-glow card-ripple relative aspect-[9/16] overflow-hidden cursor-pointer rounded-2xl ${index < visibleCount
-                      ? 'opacity-100 translate-y-0'
-                      : 'opacity-0 translate-y-[60px]'
+                    ? 'opacity-100 translate-y-0'
+                    : 'opacity-0 translate-y-[60px]'
                     }`}
                   style={{
                     transition: 'all 0.8s cubic-bezier(0.16, 1, 0.3, 1)',
@@ -263,24 +264,14 @@ export function Reels() {
                 >
                   {/* Cover Image - shown when not hovering */}
                   <div className={`absolute inset-0 transition-opacity duration-300 ${hoveredReel === reel.id ? 'opacity-0' : 'opacity-100'
-                    }`}>
-                    {/* Blur placeholder */}
-                    <img
-                      src={reel.thumbnail}
-                      alt=""
-                      className="absolute inset-0 w-full h-full object-cover blur-xl scale-110 opacity-50"
-                      aria-hidden="true"
-                    />
-                    {/* Main cover image */}
-                    <img
+                    } bg-dark-bg`}>
+                    <Image
                       src={reel.thumbnail}
                       alt={reel.title}
-                      className="card-image-parallax relative w-full h-full object-cover transition-opacity duration-500"
-                      style={{ opacity: 0 }}
+                      fill
+                      className="card-image-parallax object-cover transition-transform duration-700 group-hover:scale-110"
+                      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
                       loading="lazy"
-                      onLoad={(e) => {
-                        (e.target as HTMLImageElement).style.opacity = '1';
-                      }}
                     />
                   </div>
 

@@ -32,7 +32,7 @@ export function Restaurant() {
       }
 
       const response = await fetch('/api/content?section=restaurant', {
-        cache: 'no-store',
+        next: { revalidate: 3600 }, // Cache for 1 hour
       });
 
       if (!response.ok) {
@@ -52,7 +52,7 @@ export function Restaurant() {
           .map((item: any) => ({
             id: item.id,
             title: item.title || 'Untitled Image',
-            image: item.thumbnail_url || item.media_url || '',
+            image: (item.thumbnail_url || item.media_url || '').replace('/upload/', '/upload/q_auto,f_auto,w_800/'),
             group_id: item.group_id || null,
             order_index: item.order_index || 0,
             created_at: item.created_at || '',
@@ -279,37 +279,14 @@ export function Restaurant() {
                   }}
                 >
                   {/* Image with parallax and blur placeholder */}
-                  <div className="absolute inset-0">
-                    {/* Blur placeholder */}
-                    <img
-                      src={item.image}
-                      alt=""
-                      className="absolute inset-0 w-full h-full object-cover blur-xl scale-110 opacity-50"
-                      aria-hidden="true"
-                    />
-                    {/* Main image */}
-                    <img
+                  <div className="absolute inset-0 bg-dark-bg">
+                    <Image
                       src={item.image}
                       alt={item.title}
-                      className="card-image-parallax relative w-full h-full object-cover transition-opacity duration-500"
-                      style={{ opacity: 0 }}
+                      fill
+                      className="card-image-parallax object-cover transition-transform duration-700 group-hover:scale-110"
+                      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
                       loading="lazy"
-                      onError={(e) => {
-                        logger.error('Image failed to load:', {
-                          src: item.image,
-                          title: item.title,
-                          id: item.id,
-                        });
-                        (e.target as HTMLImageElement).src = 'https://via.placeholder.com/800x600?text=Image+Not+Found';
-                        (e.target as HTMLImageElement).style.opacity = '1';
-                      }}
-                      onLoad={(e) => {
-                        (e.target as HTMLImageElement).style.opacity = '1';
-                        logger.debug('Image loaded successfully:', {
-                          src: item.image,
-                          title: item.title,
-                        });
-                      }}
                     />
                   </div>
 
