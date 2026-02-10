@@ -251,11 +251,10 @@ export function UploadSection() {
         logger.debug(`Uploading file ${i + 1}/${selectedFiles.length}: ${file.name} (${fileSizeMB.toFixed(2)} MB)`);
 
         // Check file size before upload
-        if (fileSizeMB > maxSizeMB) {
-          const errorMsg = `File "${file.name}" is too large (${fileSizeMB.toFixed(2)} MB). Maximum allowed size is ${maxSizeMB} MB. Please compress the file or use Cloudinary Upload Widget for larger files.`;
-          logger.error(errorMsg);
-          alert(errorMsg);
-          continue; // Skip this file and continue with others
+        if (fileSizeMB > 4.0) { // Stricter limit for base64
+          const errorMsg = `File "${file.name}" is a bit large (${fileSizeMB.toFixed(2)} MB). Vercel has a strict 4.5 MB limit for the entire request. If upload fails, please use the "Upload Large Files" button below.`;
+          logger.warn(errorMsg);
+          // Don't alert yet, try to upload, but be ready for 413
         }
 
         const formData = new FormData();
@@ -374,7 +373,10 @@ export function UploadSection() {
           }
         } catch (error: any) {
           logger.error(`Error uploading ${file.name}:`, error);
-          throw error; // Re-throw to be caught by outer catch
+          alert(`Failed to upload ${file.name}: ${error.message}`);
+          // Continue with next file instead of throwing
+          progress[file.name] = 0;
+          setUploadProgress({ ...progress });
         }
       }
 

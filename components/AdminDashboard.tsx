@@ -101,6 +101,21 @@ export default function AdminDashboard() {
     }
   };
 
+  // Load Cloudinary Widget Script globally for the dashboard
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (document.querySelector('script[src*="upload-widget.cloudinary.com"]')) return;
+
+    const script = document.createElement('script');
+    script.src = 'https://upload-widget.cloudinary.com/global/all.js';
+    script.async = true;
+    document.body.appendChild(script);
+
+    return () => {
+      if (script.parentNode) script.parentNode.removeChild(script);
+    };
+  }, []);
+
   useEffect(() => {
     fetchDynamicSections();
 
@@ -1465,21 +1480,16 @@ function GallerySection({ section, isEditing }: { section: string; isEditing: bo
       logger.debug(`Fetched ${section} images:`, data?.length || 0);
 
       if (data && Array.isArray(data) && data.length > 0) {
-        const formattedImages = data
-          .filter((item: any) => item.media_url && item.media_url.trim() !== '')
-          .map((item: any) => {
-            const url = item.media_url || '';
-            logger.debug(`Image ${item.id} (${item.title}): URL length = ${url.length}`);
-            return {
-              id: item.id,
-              title: item.title || 'Untitled Image',
-              url: url,
-            };
-          });
-        logger.debug(`Formatted ${section} images:`, formattedImages.length);
+        const formattedImages = data.map((item: any) => {
+          const url = item.media_url || '';
+          return {
+            id: item.id,
+            title: item.title || 'Untitled Image',
+            url: url,
+          };
+        });
         setImages(formattedImages);
       } else {
-        logger.warn(`No ${section} images found in database`);
         setImages([]);
       }
     } catch (error) {
@@ -1631,21 +1641,72 @@ function GallerySection({ section, isEditing }: { section: string; isEditing: bo
                   </div>
                 )}
               </div>
-              <input
-                type="url"
-                placeholder="Image URL"
-                value={image.url}
-                onChange={(e) => {
-                  const updated = images.map(img => img.id === image.id ? { ...img, url: e.target.value } : img);
-                  setImages(updated);
-                }}
-                disabled={!isEditing}
-                className="w-full px-3 py-2 bg-dark-bg border border-dark-section rounded text-text-primary text-sm focus:border-accent focus:outline-none disabled:opacity-50"
-                title={image.url} // Show full URL on hover
-              />
+              <div className="space-y-2">
+                <input
+                  type="url"
+                  placeholder="Image URL"
+                  value={image.url}
+                  onChange={(e) => {
+                    const updated = images.map(img => img.id === image.id ? { ...img, url: e.target.value } : img);
+                    setImages(updated);
+                  }}
+                  disabled={!isEditing}
+                  className="w-full px-3 py-2 bg-dark-bg border border-dark-section rounded text-text-primary text-sm focus:border-accent focus:outline-none disabled:opacity-50"
+                  title={image.url}
+                />
+                {isEditing && (
+                  <button
+                    onClick={() => {
+                      const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+                      const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+
+                      if (!window.cloudinary) {
+                        alert('Cloudinary widget is loading...');
+                        return;
+                      }
+
+                      window.cloudinary.openUploadWidget(
+                        {
+                          cloudName,
+                          uploadPreset,
+                          folder: `portfolio/${section}`,
+                          multiple: false,
+                          sources: ['local', 'camera', 'url'],
+                        },
+                        (error: any, result: any) => {
+                          if (!error && result && result.event === "success") {
+                            const updated = images.map(img =>
+                              img.id === image.id ? { ...img, url: result.info.secure_url } : img
+                            );
+                            setImages(updated);
+                            // Auto save after upload
+                            handleSave({ ...image, url: result.info.secure_url });
+                          }
+                        }
+                      );
+                    }}
+                    className="w-full py-1 text-xs bg-dark-bg hover:bg-dark-section border border-dark-section rounded text-text-secondary hover:text-accent transition-colors flex items-center justify-center gap-1"
+                  >
+                    <Upload className="w-3 h-3" />
+                    Upload Image
+                  </button>
+                )}
+              </div>
               {image.url && (
-                <div className="text-xs text-text-secondary mt-1 truncate" title={image.url}>
-                  {image.url.length > 60 ? `${image.url.substring(0, 60)}...` : image.url}
+                <div className="mt-2 rounded overflow-hidden aspect-video bg-dark-bg border border-dark-section relative group">
+                  <img
+                    src={image.url}
+                    alt={image.title}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <button
+                      onClick={() => window.open(image.url, '_blank')}
+                      className="p-2 bg-white/10 rounded-full hover:bg-white/20"
+                    >
+                      <Eye className="w-5 h-5" />
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
