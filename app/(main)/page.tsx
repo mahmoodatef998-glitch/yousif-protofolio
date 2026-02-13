@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
+import { motion, AnimatePresence } from 'framer-motion';
 import { About } from '@/components/About';
 import { PortfolioFilter, FilterType } from '@/components/PortfolioFilter';
 import { ScrollProgress } from '@/components/ScrollProgress';
@@ -56,7 +57,7 @@ export default function Home() {
 
   const fetchSections = async () => {
     try {
-      const response = await fetch('/api/sections');
+      const response = await fetch('/api/sections', { cache: 'no-store' });
       const { data } = await response.json();
       if (data) {
         setSections(data);
@@ -72,7 +73,7 @@ export default function Home() {
 
   const handleFilterChange = (filter: FilterType) => {
     setActiveFilter(filter);
-    // Smooth scroll to portfolio section
+    // Smooth scrolling is now handled by Lenis, but we can still trigger it
     setTimeout(() => {
       const portfolioSection = document.querySelector('#portfolio-filter');
       if (portfolioSection) {
@@ -81,14 +82,11 @@ export default function Home() {
     }, 100);
   };
 
-  const STATIC_SECTION_NAMES = ['about', 'videos', 'reels', 'wedding', 'product', 'restaurant', 'contact'];
-
   return (
-    <main
-      className="transition-opacity-smooth"
-      style={{
-        opacity: mounted ? 1 : 0,
-      }}
+    <motion.main
+      initial={{ opacity: 0 }}
+      animate={{ opacity: mounted ? 1 : 0 }}
+      transition={{ duration: 1 }}
     >
       <ScrollProgress />
       <BackToTop />
@@ -97,16 +95,25 @@ export default function Home() {
       <About />
 
       {/* Portfolio Filter */}
-      <section id="portfolio-filter" className="py-10 sm:py-12 md:py-16 bg-dark-section">
+      <section id="portfolio-filter" className="py-16 sm:py-24 bg-dark-section relative overflow-hidden">
+        {/* Background glow */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-px bg-gradient-to-r from-transparent via-accent/30 to-transparent" />
+
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-6 md:mb-8">
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-text-primary mb-3 md:mb-4">
-              Portfolio
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-12"
+          >
+            <h2 className="text-4xl sm:text-6xl font-bold text-text-primary mb-6 tracking-tight">
+              Featured Work
             </h2>
-            <p className="text-sm sm:text-base text-text-secondary max-w-2xl mx-auto px-4">
-              Explore our work across different categories
+            <p className="text-lg text-text-secondary max-w-2xl mx-auto px-4 font-medium opacity-80">
+              A curated collection of visual stories across different mediums.
             </p>
-          </div>
+          </motion.div>
+
           <PortfolioFilter
             activeFilter={activeFilter}
             onFilterChange={handleFilterChange}
@@ -115,43 +122,56 @@ export default function Home() {
       </section>
 
       {/* Portfolio Sections in Order */}
-      {sections
-        .filter(s => s.is_active && !['about', 'contact'].includes(s.name.toLowerCase()))
-        .sort((a, b) => (a.display_order || 0) - (b.display_order || 0))
-        .map(section => {
-          const name = section.name.toLowerCase();
-          const isVisible = activeFilter === 'all' || activeFilter === name;
+      <div className="relative min-h-screen">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeFilter}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.5, ease: "easeInOut" }}
+          >
+            {sections
+              .filter(s => s.is_active && !['about', 'contact'].includes(s.name.toLowerCase()))
+              .sort((a, b) => (a.display_order || 0) - (b.display_order || 0))
+              .map(section => {
+                const name = section.name.toLowerCase();
+                const isVisible = activeFilter === 'all' || activeFilter === name;
 
-          if (!isVisible) return null;
+                if (!isVisible) return null;
 
-          switch (name) {
-            case 'videos':
-              return <Videos key={section.id} />;
-            case 'reels':
-              return <Reels key={section.id} />;
-            case 'wedding':
-              return <Wedding key={section.id} />;
-            case 'product':
-              return <Product key={section.id} />;
-            case 'restaurant':
-              return <Restaurant key={section.id} />;
-            default:
-              return (
-                <DynamicGallery
-                  key={section.id}
-                  section={name}
-                  title={section.name}
-                />
-              );
-          }
-        })
-      }
+                switch (name) {
+                  case 'videos':
+                    return <Videos key={section.id} />;
+                  case 'reels':
+                    return <Reels key={section.id} />;
+                  case 'wedding':
+                    return <Wedding key={section.id} />;
+                  case 'product':
+                    return <Product key={section.id} />;
+                  case 'restaurant':
+                    return <Restaurant key={section.id} />;
+                  default:
+                    return (
+                      <DynamicGallery
+                        key={section.id}
+                        section={name}
+                        title={section.name}
+                      />
+                    );
+                }
+              })
+            }
+          </motion.div>
+        </AnimatePresence>
+      </div>
 
       {/* Testimonials Section - What Clients Say */}
       <Testimonials />
 
       {/* Contact Section */}
       <Contact />
-    </main>
+    </motion.main>
   );
 }
+

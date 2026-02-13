@@ -4,6 +4,8 @@ import './globals.css';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
+import { SmoothScroll } from '@/components/SmoothScroll';
+import { CustomCursor } from '@/components/CustomCursor';
 import Script from 'next/script';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
@@ -82,7 +84,10 @@ export default function RootLayout({
       />
       <body className={`${inter.variable} antialiased`} suppressHydrationWarning>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-          {children}
+          <SmoothScroll>
+            <CustomCursor />
+            {children}
+          </SmoothScroll>
         </ThemeProvider>
       </body>
     </html>

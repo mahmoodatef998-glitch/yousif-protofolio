@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowUp } from 'lucide-react';
 
 export function BackToTop() {
@@ -22,17 +23,23 @@ export function BackToTop() {
   };
 
   return (
-    <button
-      onClick={scrollToTop}
-      className={`fixed bottom-8 right-8 w-14 h-14 bg-accent hover:bg-accent/90 rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 z-50 group ${
-        showBackToTop
-          ? 'opacity-100 translate-y-0 scale-100'
-          : 'opacity-0 translate-y-10 scale-90 pointer-events-none'
-      }`}
-      aria-label="Back to top"
-    >
-      <ArrowUp className="w-6 h-6 text-dark-bg group-hover:-translate-y-1 transition-transform duration-300" />
-    </button>
+    <AnimatePresence>
+      {showBackToTop && (
+        <motion.button
+          initial={{ opacity: 0, scale: 0.5, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.5, y: 20 }}
+          whileHover={{ scale: 1.1, backgroundColor: 'var(--accent)' }}
+          whileTap={{ scale: 0.9 }}
+          onClick={scrollToTop}
+          className="fixed bottom-8 right-8 w-14 h-14 bg-accent text-dark-bg rounded-full flex items-center justify-center shadow-2xl z-50 group glass-card"
+          aria-label="Back to top"
+        >
+          <ArrowUp className="w-6 h-6 group-hover:-translate-y-1 transition-transform duration-300" />
+        </motion.button>
+      )}
+    </AnimatePresence>
   );
 }
+
 

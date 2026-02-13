@@ -1,32 +1,23 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { motion, useScroll, useSpring } from 'framer-motion';
 
 export function ScrollProgress() {
-  const [scrollProgress, setScrollProgress] = useState(0);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      const totalHeight = document.documentElement.scrollHeight - window.innerHeight;
-      const progress = totalHeight > 0 ? (window.scrollY / totalHeight) * 100 : 0;
-      setScrollProgress(Math.min(progress, 100));
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll(); // Initial calculation
-
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-    };
-  }, []);
+  const { scrollYProgress } = useScroll();
+  const scaleX = useSpring(scrollYProgress, {
+    stiffness: 100,
+    damping: 30,
+    restDelta: 0.001
+  });
 
   return (
-    <div className="fixed top-0 left-0 right-0 h-1 bg-dark-bg/30 z-[100] pointer-events-none">
-      <div
-        className="h-full bg-gradient-to-r from-accent via-accent/80 to-accent transition-all duration-150 ease-out"
-        style={{ width: `${scrollProgress}%` }}
-      />
-    </div>
+    <motion.div
+      className="fixed top-0 left-0 right-0 h-1 bg-accent origin-left z-[100] pointer-events-none"
+      style={{ scaleX }}
+    >
+      <div className="absolute inset-0 bg-accent shadow-[0_0_10px_rgba(var(--accent-rgb),0.5)]" />
+    </motion.div>
   );
 }
+
 

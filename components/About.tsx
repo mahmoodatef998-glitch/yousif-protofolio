@@ -2,9 +2,10 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import Image from 'next/image';
-import { useScrollReveal } from '@/lib/animations';
+import { motion, AnimatePresence } from 'framer-motion';
 import { AnimatedCounter } from '@/components/AnimatedCounter';
 import { ArrowDown, Calendar, Eye } from 'lucide-react';
+import { logger } from '@/lib/logger';
 
 export function About() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -12,12 +13,11 @@ export function About() {
     heroTitle: 'About',
     heroSubtitle: '',
     bio: '',
-    profileImage: '', // Start empty, will be set from API
-    heroVideoUrl: '', // Optional video background URL
+    profileImage: '',
+    heroVideoUrl: '',
     stats: { clients: 500, projects: 10, awards: 100 },
   });
   const [loading, setLoading] = useState(true);
-  const [imageKey, setImageKey] = useState(0); // Force image reload when URL changes
 
   const fetchAbout = useCallback(async () => {
     try {
@@ -26,12 +26,7 @@ export function About() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error('Failed to fetch about:', {
-          status: response.status,
-          statusText: response.statusText,
-          error: errorData.error || errorData.details || 'Unknown error',
-        });
+        logger.error('Failed to fetch about data');
         setLoading(false);
         return;
       }
@@ -45,67 +40,60 @@ export function About() {
           heroSubtitle: data.hero_subtitle || '',
           bio: data.bio_text || '',
           profileImage: data.profile_image_url || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&q=80',
-          heroVideoUrl: data.hero_video_url || '', // Optional video background
+          heroVideoUrl: data.hero_video_url || '',
           stats: data.stats && typeof data.stats === 'object' ? data.stats : { clients: 500, projects: 10, awards: 100 },
         });
       }
     } catch (error: any) {
-      console.error('Error fetching about:', {
-        error: error.message,
-        stack: error.stack,
-      });
+      logger.error('Error fetching about:', error);
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    let mounted = true;
-    let channel: BroadcastChannel | null = null;
-    let interval: NodeJS.Timeout | null = null;
+    fetchAbout();
 
-    // Initial fetch
-    if (mounted) {
-      fetchAbout();
-    }
-
-    // Listen for content updates from admin dashboard
     if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
-      channel = new BroadcastChannel('content-updated');
+      const channel = new BroadcastChannel('content-updated');
       channel.onmessage = (event) => {
-        if (mounted && event.data.type === 'content-updated' &&
-          (event.data.section === 'about' || !event.data.section)) {
+        if (event.data.type === 'content-updated' && (event.data.section === 'about' || !event.data.section)) {
           fetchAbout();
         }
       };
+      return () => channel.close();
     }
-
-    // Refresh data every 5 minutes to show new updates (reduced from 30s)
-    interval = setInterval(() => {
-      if (mounted) {
-        fetchAbout();
-      }
-    }, 300000);
-
-    return () => {
-      mounted = false;
-      if (channel) channel.close();
-      if (interval) clearInterval(interval);
-    };
   }, [fetchAbout]);
 
-  // Animation hooks - separate for image and text
-  const { ref: imageRef, isVisible: imageVisible } = useScrollReveal({
-    threshold: 0.2,
-    triggerOnce: true,
-    delay: 0,
-  });
+  const containerVariants: any = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.2,
+        delayChildren: 0.3
+      }
+    }
+  };
 
-  const { ref: textRef, isVisible: textVisible } = useScrollReveal({
-    threshold: 0.2,
-    triggerOnce: true,
-    delay: 200,
-  });
+  const itemVariants: any = {
+    hidden: { opacity: 0, y: 30 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.8, ease: "easeOut" }
+    }
+  };
+
+  const imageVariants: any = {
+    hidden: { opacity: 0, scale: 0.9, x: -20 },
+    visible: {
+      opacity: 1,
+      scale: 1,
+      x: 0,
+      transition: { duration: 1.2, ease: "easeOut" }
+    }
+  };
 
   return (
     <section
@@ -113,176 +101,162 @@ export function About() {
       id="about"
       className="relative min-h-screen flex items-center justify-center overflow-hidden bg-dark-bg"
     >
-      {/* Background Image/Video */}
-      <div className="absolute inset-0">
-        {/* Video Background (optional - can be enabled from admin) */}
+      {/* Background with Parallax effect */}
+      <motion.div
+        className="absolute inset-0"
+        initial={{ scale: 1.1 }}
+        animate={{ scale: 1 }}
+        transition={{ duration: 2, ease: "easeOut" }}
+      >
         {aboutData.heroVideoUrl ? (
-          <video
-            autoPlay
-            loop
-            muted
-            playsInline
-            className="absolute inset-0 w-full h-full object-cover"
-          >
+          <video autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover">
             <source src={aboutData.heroVideoUrl} type="video/mp4" />
           </video>
         ) : (
           <Image
             src="https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=1920&q=90&auto=format&fit=crop"
-            alt="About Background"
+            alt="Background"
             fill
             className="object-cover"
             priority
           />
         )}
-        <div className="absolute inset-0 bg-dark-bg/80" />
-      </div>
+        <div className="absolute inset-0 bg-dark-bg/85 backdrop-blur-[2px]" />
+      </motion.div>
 
-      {/* Scroll Indicator */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 animate-bounce">
-        <div className="flex flex-col items-center gap-2 text-text-secondary/70 hover:text-accent transition-colors cursor-pointer group">
-          <span className="text-sm font-medium">Scroll</span>
-          <ArrowDown className="w-5 h-5 group-hover:translate-y-1 transition-transform" />
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16 lg:py-20">
-        {/* 
-          Flexbox Container: 
-          - flex-col on mobile (stack vertically)
-          - flex-row on desktop (side by side)
-          - items-center: vertically center items
-          - gap-8 lg:gap-16: responsive spacing
-        */}
-        <div className="flex flex-col lg:flex-row items-center gap-6 sm:gap-8 lg:gap-16 min-h-[70vh] md:min-h-[80vh]">
-          {/* 
-            Image Container with Animation:
-            - Safe animation: only opacity and transform (no layout shift)
-            - Default visible if reduced-motion or JS fails
-            - Fade + scale animation
-          */}
-          <div
-            ref={imageRef as React.RefObject<HTMLDivElement>}
-            className="relative w-full sm:w-[80%] md:w-[70%] lg:w-[40%] flex-shrink-0 max-w-full order-1 transition-opacity-smooth transition-transform-smooth"
-            style={{
-              opacity: imageVisible ? 1 : 0,
-              transform: imageVisible ? 'scale(1)' : 'scale(0.95)',
-            }}
+      {/* Hero Content */}
+      <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 py-24">
+        <motion.div
+          className="flex flex-col lg:flex-row items-center gap-12 lg:gap-20"
+          variants={containerVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
+        >
+          {/* Profile Image Column */}
+          <motion.div
+            className="relative w-full lg:w-5/12 max-w-md lg:max-w-none"
+            variants={imageVariants}
           >
-            <div className="relative w-full aspect-[3/4] overflow-hidden rounded-lg hover-scale bg-dark-section">
-              {aboutData.profileImage ? (
+            <div className="relative aspect-[3/4] rounded-2xl overflow-hidden glass-card border border-white/10 shadow-2xl">
+              {aboutData.profileImage && (
                 <Image
                   src={aboutData.profileImage}
-                  alt={aboutData.heroTitle}
+                  alt="Profile"
                   fill
-                  className="object-cover"
+                  className="object-cover transition-transform duration-700 hover:scale-110"
                   priority
                   sizes="(max-width: 768px) 100vw, 40vw"
                 />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center bg-dark-section text-text-secondary">
-                  {loading ? (
-                    <div className="animate-pulse text-sm">Loading...</div>
-                  ) : (
-                    <div className="text-sm">No image</div>
-                  )}
-                </div>
               )}
             </div>
-          </div>
+            {/* Decorative elements */}
+            <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-accent/20 blur-3xl rounded-full -z-10" />
+            <div className="absolute -top-6 -left-6 w-32 h-32 bg-blue-500/10 blur-3xl rounded-full -z-10" />
+          </motion.div>
 
-          {/* 
-            Text Content Container with Animation:
-            - Safe animation: only opacity and transform (no layout shift)
-            - Staggered delay for smooth reveal
-            - Default visible if reduced-motion or JS fails
-          */}
-          <div
-            ref={textRef as React.RefObject<HTMLDivElement>}
-            className="w-full lg:w-[60%] flex-shrink self-center order-2 transition-opacity-smooth transition-transform-smooth"
-            style={{
-              opacity: textVisible ? 1 : 0,
-              transform: textVisible ? 'translateY(0)' : 'translateY(20px)',
-            }}
-          >
-            {aboutData.heroSubtitle && (
-              <p className="text-lg sm:text-xl md:text-2xl text-accent mb-4 md:mb-8">{aboutData.heroSubtitle}</p>
-            )}
-            {aboutData.bio && (
-              <div className="space-y-4 md:space-y-6 text-base sm:text-lg md:text-xl text-text-secondary leading-relaxed mb-6 md:mb-8">
-                {aboutData.bio.split('\n').map((paragraph, index) => (
-                  <p key={index}>{paragraph}</p>
-                ))}
+          {/* Bio Content Column */}
+          <div className="w-full lg:w-7/12 text-left">
+            <motion.h1
+              variants={itemVariants}
+              className="text-5xl md:text-7xl font-bold text-text-primary mb-6 tracking-tight"
+            >
+              {aboutData.heroTitle}
+            </motion.h1>
+
+            <motion.p
+              variants={itemVariants}
+              className="text-xl md:text-2xl text-accent font-medium mb-8"
+            >
+              {aboutData.heroSubtitle}
+            </motion.p>
+
+            <motion.div
+              variants={itemVariants}
+              className="space-y-6 text-lg md:text-xl text-text-secondary leading-relaxed mb-10"
+            >
+              {aboutData.bio.split('\n').filter(p => p.trim()).map((paragraph, index) => (
+                <p key={index}>{paragraph}</p>
+              ))}
+            </motion.div>
+
+            {/* Stats Row */}
+            <motion.div
+              variants={itemVariants}
+              className="grid grid-cols-3 gap-8 pt-10 border-t border-white/5"
+            >
+              <div className="text-left">
+                <AnimatedCounter
+                  value={aboutData.stats.projects}
+                  duration={2500}
+                  suffix="+"
+                  className="text-3xl md:text-4xl font-bold text-text-primary mb-1"
+                />
+                <p className="text-xs md:text-sm uppercase tracking-widest text-text-secondary font-semibold">Projects</p>
               </div>
-            )}
+              <div className="text-left">
+                <AnimatedCounter
+                  value={aboutData.stats.clients}
+                  duration={2500}
+                  suffix="+"
+                  className="text-3xl md:text-4xl font-bold text-text-primary mb-1"
+                />
+                <p className="text-xs md:text-sm uppercase tracking-widest text-text-secondary font-semibold">Happy Clients</p>
+              </div>
+              <div className="text-left">
+                <AnimatedCounter
+                  value={aboutData.stats.awards}
+                  duration={2500}
+                  suffix="+"
+                  className="text-3xl md:text-4xl font-bold text-text-primary mb-1"
+                />
+                <p className="text-xs md:text-sm uppercase tracking-widest text-text-secondary font-semibold">Awards</p>
+              </div>
+            </motion.div>
 
-            {/* CTA Buttons */}
-            <div className="flex flex-wrap gap-3 sm:gap-4 mb-8 md:mb-12">
+            {/* Actions */}
+            <motion.div
+              variants={itemVariants}
+              className="mt-12 flex flex-wrap gap-4"
+            >
               <a
                 href="#contact"
-                className="group px-8 py-4 bg-accent text-dark-bg font-semibold rounded-lg hover:bg-accent/90 hover:scale-105 active:scale-95 transition-all duration-300 flex items-center gap-2 btn-magnetic"
+                className="px-8 py-4 bg-accent text-dark-bg font-bold rounded-xl hover:bg-accent/90 transition-all flex items-center gap-3 shadow-lg shadow-accent/20"
                 onClick={(e) => {
                   e.preventDefault();
-                  const element = document.querySelector('#contact');
-                  if (element) {
-                    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                  }
+                  document.querySelector('#contact')?.scrollIntoView({ behavior: 'smooth' });
                 }}
               >
                 <Calendar className="w-5 h-5" />
-                <span>Book a Session</span>
+                Book Session
               </a>
               <a
-                href="#product"
-                className="group px-8 py-4 bg-transparent border-2 border-accent text-accent font-semibold rounded-lg hover:bg-accent/10 hover:scale-105 active:scale-95 transition-all duration-300 flex items-center gap-2 btn-magnetic"
+                href="#wedding"
+                className="px-8 py-4 bg-white/5 border border-white/10 text-text-primary font-bold rounded-xl hover:bg-white/10 transition-all flex items-center gap-3 backdrop-blur-sm"
                 onClick={(e) => {
                   e.preventDefault();
-                  const element = document.querySelector('#product');
-                  if (element) {
-                    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                  }
+                  document.querySelector('#portfolio-filter')?.scrollIntoView({ behavior: 'smooth' });
                 }}
               >
                 <Eye className="w-5 h-5" />
-                <span>View Portfolio</span>
+                View Gallery
               </a>
-            </div>
-
-            {/* Stats with Animation */}
-            <div className="mt-8 md:mt-12 grid grid-cols-3 gap-4 sm:gap-6 md:gap-8 pt-6 md:pt-8 border-t border-dark-section">
-              <div className="text-center">
-                <AnimatedCounter
-                  value={aboutData.stats.projects}
-                  duration={2000}
-                  suffix="+"
-                  className="text-4xl md:text-5xl font-bold text-accent mb-2"
-                />
-                <div className="text-sm text-text-secondary">Projects</div>
-              </div>
-              <div className="text-center">
-                <AnimatedCounter
-                  value={aboutData.stats.clients}
-                  duration={2000}
-                  suffix="+"
-                  className="text-4xl md:text-5xl font-bold text-accent mb-2"
-                />
-                <div className="text-sm text-text-secondary">Clients</div>
-              </div>
-              <div className="text-center">
-                <AnimatedCounter
-                  value={aboutData.stats.awards}
-                  duration={2000}
-                  suffix="+"
-                  className="text-4xl md:text-5xl font-bold text-accent mb-2"
-                />
-                <div className="text-sm text-text-secondary">Awards</div>
-              </div>
-            </div>
+            </motion.div>
           </div>
-        </div>
+        </motion.div>
       </div>
+
+      {/* Down Arrow */}
+      <motion.div
+        className="absolute bottom-10 left-1/2 -translate-x-1/2"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 2, duration: 1, repeat: Infinity, repeatType: "reverse" }}
+      >
+        <ArrowDown className="w-6 h-6 text-accent/50" />
+      </motion.div>
     </section>
   );
 }
+
 
