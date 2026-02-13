@@ -78,7 +78,7 @@ export default function AdminDashboard() {
 
   const fetchDynamicSections = async () => {
     try {
-      const response = await fetch('/api/sections');
+      const response = await fetch('/api/sections', { cache: 'no-store' });
       const { data } = await response.json();
       if (data) {
         // Map dynamic sections and filter out those that match static IDs
@@ -703,6 +703,14 @@ function VideosSection({ isEditing }: { isEditing: boolean }) {
 
       if (response.ok) {
         setVideos(videos.filter(v => v.id !== id));
+
+        // Broadcast update
+        if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+          const channel = new BroadcastChannel('content-updated');
+          channel.postMessage({ type: 'content-updated', section: 'videos' });
+          channel.close();
+        }
+
         alert('Video deleted successfully!');
       } else {
         alert('Failed to delete video');
@@ -1254,6 +1262,14 @@ function ReelsSection({ isEditing }: { isEditing: boolean }) {
 
       if (response.ok) {
         setReels(reels.filter(r => r.id !== id));
+
+        // Broadcast update
+        if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+          const channel = new BroadcastChannel('content-updated');
+          channel.postMessage({ type: 'content-updated', section: 'reels' });
+          channel.close();
+        }
+
         alert('Reel deleted successfully!');
       } else {
         alert('Failed to delete reel');
@@ -1603,6 +1619,14 @@ function GallerySection({ section, isEditing }: { section: string; isEditing: bo
 
       if (response.ok) {
         setImages(images.filter(img => img.id !== id));
+
+        // Broadcast update
+        if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+          const channel = new BroadcastChannel('content-updated');
+          channel.postMessage({ type: 'content-updated', section: section });
+          channel.close();
+        }
+
         alert('Image deleted successfully!');
       } else {
         alert('Failed to delete image');

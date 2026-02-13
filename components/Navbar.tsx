@@ -22,7 +22,7 @@ export function Navbar() {
 
   const fetchSections = async () => {
     try {
-      const response = await fetch('/api/sections');
+      const response = await fetch('/api/sections', { cache: 'no-store' });
       const { data } = await response.json();
       if (data) {
         const dynamicNav = data
@@ -126,8 +126,8 @@ export function Navbar() {
                   href={item.href}
                   onClick={(e) => handleNavClick(e, item.href)}
                   className={`text-sm transition-colors relative ${isActive
-                      ? 'text-accent'
-                      : 'text-text-secondary hover:text-accent'
+                    ? 'text-accent'
+                    : 'text-text-secondary hover:text-accent'
                     }`}
                 >
                   {item.name}
@@ -167,8 +167,8 @@ export function Navbar() {
                   href={item.href}
                   onClick={(e) => handleNavClick(e, item.href)}
                   className={`block transition-colors ${isActive
-                      ? 'text-accent'
-                      : 'text-text-secondary hover:text-accent'
+                    ? 'text-accent'
+                    : 'text-text-secondary hover:text-accent'
                     }`}
                 >
                   {item.name}

@@ -29,7 +29,7 @@ export function PortfolioFilter({ activeFilter, onFilterChange }: PortfolioFilte
 
   const fetchSections = async () => {
     try {
-      const response = await fetch('/api/sections');
+      const response = await fetch('/api/sections', { cache: 'no-store' });
       const { data } = await response.json();
       if (data) {
         const dynamicFilters = data

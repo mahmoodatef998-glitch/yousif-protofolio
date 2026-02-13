@@ -133,7 +133,7 @@ export async function GET(request: NextRequest) {
       section: section || 'all',
     }, {
       headers: {
-        'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
+        'Cache-Control': 'no-store, max-age=0',
       }
     });
   } catch (error: any) {
@@ -338,27 +338,35 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'ID is required' }, { status: 400 });
     }
 
-    logger.log(`Deleting content with ID: ${id}`);
+    logger.log(`🗑️ DELETE Content Request: id=${id}`);
 
-    const { error } = await supabase
+    const { error, count } = await supabase
       .from('content_items')
-      .delete()
+      .delete({ count: 'exact' })
       .eq('id', id);
 
     if (error) {
-      logger.error('Error deleting content:', error);
+      logger.error('❌ DELETE Content: Supabase error:', error);
       return NextResponse.json(
         {
           error: error.message,
           code: error.code,
-          details: 'Failed to delete content from Supabase. Check your database connection and RLS policies.'
+          details: 'Failed to delete content from Supabase.'
         },
         { status: 500 }
       );
     }
 
-    logger.log('Content deleted successfully');
-    return NextResponse.json({ success: true });
+    if (count === 0) {
+      logger.warn(`⚠️ DELETE Content: No item found with ID: ${id}`);
+      return NextResponse.json(
+        { error: 'Item not found', details: 'The item may have already been deleted.' },
+        { status: 404 }
+      );
+    }
+
+    logger.log(`✅ DELETE Content: Successfully deleted item ID: ${id}`);
+    return NextResponse.json({ success: true, deletedId: id });
   } catch (error: any) {
     logger.error('API route error:', error);
     return NextResponse.json(

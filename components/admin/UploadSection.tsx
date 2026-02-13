@@ -32,7 +32,7 @@ export function UploadSection() {
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch('/api/sections');
+      const response = await fetch('/api/sections', { cache: 'no-store' });
       const { data } = await response.json();
       if (data) {
         const dynamicCats = data.map((s: any) => s.name.toLowerCase());
@@ -239,6 +239,10 @@ export function UploadSection() {
         files: selectedFiles.map(f => f.name)
       });
 
+      let successCount = 0;
+      let errorCount = 0;
+      const errors: string[] = [];
+
       for (let i = 0; i < selectedFiles.length; i++) {
         const file = selectedFiles[i];
         const fileName = selectedFiles.length === 1
@@ -246,15 +250,19 @@ export function UploadSection() {
           : `${imageName || 'image'}-${i + 1}`;
 
         const fileSizeMB = file.size / 1024 / 1024;
-        const maxSizeMB = 4.5; // Vercel's limit
 
-        logger.debug(`Uploading file ${i + 1}/${selectedFiles.length}: ${file.name} (${fileSizeMB.toFixed(2)} MB)`);
+        // Check file size before upload - Vercel limit is 4.5MB
+        if (fileSizeMB > 4.5) {
+          const errorMsg = `File "${file.name}" is too large (${fileSizeMB.toFixed(2)} MB). \n\nDirect uploads are limited to 4.5MB due to server limits. \n\nPlease use the "Upload Large Files (Up to 200MB)" button below for this file.`;
+          logger.error(errorMsg);
+          alert(errorMsg);
+          errorCount++;
+          errors.push(`${file.name}: Too large (${fileSizeMB.toFixed(2)}MB)`);
+          continue; // Skip this file
+        }
 
-        // Check file size before upload
-        if (fileSizeMB > 4.0) { // Stricter limit for base64
-          const errorMsg = `File "${file.name}" is a bit large (${fileSizeMB.toFixed(2)} MB). Vercel has a strict 4.5 MB limit for the entire request. If upload fails, please use the "Upload Large Files" button below.`;
-          logger.warn(errorMsg);
-          // Don't alert yet, try to upload, but be ready for 413
+        if (fileSizeMB > 4.0) {
+          logger.warn(`File "${file.name}" is close to the 4.5MB limit. If it fails, use the Large Files button.`);
         }
 
         const formData = new FormData();
@@ -370,21 +378,36 @@ export function UploadSection() {
               fileIndex: i + 1,
               totalFiles: selectedFiles.length
             });
+            successCount++;
           }
         } catch (error: any) {
+          errorCount++;
+          const errorMsg = error.message || 'Unknown error';
+          errors.push(`${file.name}: ${errorMsg}`);
           logger.error(`Error uploading ${file.name}:`, error);
-          alert(`Failed to upload ${file.name}: ${error.message}`);
-          // Continue with next file instead of throwing
+
           progress[file.name] = 0;
           setUploadProgress({ ...progress });
         }
       }
 
-      // Show success message with group info
-      if (currentGroupId) {
-        alert(`✅ All files uploaded successfully!\n\n📦 Group ID: ${currentGroupId}\n\nAll ${selectedFiles.length} file(s) have been grouped together. Click on the main image to view all images in the group.\n\nThe homepage will automatically update within 30 seconds, or you can refresh it manually.`);
+      // Show final feedback
+      if (successCount === selectedFiles.length) {
+        // All succeeded
+        if (currentGroupId) {
+          alert(`✅ All ${successCount} files uploaded successfully!\n\n📦 Group ID: ${currentGroupId}\n\nAll files have been grouped together.`);
+        } else {
+          alert(`✅ All ${successCount} files uploaded successfully!`);
+        }
+      } else if (successCount > 0) {
+        // Partial success
+        alert(`⚠️ Uploaded ${successCount} of ${selectedFiles.length} files.\n\n❌ ${errorCount} files failed:\n${errors.join('\n')}\n\nTip: For large files (over 4.5MB), use the "Upload Large Files" button below.`);
       } else {
-        alert(`✅ All ${selectedFiles.length} file(s) uploaded successfully! The homepage will automatically update within 30 seconds, or you can refresh it manually.`);
+        // All failed
+        alert(`❌ Failed to upload any files.\n\nErrors:\n${errors.join('\n')}\n\nIMPORTANT: Mobile photos are often large. If your files are over 4.5MB, you MUST use the "Upload Large Files" button below.`);
+        setUploading(false);
+        setUploadProgress({});
+        return; // Don't clear selections so they can try again with widget
       }
 
       setSelectedFiles([]);

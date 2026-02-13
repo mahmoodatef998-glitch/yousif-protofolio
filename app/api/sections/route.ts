@@ -82,20 +82,56 @@ export async function DELETE(request: NextRequest) {
     const name = searchParams.get('name');
 
     if (!name) {
+      console.error('❌ DELETE Section: Missing name parameter');
       return NextResponse.json({ error: 'Section name is required' }, { status: 400 });
     }
 
-    const { error } = await supabase
-      .from('sections')
-      .delete()
-      .eq('name', name);
+    console.log(`🗑️ DELETE Section Request: name=${name}`);
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+    // First, find the section to get its UUID
+    const { data: sectionData, error: findError } = await supabase
+      .from('sections')
+      .select('id, name')
+      .eq('name', name)
+      .single();
+
+    if (findError) {
+      console.error(`❌ DELETE Section: Failed to find section "${name}":`, findError);
+      return NextResponse.json({ error: `Section "${name}" not found` }, { status: 404 });
     }
 
-    return NextResponse.json({ success: true });
+    const sectionId = sectionData.id;
+    console.log(`✅ DELETE Section: Found section "${name}" with ID: ${sectionId}`);
+
+    // Delete content items first (even though schema has ON DELETE CASCADE, let's be explicit and safe)
+    const { error: contentDeleteError } = await supabase
+      .from('content_items')
+      .delete()
+      .eq('section_id', sectionId);
+
+    if (contentDeleteError) {
+      console.warn(`⚠️ DELETE Section: Failed to delete content items for "${name}":`, contentDeleteError);
+      // Continue anyway, as the main section delete might still work
+    } else {
+      console.log(`✅ DELETE Section: Successfully deleted content items for "${name}"`);
+    }
+
+    // Now delete the section
+    const { error: deleteError, count } = await supabase
+      .from('sections')
+      .delete()
+      .eq('id', sectionId);
+
+    if (deleteError) {
+      console.error(`❌ DELETE Section: Failed to delete section row:`, deleteError);
+      return NextResponse.json({ error: deleteError.message }, { status: 500 });
+    }
+
+    console.log(`✅ DELETE Section: Successfully deleted section "${name}" from database`);
+
+    return NextResponse.json({ success: true, deleted: name });
   } catch (error: any) {
+    console.error(`❌ DELETE Section: Unexpected error:`, error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
