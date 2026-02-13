@@ -31,7 +31,7 @@ export function CustomCursor() {
                 target.closest('a') ||
                 window.getComputedStyle(target).cursor === 'pointer';
 
-            setIsPointer(isClickable);
+            setIsPointer(!!isClickable);
         };
 
         window.addEventListener('mousemove', moveCursor);
