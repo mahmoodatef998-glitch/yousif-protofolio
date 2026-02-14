@@ -4,6 +4,9 @@ import { logger } from '@/lib/logger';
 import { apiRateLimiter } from '@/lib/rate-limit';
 import { aboutContentSchema, validateRequest } from '@/lib/validations';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 // GET - Fetch about content
 export async function GET(request: NextRequest) {
   try {
@@ -13,7 +16,7 @@ export async function GET(request: NextRequest) {
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
       logger.error('Missing Supabase environment variables');
       return NextResponse.json(
-        { 
+        {
           error: 'Supabase configuration missing',
           details: 'NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY must be set'
         },
@@ -22,7 +25,7 @@ export async function GET(request: NextRequest) {
     }
 
     const supabase = await createClient();
-    
+
     const { data, error } = await supabase
       .from('about_content')
       .select('*')
@@ -35,10 +38,10 @@ export async function GET(request: NextRequest) {
       if (error.code === 'PGRST116') {
         return NextResponse.json({ data: null });
       }
-      
+
       logger.error('Error fetching about content:', error);
       return NextResponse.json(
-        { 
+        {
           error: error.message,
           code: error.code,
           details: 'Failed to fetch about content from Supabase. Check your database connection and RLS policies.'
@@ -47,11 +50,19 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({ data: data || null });
+    logger.log(`🔍 GET About Content: Returned latest record (ID: ${data?.id})`);
+
+    return NextResponse.json({ data: data || null }, {
+      headers: {
+        'Cache-Control': 'no-store, max-age=0, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      }
+    });
   } catch (error: any) {
     logger.error('API route error:', error);
     return NextResponse.json(
-      { 
+      {
         error: error.message || 'Internal server error',
         details: 'An unexpected error occurred while processing the request'
       },
@@ -68,7 +79,7 @@ export async function POST(request: NextRequest) {
     if (!rateLimitResult.success) {
       return NextResponse.json(
         { error: rateLimitResult.message },
-        { 
+        {
           status: 429,
           headers: {
             'Retry-After': String(Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000)),
@@ -84,7 +95,7 @@ export async function POST(request: NextRequest) {
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
       logger.error('Missing Supabase environment variables');
       return NextResponse.json(
-        { 
+        {
           error: 'Supabase configuration missing',
           details: 'NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY must be set'
         },
@@ -93,7 +104,7 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = await createClient();
-    
+
     // Parse and validate request body
     let body;
     try {
@@ -101,7 +112,7 @@ export async function POST(request: NextRequest) {
     } catch (parseError: any) {
       logger.error('Error parsing request body:', parseError);
       return NextResponse.json(
-        { 
+        {
           error: 'Invalid JSON in request body',
           details: parseError.message || 'Failed to parse request body'
         },
@@ -118,7 +129,7 @@ export async function POST(request: NextRequest) {
         error: validation.error
       });
       return NextResponse.json(
-        { 
+        {
           error: 'Validation failed',
           details: validation.error || 'Invalid input: expected string, received undefined'
         },
@@ -128,17 +139,18 @@ export async function POST(request: NextRequest) {
 
     const validatedBody = validation.data;
 
-    // Check if exists
+    // Check if exists - always pick the LATEST one to be consistent with GET
     const { data: existing, error: checkError } = await supabase
       .from('about_content')
       .select('id')
+      .order('created_at', { ascending: false })
       .limit(1)
       .single();
 
     if (checkError && checkError.code !== 'PGRST116') {
       logger.error('Error checking existing about content:', checkError);
       return NextResponse.json(
-        { 
+        {
           error: checkError.message,
           code: checkError.code,
           details: 'Failed to check existing about content'
@@ -165,7 +177,7 @@ export async function POST(request: NextRequest) {
     }
 
     const dataToSave: any = {};
-    
+
     // Only include fields that are present in the body
     if (body.hero_title !== undefined) dataToSave.hero_title = body.hero_title;
     if (body.hero_subtitle !== undefined) dataToSave.hero_subtitle = body.hero_subtitle;
@@ -190,11 +202,11 @@ export async function POST(request: NextRequest) {
 
       if (error) {
         logger.error('Error updating about content:', error);
-        
+
         // Check if it's a schema error (missing column)
         if (error.code === 'PGRST204' || error.message?.includes('column') || error.message?.includes('schema cache')) {
           return NextResponse.json(
-            { 
+            {
               error: error.message,
               code: error.code,
               details: 'Database schema mismatch. The about_content table is missing required columns or schema cache needs refresh. Try: 1) Run supabase/recreate_about_content_table.sql in Supabase SQL Editor (⚠️ will delete existing data), 2) Wait 30-60 seconds, 3) Try again. If problem persists, restart your Supabase project to refresh schema cache.',
@@ -206,9 +218,9 @@ export async function POST(request: NextRequest) {
             { status: 500 }
           );
         }
-        
+
         return NextResponse.json(
-          { 
+          {
             error: error.message,
             code: error.code,
             details: 'Failed to update about content in Supabase. Check your database schema and RLS policies.'
@@ -229,11 +241,11 @@ export async function POST(request: NextRequest) {
 
       if (error) {
         logger.error('Error inserting about content:', error);
-        
+
         // Check if it's a schema error (missing column)
         if (error.code === 'PGRST204' || error.message?.includes('column') || error.message?.includes('schema cache')) {
           return NextResponse.json(
-            { 
+            {
               error: error.message,
               code: error.code,
               details: 'Database schema mismatch. The about_content table is missing required columns or schema cache needs refresh. Try: 1) Run supabase/recreate_about_content_table.sql in Supabase SQL Editor (⚠️ will delete existing data), 2) Wait 30-60 seconds, 3) Try again. If problem persists, restart your Supabase project to refresh schema cache.',
@@ -245,9 +257,9 @@ export async function POST(request: NextRequest) {
             { status: 500 }
           );
         }
-        
+
         return NextResponse.json(
-          { 
+          {
             error: error.message,
             code: error.code,
             details: 'Failed to insert about content into Supabase. Check your database schema and RLS policies.'
@@ -262,7 +274,7 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     logger.error('API route error:', error);
     return NextResponse.json(
-      { 
+      {
         error: error.message || 'Internal server error',
         details: 'An unexpected error occurred while processing the request'
       },

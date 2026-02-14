@@ -25,9 +25,11 @@ export function AboutSection({ isEditing }: AboutSectionProps) {
 
   const fetchAbout = async () => {
     try {
-      const response = await fetch('/api/about');
+      const response = await fetch(`/api/about?t=${Date.now()}`, {
+        cache: 'no-store'
+      });
       const { data } = await response.json();
-      
+
       if (data) {
         setTitle(data.hero_title || 'Yousif');
         setSubtitle(data.hero_subtitle || 'Photographer & Videographer');
@@ -46,35 +48,35 @@ export function AboutSection({ isEditing }: AboutSectionProps) {
 
   const handleImageUpload = async (file: File) => {
     const fileSizeMB = file.size / 1024 / 1024;
-    
+
     logger.log('📤 Starting About section image upload:', {
       fileName: file.name,
       fileSize: `${fileSizeMB.toFixed(2)} MB`,
       fileType: file.type
     });
-    
+
     if (fileSizeMB > 4.5) {
       alert('Image is too large (max 4.5 MB). Please compress or use a smaller image, or use Cloudinary Widget for larger files.');
       return;
     }
-    
+
     setUploadingImage(true);
     try {
       const formData = new FormData();
       formData.append('file', file);
       formData.append('category', 'about');
       formData.append('name', 'profile-image');
-      
+
       logger.log('📤 Uploading to /api/cloudinary/upload:', {
         category: 'about',
         fileName: file.name
       });
-      
+
       const response = await fetch('/api/cloudinary/upload', {
         method: 'POST',
         body: formData,
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
         logger.error('❌ Upload failed:', {
@@ -83,7 +85,7 @@ export function AboutSection({ isEditing }: AboutSectionProps) {
         });
         throw new Error(errorData.error || 'Upload failed');
       }
-      
+
       const uploadData = await response.json();
       logger.log('✅ Upload successful:', {
         result: uploadData.result,
@@ -91,14 +93,14 @@ export function AboutSection({ isEditing }: AboutSectionProps) {
         url: uploadData.result?.url,
         public_id: uploadData.result?.public_id
       });
-      
+
       const imageUrl = uploadData.result?.secure_url || uploadData.result?.url;
-      
+
       if (!imageUrl) {
         logger.error('❌ No image URL in response:', uploadData);
         throw new Error('Upload successful but no image URL returned');
       }
-      
+
       logger.log('💾 Setting profile image URL:', imageUrl);
       setProfileImage(imageUrl);
       alert('Image uploaded successfully!');
@@ -140,7 +142,7 @@ export function AboutSection({ isEditing }: AboutSectionProps) {
       } else {
         const errorMessage = result.error || result.details || 'Failed to save about section';
         logger.error('Save error:', result);
-        
+
         // Check if it's a schema error
         if (result.fixRequired && result.sqlScript) {
           const instructions = result.instructions ? `\n\n📖 ${result.instructions}` : '';
@@ -209,7 +211,7 @@ export function AboutSection({ isEditing }: AboutSectionProps) {
           </div>
           <div>
             <label className="block text-sm font-medium text-text-secondary mb-2">Profile Image</label>
-            
+
             {/* Drag & Drop Area */}
             {!profileImage ? (
               <div
@@ -237,9 +239,8 @@ export function AboutSection({ isEditing }: AboutSectionProps) {
                     fileInputRef.current?.click();
                   }
                 }}
-                className={`border-2 border-dashed border-dark-section rounded-lg p-8 text-center transition-colors ${
-                  isEditing ? 'cursor-pointer hover:border-accent' : 'opacity-50 cursor-not-allowed'
-                }`}
+                className={`border-2 border-dashed border-dark-section rounded-lg p-8 text-center transition-colors ${isEditing ? 'cursor-pointer hover:border-accent' : 'opacity-50 cursor-not-allowed'
+                  }`}
               >
                 {uploadingImage ? (
                   <>
@@ -271,7 +272,7 @@ export function AboutSection({ isEditing }: AboutSectionProps) {
                 )}
               </div>
             )}
-            
+
             <input
               ref={fileInputRef}
               type="file"
@@ -285,7 +286,7 @@ export function AboutSection({ isEditing }: AboutSectionProps) {
               className="hidden"
               disabled={!isEditing}
             />
-            
+
             {/* Fallback URL Input */}
             <div className="mt-2">
               <label className="block text-xs text-text-secondary mb-1">Or enter URL:</label>

@@ -21,8 +21,12 @@ export function About() {
 
   const fetchAbout = useCallback(async () => {
     try {
-      const response = await fetch('/api/about', {
+      const response = await fetch(`/api/about?t=${Date.now()}`, {
         cache: 'no-store',
+        headers: {
+          'Pragma': 'no-cache',
+          'Cache-Control': 'no-cache'
+        }
       });
 
       if (!response.ok) {
@@ -35,6 +39,12 @@ export function About() {
       const { data } = result;
 
       if (data) {
+        logger.debug('✅ About data received:', {
+          id: data.id,
+          title: data.hero_title,
+          subtitle: data.hero_subtitle,
+          hasBio: !!data.bio_text
+        });
         setAboutData({
           heroTitle: data.hero_title || 'About',
           heroSubtitle: data.hero_subtitle || '',
@@ -43,6 +53,8 @@ export function About() {
           heroVideoUrl: data.hero_video_url || '',
           stats: data.stats && typeof data.stats === 'object' ? data.stats : { clients: 500, projects: 10, awards: 100 },
         });
+      } else {
+        logger.warn('⚠️ No about data found in database');
       }
     } catch (error: any) {
       logger.error('Error fetching about:', error);
