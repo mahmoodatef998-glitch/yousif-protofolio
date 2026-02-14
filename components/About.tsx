@@ -37,16 +37,17 @@ export function About() {
 
       const result = await response.json();
       const { data } = result;
-
       if (data) {
-        logger.debug('✅ About data received:', {
-          id: data.id,
-          title: data.hero_title,
-          subtitle: data.hero_subtitle,
-          hasBio: !!data.bio_text
+        const title = data.hero_title !== undefined && data.hero_title !== null ? data.hero_title : 'Yousif';
+
+        logger.debug('✅ About data mapped:', {
+          heroTitle: title,
+          heroSubtitle: data.hero_subtitle || '',
+          bio: data.bio_text || ''
         });
+
         setAboutData({
-          heroTitle: data.hero_title || 'About',
+          heroTitle: title,
           heroSubtitle: data.hero_subtitle || '',
           bio: data.bio_text || '',
           profileImage: data.profile_image_url || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&q=80',
@@ -54,7 +55,8 @@ export function About() {
           stats: data.stats && typeof data.stats === 'object' ? data.stats : { clients: 500, projects: 10, awards: 100 },
         });
       } else {
-        logger.warn('⚠️ No about data found in database');
+        logger.warn('⚠️ No about data found in database, using defaults');
+        setAboutData(prev => ({ ...prev, heroTitle: 'Yousif' }));
       }
     } catch (error: any) {
       logger.error('Error fetching about:', error);

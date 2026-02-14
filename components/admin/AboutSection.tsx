@@ -119,7 +119,7 @@ export function AboutSection({ isEditing }: AboutSectionProps) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          hero_title: title,
+          hero_title: title.trim(),
           hero_subtitle: subtitle,
           bio_text: bio,
           profile_image_url: profileImage,
@@ -128,6 +128,7 @@ export function AboutSection({ isEditing }: AboutSectionProps) {
       });
 
       const result = await response.json();
+      logger.log('💾 Save response received:', result);
 
       if (response.ok) {
         alert('About section saved successfully!');
